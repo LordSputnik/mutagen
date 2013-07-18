@@ -1,9 +1,8 @@
 
-
 version = (1, 21)
-version_string = u".".join(str(v) for v in version)
+version_string = ".".join(str(v) for v in version)
 
-class Metadata(object):
+class Metadata(dict):
     def __init__(self, *args, **kwargs):
         if args or kwargs:
             self.load(*args, **kwargs)
