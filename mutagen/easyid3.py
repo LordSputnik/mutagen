@@ -18,6 +18,7 @@ from fnmatch import fnmatchcase
 import mutagen
 import mutagen.id3
 
+from mutagen._util import dict_match
 from mutagen.id3 import ID3, error, delete, ID3FileType
 
 __all__ = ['EasyID3', 'Open', 'delete']
@@ -207,6 +208,16 @@ class EasyID3(mutagen.Metadata):
         else:
             raise EasyID3KeyError("%r is not a valid key" % key)
 
+    # This is BAD. Need to rewrite EasyID3, probably - it shouldn't really be a
+    # subclass of metadata, it's a wrapper around an actual metadata class.
+    def __contains__(self, key):
+        try:
+            self.__getitem__(key)
+        except KeyError:
+            return False
+        else:
+            return True
+
     # Note - this returns a list, not a view - shouldn't break anything though.
     def keys(self):
         keys = []
@@ -222,6 +233,7 @@ class EasyID3(mutagen.Metadata):
     def pprint(self):
         """Print tag key=value pairs."""
         strings = []
+        print(self.keys())
         for key in sorted(self.keys()):
             values = self[key]
             for value in values:
@@ -435,7 +447,7 @@ for frameid, key in {
     "TSOT": "titlesort",
     "TSRC": "isrc",
     "TSST": "discsubtitle",
-}.iteritems():
+}.items():
     EasyID3.RegisterTextKey(key, frameid)
 
 EasyID3.RegisterKey("genre", genre_get, genre_set, genre_delete)
@@ -469,7 +481,7 @@ for desc, key in {
     "ASIN": "asin",
     "ALBUMARTISTSORT": "albumartistsort",
     "BARCODE": "barcode"
-}.iteritems():
+}.items():
     EasyID3.RegisterTXXXKey(key, desc)
 
 class EasyID3FileType(ID3FileType):

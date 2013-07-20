@@ -296,7 +296,7 @@ class ID3(mutagen.Metadata):
             return [self[key]]
         else:
             key = key + ':'
-            return [v for s, v in self.iteritems() if s.startswith(key)]
+            return [v for s, v in self.items() if s.startswith(key)]
 
     def delall(self, key):
         """Delete all tags of a given kind; see getall."""
@@ -304,7 +304,7 @@ class ID3(mutagen.Metadata):
             del(self[key])
         else:
             key = key + ":"
-            for k in [s for s in self.iterkeys() if s.startswith(key)]:
+            for k in [s for s in self.keys() if s.startswith(key)]:
                 del(self[k])
 
     def setall(self, key, values):
