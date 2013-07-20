@@ -1120,7 +1120,7 @@ class TextFrame(Frame):
     """
 
     _framespec = [EncodingSpec('encoding'),
-                  MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000')]
+                  MultiSpec('text', EncodedTextSpec('text'), sep='\u0000')]
 
     def __str__(self):
         return '\u0000'.join(self.text)
@@ -1158,7 +1158,7 @@ class NumericTextFrame(TextFrame):
 
     _framespec = [EncodingSpec('encoding'),
                   MultiSpec('text', EncodedNumericTextSpec('text'),
-                            sep=u'\u0000')]
+                            sep='\u0000')]
 
     def __pos__(self):
         """Return the numerical value of the string."""
@@ -1175,7 +1175,7 @@ class NumericPartTextFrame(TextFrame):
 
     _framespec = [EncodingSpec('encoding'),
                   MultiSpec('text', EncodedNumericPartTextSpec('text'),
-                            sep=u'\u0000')]
+                            sep='\u0000')]
 
     def __pos__(self):
         return int(self.text[0].split("/")[0])
@@ -1188,7 +1188,7 @@ class TimeStampTextFrame(TextFrame):
     """
 
     _framespec = [EncodingSpec('encoding'),
-                  MultiSpec('text', TimeStampSpec('stamp'), sep=u',')]
+                  MultiSpec('text', TimeStampSpec('stamp'), sep=',')]
 
     def __str__(self):
         return ','.join(stamp.text for stamp in self.text)
@@ -1348,7 +1348,7 @@ class TXXX(TextFrame):
     the same). Many taggers use this frame to store freeform keys.
     """
     _framespec = [EncodingSpec('encoding'), EncodedTextSpec('desc'),
-                  MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000')]
+                  MultiSpec('text', EncodedTextSpec('text'), sep='\u0000')]
 
     HashKey = property(lambda s: '{}:{}'.format(s.FrameID, s.desc))
 
@@ -2048,8 +2048,122 @@ class CRA(AENC): "Audio encryption"
 
 class LNK(LINK):
     """Linked information"""
-    _framespec = [StringSpec('frameid', 3), Latin1TextSpec('url')]
+    _framespec = [ASCIIStringSpec('frameid', 3), Latin1TextSpec('url')]
     _optionalspec = [BinaryDataSpec('data')]
 
 Frames_2_2 = {k: v for k, v in globals().items() if
           (len(k) == 3 and isinstance(v, type) and issubclass(v, Frame))}
+
+
+#TODO - Check this is still valid in Python 3
+# support open(filename) as interface
+Open = ID3
+
+# ID3v1.1 support.
+def ParseID3v1(data):
+    """Parse an ID3v1 tag, returning a list of ID3v2.4 frames."""
+
+    try:
+        data = data[data.index(b'TAG'):]
+    except ValueError:
+        return None
+    if 128 < len(data) or len(data) < 124:
+        return None
+
+    # Issue #69 - Previous versions of Mutagen, when encountering
+    # out-of-spec TDRC and TYER frames of less than four characters,
+    # wrote only the characters available - e.g. "1" or "" - into the
+    # year field. To parse those, reduce the size of the year field.
+    # Amazingly, "0s" works as a struct format string.
+    unpack_fmt = "3s30s30s30s{}s29sBB".format(len(data) - 124)
+
+    try:
+        tag, title, artist, album, year, comment, track, genre = unpack(
+            unpack_fmt, data)
+    except StructError:
+        return None
+
+    if tag != b"TAG":
+        return None
+
+    def fix(data):
+        return data.split(b'\x00')[0].strip().decode('latin1')
+
+    title, artist, album, year, comment = map(
+        fix, [title, artist, album, year, comment])
+
+    frames = {}
+    if title:
+        frames['TIT2'] = TIT2(encoding=0, text=title)
+    if artist:
+        frames['TPE1'] = TPE1(encoding=0, text=[artist])
+    if album:
+        frames['TALB'] = TALB(encoding=0, text=album)
+    if year:
+        frames['TDRC'] = TDRC(encoding=0, text=year)
+    if comment:
+        frames['COMM'] = COMM(encoding=0, lang='eng', desc="ID3v1 Comment",
+                              text=comment)
+
+    # Don't read a track number if it looks like the comment was
+    # padded with spaces instead of nulls (thanks, WinAmp).
+    if track and (track != 32 or string[-3] == b'\x00'):
+        frames['TRCK'] = TRCK(encoding=0, text=str(track))
+
+    if genre != 255:
+        frames['TCON'] = TCON(encoding=0, text=str(genre))
+
+    return frames
+
+def MakeID3v1(id3):
+    """Return an ID3v1.1 tag string from a dict of ID3v2.4 frames."""
+
+    v1 = {}
+
+    for v2id, name in {"TIT2": "title", "TPE1": "artist",
+                       "TALB": "album"}.items():
+        if v2id in id3:
+            text = id3[v2id].text[0].encode('latin1', 'replace')[:30]
+        else:
+            text = b""
+
+        v1[name] = text + (b'\x00' * (30 - len(text)))
+
+    if "COMM" in id3:
+        cmnt = id3["COMM"].text[0].encode('latin1', 'replace')[:28]
+    else:
+        cmnt = b""
+
+    v1['comment'] = cmnt + (b'\x00' * (29 - len(cmnt)))
+
+    if "TRCK" in id3:
+        try:
+            v1['track'] = bytes([+id3["TRCK"]])
+        except ValueError:
+            v1['track'] = b'\x00'
+    else:
+        v1['track'] = b'\x00'
+
+    if 'TCON' in id3:
+        try:
+            genre = id3['TCON'].genres[0]
+        except IndexError:
+            pass
+        else:
+            if genre in GENRES:
+                v1['genre'] = bytes([GENRES.index(genre)])
+
+    if 'genre' not in v1:
+        v1['genre'] = b"\xff"
+
+    if 'TDRC' in id3:
+        year = str(id3['TDRC']).encode('latin1', 'replace')
+    elif "TYER" in id3:
+        year = str(id3['TYER']).encode('latin1', 'replace')
+    else:
+        year = b""
+
+    v1['year'] = (year + b'\x00\x00\x00\x00')[:4]
+
+    return (b'TAG' + v1['title'] + v1['artist'] + v1['album'] + v1['year'] +
+            v1['comment'] + v1['track'] + v1['genre'])
