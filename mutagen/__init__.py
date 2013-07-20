@@ -10,8 +10,8 @@ class Metadata(dict):
     def load(self, *args, **kwargs):
         raise NotImplementedError
 
-    def save(self, filename = None):
+    def save(self, filename=None):
         raise NotImplementedError
 
-    def delete(self, filename = None):
+    def delete(self, filename=None):
         raise NotImplementedError

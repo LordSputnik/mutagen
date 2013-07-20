@@ -1956,3 +1956,100 @@ class ASPI(Frame):
 
 Frames = {k: v for k, v in globals().items() if
           (len(k) == 4 and isinstance(v, type) and issubclass(v, Frame))}
+
+# ID3v2.2 frames
+class UFI(UFID): "Unique File Identifier"
+
+class TT1(TIT1): "Content group description"
+class TT2(TIT2): "Title"
+class TT3(TIT3): "Subtitle/Description refinement"
+class TP1(TPE1): "Lead Artist/Performer/Soloist/Group"
+class TP2(TPE2): "Band/Orchestra/Accompaniment"
+class TP3(TPE3): "Conductor"
+class TP4(TPE4): "Interpreter/Remixer/Modifier"
+class TCM(TCOM): "Composer"
+class TXT(TEXT): "Lyricist"
+class TLA(TLAN): "Audio Language(s)"
+class TCO(TCON): "Content Type (Genre)"
+class TAL(TALB): "Album"
+class TPA(TPOS): "Part of set"
+class TRK(TRCK): "Track Number"
+class TRC(TSRC): "International Standard Recording Code (ISRC)"
+class TYE(TYER): "Year of recording"
+class TDA(TDAT): "Date of recording (DDMM)"
+class TIM(TIME): "Time of recording (HHMM)"
+class TRD(TRDA): "Recording Dates"
+class TMT(TMED): "Source Media Type"
+class TFT(TFLT): "File Type"
+class TBP(TBPM): "Beats per minute"
+class TCP(TCMP): "iTunes Compilation Flag"
+class TCR(TCOP): "Copyright (C)"
+class TPB(TPUB): "Publisher"
+class TEN(TENC): "Encoder"
+class TSS(TSSE): "Encoder settings"
+class TOF(TOFN): "Original Filename"
+class TLE(TLEN): "Audio Length (ms)"
+class TSI(TSIZ): "Audio Data size (bytes)"
+class TDY(TDLY): "Audio Delay (ms)"
+class TKE(TKEY): "Starting Key"
+class TOT(TOAL): "Original Album"
+class TOA(TOPE): "Original Artist/Perfomer"
+class TOL(TOLY): "Original Lyricist"
+class TOR(TORY): "Original Release Year"
+
+class TXX(TXXX): "User-defined Text"
+
+class WAF(WOAF): "Official File Information"
+class WAR(WOAR): "Official Artist/Performer Information"
+class WAS(WOAS): "Official Source Information"
+class WCM(WCOM): "Commercial Information"
+class WCP(WCOP): "Copyright Information"
+class WPB(WPUB): "Official Publisher Information"
+
+class WXX(WXXX): "User-defined URL"
+
+class IPL(IPLS): "Involved people list"
+class MCI(MCDI): "Binary dump of CD's TOC"
+class ETC(ETCO): "Event timing codes"
+class MLL(MLLT): "MPEG location lookup table"
+class STC(SYTC): "Synced tempo codes"
+class ULT(USLT): "Unsychronised lyrics/text transcription"
+class SLT(SYLT): "Synchronised lyrics/text"
+class COM(COMM): "Comment"
+#class RVA(RVAD)
+#class EQU(EQUA)
+class REV(RVRB): "Reverb"
+class PIC(APIC):
+    """Attached Picture.
+
+    The 'mime' attribute of an ID3v2.2 attached picture must be either
+    'PNG' or 'JPG'.
+    """
+    _framespec = [EncodingSpec('encoding'), ASCIIStringSpec('mime', 3),
+                  ByteSpec('type'), EncodedTextSpec('desc'),
+                  BinaryDataSpec('data')]
+
+class GEO(GEOB): "General Encapsulated Object"
+class CNT(PCNT): "Play counter"
+class POP(POPM): "Popularimeter"
+class BUF(RBUF): "Recommended buffer size"
+
+class CRM(Frame):
+    """Encrypted meta frame"""
+    _framespec = [Latin1TextSpec('owner'), Latin1TextSpec('desc'),
+                  BinaryDataSpec('data')]
+
+    def __eq__(self, other):
+        return self.data == other
+
+    __hash__ = Frame.__hash__
+
+class CRA(AENC): "Audio encryption"
+
+class LNK(LINK):
+    """Linked information"""
+    _framespec = [StringSpec('frameid', 3), Latin1TextSpec('url')]
+    _optionalspec = [BinaryDataSpec('data')]
+
+Frames_2_2 = {k: v for k, v in globals().items() if
+          (len(k) == 3 and isinstance(v, type) and issubclass(v, Frame))}
