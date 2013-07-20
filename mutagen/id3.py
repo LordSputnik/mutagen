@@ -347,6 +347,108 @@ class ID3(mutagen.Metadata):
         delete(filename, delete_v1, delete_v2)
         self.clear()
 
+    def __save_frame(self, frame, name=None):
+        flags = 0
+        if self.PEDANTIC and isinstance(frame, TextFrame):
+            if len(str(frame)) == 0:
+                return b''
+
+        framedata = frame._writeData()
+        usize = len(framedata)
+
+        if usize > 2048:
+            # Disabled as this causes iTunes and other programs
+            # to fail to find these frames, which usually includes
+            # e.g. APIC.
+            #framedata = BitPaddedInt.to_str(usize) + framedata.encode('zlib')
+            #flags |= Frame.FLAG24_COMPRESS | Frame.FLAG24_DATALEN
+            pass
+
+        datasize = BitPaddedInt.to_str(len(framedata), width=4)
+        header = struct.pack('>4s4sH', name or type(frame).__name__, datasize,
+                             flags)
+        return header + framedata
+
+    def update_to_v24(self):
+        """Convert older tags into an ID3v2.4 tag.
+
+        This updates old ID3v2 frames to ID3v2.4 ones (e.g. TYER to
+        TDRC). If you intend to save tags, you must call this function
+        at some point; it is called by default when loading the tag.
+        """
+
+        if self.version < (2, 3, 0):
+            # unsafe to write
+            del self.unknown_frames[:]
+        elif self.version == (2, 3, 0) and not self.__unknown_updated:
+            # convert unknown 2.3 frames (flags/size) to 2.4
+            converted = []
+            for frame in self.unknown_frames:
+                try:
+                    name, size, flags = unpack('>4sLH', frame[:10])
+                    frame = BinaryFrame.fromData(self, flags, frame[10:])
+                except (struct.error, error):
+                    continue
+                converted.append(self.__save_frame(frame, name=name))
+            self.unknown_frames[:] = converted
+            self.__unknown_updated = True
+
+        # TDAT, TYER, and TIME have been turned into TDRC.
+        try:
+            if str(self.get("TYER", "")):
+                date = str(self.pop("TYER"))
+                if str(self.get("TDAT", "")):
+                    dat = str(self.pop("TDAT"))
+                    date = "{}-{}-{}".format(date, dat[2:], dat[:2])
+                    if str(self.get("TIME", "")):
+                        time = str(self.pop("TIME"))
+                        date += "T{}:{}:00".format(time[:2], time[2:])
+                if "TDRC" not in self:
+                    self.add(TDRC(encoding=0, text=date))
+        except UnicodeDecodeError:
+            # Old ID3 tags have *lots* of Unicode problems, so if TYER
+            # is bad, just chuck the frames.
+            pass
+
+        # TORY can be the first part of a TDOR.
+        if "TORY" in self:
+            f = self.pop("TORY")
+            if "TDOR" not in self:
+                try:
+                    self.add(TDOR(encoding=0, text=str(f)))
+                except UnicodeDecodeError:
+                    pass
+
+        # IPLS is now TIPL.
+        if "IPLS" in self:
+            f = self.pop("IPLS")
+            if "TIPL" not in self:
+                self.add(TIPL(encoding=f.encoding, people=f.people))
+
+        if "TCON" in self:
+            # Get rid of "(xx)Foobr" format.
+            self["TCON"].genres = self["TCON"].genres
+
+        if self.version < (2, 3):
+            # ID3v2.2 PIC frames are slightly different.
+            pics = self.getall("PIC")
+            mimes = { "PNG": "image/png", "JPG": "image/jpeg" }
+            self.delall("PIC")
+            for pic in pics:
+                newpic = APIC(encoding=pic.encoding,
+                              mime=mimes.get(pic.mime, pic.mime),
+                              type=pic.type, desc=pic.desc, data=pic.data)
+                self.add(newpic)
+
+            # ID3v2.2 LNK frames are just way too different to upgrade.
+            self.delall("LINK")
+
+        # These can't be trivially translated to any ID3v2.4 tags, or
+        # should have been removed already.
+        for key in ["RVAD", "EQUA", "TRDA", "TSIZ", "TDAT", "TIME", "CRM"]:
+            if key in self:
+                del(self[key])
+
 def delete(filename, delete_v1=True, delete_v2=True):
     """Remove tags from a file.
 
