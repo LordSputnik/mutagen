@@ -2379,3 +2379,67 @@ def MakeID3v1(id3):
 
     return (b'TAG' + v1['title'] + v1['artist'] + v1['album'] + v1['year'] +
             v1['comment'] + v1['track'] + v1['genre'])
+
+
+class ID3FileType(mutagen.FileType):
+    """An unknown type of file with ID3 tags."""
+
+    ID3 = ID3
+
+    class _Info(object):
+        length = 0
+
+        def __init__(self, fileobj, offset):
+            pass
+
+        pprint = staticmethod(lambda: "Unknown format with ID3 tag")
+
+    @staticmethod
+    def score(filename, fileobj, header):
+        return header.startswith("ID3")
+
+    def add_tags(self, ID3=None):
+        """Add an empty ID3 tag to the file.
+
+        A custom tag reader may be used in instead of the default
+        mutagen.id3.ID3 object, e.g. an EasyID3 reader.
+        """
+        if ID3 is None:
+            ID3 = self.ID3
+        if self.tags is None:
+            self.ID3 = ID3
+            self.tags = ID3()
+        else:
+            raise error("an ID3 tag already exists")
+
+    def load(self, filename, ID3=None, **kwargs):
+        """Load stream and tag information from a file.
+
+        A custom tag reader may be used in instead of the default
+        mutagen.id3.ID3 object, e.g. an EasyID3 reader.
+        """
+        if ID3 is None:
+            ID3 = self.ID3
+        else:
+            # If this was initialized with EasyID3, remember that for
+            # when tags are auto-instantiated in add_tags.
+            self.ID3 = ID3
+        self.filename = filename
+        try:
+            self.tags = ID3(filename, **kwargs)
+        except error:
+            self.tags = None
+
+        if self.tags is not None:
+            try:
+                offset = self.tags.size
+            except AttributeError:
+                offset = None
+        else:
+            offset = None
+
+        try:
+            fileobj = open(filename, "rb")
+            self.info = self._Info(fileobj, offset)
+        finally:
+            fileobj.close()

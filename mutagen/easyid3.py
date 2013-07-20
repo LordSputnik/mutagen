@@ -136,6 +136,7 @@ class EasyID3(mutagen.Metadata):
             EasyID3.RegisterTXXXKey('barcode', 'BARCODE').
         """
         frameid = "TXXX:" + desc
+
         def getter(id3, key):
             return list(id3[frameid])
 
@@ -409,7 +410,7 @@ def peakgain_list(id3, key):
 for frameid, key in {
     "TALB": "album",
     "TBPM": "bpm",
-    "TCMP": "compilation", # iTunes extension
+    "TCMP": "compilation",  # iTunes extension
     "TCOM": "composer",
     "TCOP": "copyright",
     "TENC": "encodedby",
@@ -427,14 +428,14 @@ for frameid, key in {
     "TPUB": "organization",
     "TRCK": "tracknumber",
     "TOLY": "author",
-    "TSO2": "albumartistsort", # iTunes extension
+    "TSO2": "albumartistsort",  # iTunes extension
     "TSOA": "albumsort",
-    "TSOC": "composersort", # iTunes extension
+    "TSOC": "composersort",  # iTunes extension
     "TSOP": "artistsort",
     "TSOT": "titlesort",
     "TSRC": "isrc",
     "TSST": "discsubtitle",
-    }.iteritems():
+}.iteritems():
     EasyID3.RegisterTextKey(key, frameid)
 
 EasyID3.RegisterKey("genre", genre_get, genre_set, genre_delete)
@@ -455,20 +456,20 @@ EasyID3.RegisterKey("replaygain_*_peak", peak_get, peak_set, peak_delete)
 # http://bugs.musicbrainz.org/ticket/1383
 # http://musicbrainz.org/doc/MusicBrainzTag
 for desc, key in {
-    u"MusicBrainz Artist Id": "musicbrainz_artistid",
-    u"MusicBrainz Album Id": "musicbrainz_albumid",
-    u"MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
-    u"MusicBrainz TRM Id": "musicbrainz_trmid",
-    u"MusicIP PUID": "musicip_puid",
-    u"MusicMagic Fingerprint": "musicip_fingerprint",
-    u"MusicBrainz Album Status": "musicbrainz_albumstatus",
-    u"MusicBrainz Album Type": "musicbrainz_albumtype",
-    u"MusicBrainz Album Release Country": "releasecountry",
-    u"MusicBrainz Disc Id": "musicbrainz_discid",
-    u"ASIN": "asin",
-    u"ALBUMARTISTSORT": "albumartistsort",
-    u"BARCODE": "barcode",
-    }.iteritems():
+    "MusicBrainz Artist Id": "musicbrainz_artistid",
+    "MusicBrainz Album Id": "musicbrainz_albumid",
+    "MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
+    "MusicBrainz TRM Id": "musicbrainz_trmid",
+    "MusicIP PUID": "musicip_puid",
+    "MusicMagic Fingerprint": "musicip_fingerprint",
+    "MusicBrainz Album Status": "musicbrainz_albumstatus",
+    "MusicBrainz Album Type": "musicbrainz_albumtype",
+    "MusicBrainz Album Release Country": "releasecountry",
+    "MusicBrainz Disc Id": "musicbrainz_discid",
+    "ASIN": "asin",
+    "ALBUMARTISTSORT": "albumartistsort",
+    "BARCODE": "barcode"
+}.iteritems():
     EasyID3.RegisterTXXXKey(key, desc)
 
 class EasyID3FileType(ID3FileType):
