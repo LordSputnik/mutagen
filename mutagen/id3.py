@@ -32,6 +32,7 @@ class ID3(mutagen.Metadata):
         self.version = (2, 4, 0)
         self.__readbytes = 0
         self.__flags = 0
+        self.__unknown_updated = False
 
         # Initialize the metadata base class with any input arguments.
         super(ID3, self).__init__(*args, **kwargs)
@@ -332,6 +333,111 @@ class ID3(mutagen.Metadata):
 
         self[frame.HashKey] = frame
 
+    def save(self, filename=None, v1=1):
+        """Save changes to a file.
+
+        If no filename is given, the one most recently loaded is used.
+
+        Keyword arguments:
+        v1 -- if 0, ID3v1 tags will be removed
+              if 1, ID3v1 tags will be updated but not added
+              if 2, ID3v1 tags will be created and/or updated
+
+        The lack of a way to update only an ID3v1 tag is intentional.
+        """
+
+        # Sort frames by 'importance'
+        order = ["TIT2", "TPE1", "TRCK", "TALB", "TPOS", "TDRC", "TCON"]
+
+        order = {b: a for a, b in enumerate(order)}
+        last = len(order)
+        frames = list(self.items())
+        frames = sorted(self.items(), key=lambda a: order.get(a[0][:4], last))
+
+        f_data = [self.__save_frame(frame) for (key, frame) in frames]
+        f_data.extend(data for data in self.unknown_frames if len(data) > 10)
+        if not f_data:
+            try:
+                self.delete(filename)
+            except EnvironmentError as err:
+                from errno import ENOENT
+                if err.errno != ENOENT:
+                    raise
+            return
+
+        f_data = b''.join(f_data)
+        framesize = len(f_data)
+
+        if filename is None:
+            filename = self.filename
+        try:
+            f = open(filename, 'rb+')
+        except IOError as err:
+            from errno import ENOENT
+            if err.errno != ENOENT:
+                raise
+            f = open(filename, 'ab')  # create, then reopen
+            f = open(filename, 'rb+')
+        try:
+            idata = f.read(10)
+            try:
+                id3, vmaj, vrev, flags, insize = struct.unpack('>3sBBB4s',
+                                                               idata)
+            except struct.error:
+                id3, insize = b'', 0
+
+            insize = BitPaddedInt(insize)
+            if id3 != b'ID3':
+                insize = -10
+
+            if insize >= framesize:
+                outsize = insize
+            else:
+                outsize = (framesize + 1023) & ~0x3FF
+            f_data += b'\x00' * (outsize - framesize)
+
+            framesize = BitPaddedInt.to_bytes(outsize, width=4)
+            flags = 0
+            header = struct.pack('>3sBBB4s', b'ID3', 4, 0, flags, framesize)
+            data = header + f_data
+
+            if (insize < outsize):
+                insert_bytes(f, outsize - insize, insize + 10)
+
+            f.seek(0)
+            f.write(data)
+
+            try:
+                f.seek(-128, 2)
+            except IOError as err:
+                # If the file is too small, that's OK - it just means
+                # we're certain it doesn't have a v1 tag.
+                from errno import EINVAL
+                if err.errno != EINVAL:
+                    # If we failed to see for some other reason, bail out.
+                    raise
+                # Since we're sure this isn't a v1 tag, don't read it.
+                f.seek(0, 2)
+
+            data = f.read(128)
+            try:
+                idx = data.index(b"TAG")
+            except ValueError:
+                offset = 0
+                has_v1 = False
+            else:
+                offset = idx - len(data)
+                has_v1 = True
+
+            f.seek(offset, 2)
+            if v1 == 1 and has_v1 or v1 == 2:
+                f.write(MakeID3v1(self))
+            else:
+                f.truncate()
+
+        finally:
+            f.close()
+
     def delete(self, filename=None, delete_v1=True, delete_v2=True):
         """Remove tags from a file.
 
@@ -353,6 +459,7 @@ class ID3(mutagen.Metadata):
             if len(str(frame)) == 0:
                 return b''
 
+        print(type(frame))
         framedata = frame._writeData()
         usize = len(framedata)
 
@@ -364,12 +471,13 @@ class ID3(mutagen.Metadata):
             #flags |= Frame.FLAG24_COMPRESS | Frame.FLAG24_DATALEN
             pass
 
-        datasize = BitPaddedInt.to_str(len(framedata), width=4)
-        header = struct.pack('>4s4sH', name or type(frame).__name__, datasize,
-                             flags)
+        datasize = BitPaddedInt.to_bytes(len(framedata), width=4)
+        header = struct.pack('>4s4sH',
+                             (name or type(frame).__name__).encode('ascii'),
+                             datasize, flags)
         return header + framedata
 
-    def update_to_v24(self):
+    def normalize_for_v24(self):
         """Convert older tags into an ID3v2.4 tag.
 
         This updates old ID3v2 frames to ID3v2.4 ones (e.g. TYER to
@@ -432,7 +540,7 @@ class ID3(mutagen.Metadata):
         if self.version < (2, 3):
             # ID3v2.2 PIC frames are slightly different.
             pics = self.getall("PIC")
-            mimes = { "PNG": "image/png", "JPG": "image/jpeg" }
+            mimes = {"PNG": "image/png", "JPG": "image/jpeg"}
             self.delall("PIC")
             for pic in pics:
                 newpic = APIC(encoding=pic.encoding,
@@ -448,6 +556,8 @@ class ID3(mutagen.Metadata):
         for key in ["RVAD", "EQUA", "TRDA", "TSIZ", "TDAT", "TIME", "CRM"]:
             if key in self:
                 del(self[key])
+
+    update_to_v24 = normalize_for_v24
 
 def delete(filename, delete_v1=True, delete_v2=True):
     """Remove tags from a file.
@@ -517,9 +627,9 @@ class BitPaddedInt(int):
             reformed_bytes.append(value & mask)
             value = value >> bits
         if width == -1:
-            width = max(4, len(bytes))
+            width = max(4, len(reformed_bytes))
 
-        if len(bytes) > width:
+        if len(reformed_bytes) > width:
             raise ValueError("Value too wide "
                              "({} bytes)".format(len(reformed_bytes)))
         else:
@@ -528,7 +638,7 @@ class BitPaddedInt(int):
         if bigendian:
             reformed_bytes.reverse()
 
-        return b''.join(reformed_bytes)
+        return bytes(reformed_bytes)
 
 # TODO Must be a better way to do this with bytearray?
 class unsynch(object):
@@ -591,7 +701,7 @@ class ByteSpec(Spec):
         return data[0], data[1:]
 
     def write(self, frame, value):
-        return value
+        return bytes([value])
 
     def validate(self, frame, value):
         if value is None:
@@ -688,7 +798,7 @@ class Latin1TextSpec(Spec):
         return data.decode('latin1'), ret
 
     def write(self, data, value):
-        return value.encode('latin1') + '\x00'
+        return value.encode('latin1') + b'\x00'
 
     def validate(self, frame, value):
         if value is None:
@@ -779,7 +889,7 @@ class MultiSpec(Spec):
         if value is None:
             return []
 
-        if self.sep and isinstance(value, bytes):
+        if self.sep and isinstance(value, str):
             value = value.split(self.sep)
 
         if isinstance(value, list):
@@ -2154,7 +2264,7 @@ class LNK(LINK):
     _optionalspec = [BinaryDataSpec('data')]
 
 Frames_2_2 = {k: v for k, v in globals().items() if
-          (len(k) == 3 and isinstance(v, type) and issubclass(v, Frame))}
+              (len(k) == 3 and isinstance(v, type) and issubclass(v, Frame))}
 
 
 #TODO - Check this is still valid in Python 3
