@@ -17,6 +17,7 @@ import re
 
 import mutagen
 from mutagen._constants import GENRES
+from mutagen._util import insert_bytes, delete_bytes, DictProxy
 
 class error(Exception): pass
 class ID3NoHeaderError(error, ValueError): pass
@@ -31,7 +32,7 @@ class ID3Warning(error, UserWarning): pass
 def is_valid_frame_id(frame_id):
     return frame_id.isalnum() and frame_id.isupper()
 
-class ID3(mutagen.Metadata):
+class ID3(DictProxy, mutagen.Metadata):
 
     filename = None
     PEDANTIC = True
@@ -55,9 +56,8 @@ class ID3(mutagen.Metadata):
                 raise ValueError("Requested bytes ({}) less than "
                                  "zero".format(size))
             if size > self.__filesize:
-                raise EOFError("Requested {:#x} of {:#x} {}".format(
-                               long(size), long(self.__filesize),
-                               self.filename))
+                raise EOFError("Requested {:#x} of {:#x} {}".format(int(size),
+                               int(self.__filesize), self.filename))
         except AttributeError:
             pass
 
@@ -469,7 +469,6 @@ class ID3(mutagen.Metadata):
             if len(str(frame)) == 0:
                 return b''
 
-        print(type(frame))
         framedata = frame._writeData()
         usize = len(framedata)
 
@@ -503,7 +502,7 @@ class ID3(mutagen.Metadata):
             converted = []
             for frame in self.unknown_frames:
                 try:
-                    name, size, flags = unpack('>4sLH', frame[:10])
+                    name, size, flags = struct.unpack('>4sLH', frame[:10])
                     frame = BinaryFrame.fromData(self, flags, frame[10:])
                 except (struct.error, error):
                     continue
@@ -595,7 +594,7 @@ def delete(filename, delete_v1=True, delete_v2=True):
         f.seek(0, 0)
         idata = f.read(10)
         try:
-            id3, vmaj, vrev, flags, insize = unpack('>3sBBB4s', idata)
+            id3, vmaj, vrev, flags, insize = struct.unpack('>3sBBB4s', idata)
         except struct.error:
             id3, insize = b'', -1
         insize = BitPaddedInt(insize)
@@ -990,11 +989,11 @@ class ChannelSpec(ByteSpec):
 
 class VolumeAdjustmentSpec(Spec):
     def read(self, frame, data):
-        value = unpack('>h', data[0:2])[0]
+        value = struct.unpack('>h', data[0:2])[0]
         return value / 512, data[2:]
 
     def write(self, frame, value):
-        return pack('>h', int(round(value * 512)))
+        return struct.pack('>h', int(round(value * 512)))
 
     def validate(self, frame, value):
         return value
@@ -1021,7 +1020,7 @@ class VolumePeakSpec(Spec):
 
     def write(self, frame, value):
         # always write as 16 bits for sanity.
-        return b"\x10" + pack('>H', int(round(value * 32768)))
+        return b"\x10" + struct.pack('>H', int(round(value * 32768)))
 
     def validate(self, frame, value):
         return value
@@ -1498,8 +1497,10 @@ class TCON(TextFrame):
         return genres
 
     def __set_genres(self, genres):
-        if isinstance(genres, basestring): genres = [genres]
-        self.text = map(self.__decode, genres)
+        if isinstance(genres, str):
+            genres = [genres]
+
+        self.text = genres
 
     def __decode(self, value):
         if isinstance(value, str):
@@ -2300,8 +2301,8 @@ def ParseID3v1(data):
     unpack_fmt = "3s30s30s30s{}s29sBB".format(len(data) - 124)
 
     try:
-        tag, title, artist, album, year, comment, track, genre = unpack(
-            unpack_fmt, data)
+        tag, title, artist, album, year, comment, track, genre = \
+            struct.unpack(unpack_fmt, data)
     except StructError:
         return None
 

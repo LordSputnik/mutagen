@@ -1,16 +1,13 @@
 import os
-import sys
+import tempfile
 import shutil
-import pickle
 from tests import add, TestCase
 from mutagen.id3 import ID3FileType
 from mutagen.easyid3 import EasyID3, error as ID3Error, delete
-from tempfile import mkstemp
 
 class TEasyID3(TestCase):
-
     def setUp(self):
-        fd, self.filename = mkstemp('.mp3')
+        fd, self.filename = tempfile.mkstemp(suffix='.mp3')
         os.close(fd)
         empty = os.path.join('tests', 'data', 'emptyfile.mp3')
         shutil.copy(empty, self.filename)
@@ -24,6 +21,7 @@ class TEasyID3(TestCase):
         self.failUnless(mp3.tags)
         mp3.pprint()
         self.failUnless(isinstance(mp3.tags, EasyID3))
+
 
     def test_delete(self):
         self.id3["artist"] = "foobar"
@@ -110,7 +108,7 @@ class TEasyID3(TestCase):
         self.failUnlessEqual(self.id3["date"], ["2004"])
         del(self.id3["date"])
         self.failIf("date" in self.id3.keys())
-        
+
     def test_write_date_double(self):
         self.id3["date"] = ["2004", "2005"]
         self.id3.save(self.filename)
@@ -125,9 +123,8 @@ class TEasyID3(TestCase):
     def test_write_invalid(self):
         self.failUnlessRaises(ValueError, self.id3.__getitem__, "notvalid")
         self.failUnlessRaises(ValueError, self.id3.__delitem__, "notvalid")
-        self.failUnlessRaises(
-            ValueError, self.id3.__setitem__, "notvalid", "tests")
-
+        self.failUnlessRaises(ValueError, self.id3.__setitem__, "notvalid",
+                              "tests")
     def test_perfomer(self):
         self.id3["performer:coder"] = ["piman", "mu"]
         self.id3.save(self.filename)
@@ -178,8 +175,8 @@ class TEasyID3(TestCase):
         self.failUnlessEqual(id3["asin"], ["Hello"])
 
     def test_txxx_unicode(self):
-        self.id3["asin"] = u"He\u1234llo"
-        self.failUnlessEqual(self.id3["asin"], [u"He\u1234llo"])
+        self.id3["asin"] = "He\u1234llo"
+        self.failUnlessEqual(self.id3["asin"], ["He\u1234llo"])
 
     def test_bad_trackid(self):
         self.failUnlessRaises(ValueError, self.id3.__setitem__,
@@ -189,7 +186,7 @@ class TEasyID3(TestCase):
     def test_gain_bad_key(self):
         self.failIf("replaygain_foo_gain" in self.id3)
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
-        
+
     def test_gain_bad_value(self):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_gain", [])
@@ -198,11 +195,11 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["1", "2"])
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
-        
+
     def test_peak_bad_key(self):
         self.failIf("replaygain_foo_peak" in self.id3)
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
-        
+
     def test_peak_bad_value(self):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_peak", [])
@@ -213,7 +210,7 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["3"])
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
-        
+
     def test_gain_peak_get(self):
         self.id3["replaygain_foo_gain"] = "+3.5 dB"
         self.id3["replaygain_bar_peak"] = "0.5"
@@ -251,10 +248,6 @@ class TEasyID3(TestCase):
         del(self.id3["replaygain_bar_peak"])
         self.failIf("replaygain_foo_gain" in self.id3.keys())
         self.failIf("replaygain_bar_gain" in self.id3.keys())
-
-    def test_pickle(self):
-        # http://code.google.com/p/mutagen/issues/detail?id=102
-        pickle.dumps(self.id3)
 
     def tearDown(self):
         os.unlink(self.filename)

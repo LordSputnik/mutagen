@@ -24,7 +24,7 @@ import mutagen
 import mutagen.id3
 import collections
 
-from mutagen._util import dict_match
+from mutagen._util import dict_match, DictMixin
 from mutagen.id3 import ID3, error, delete, ID3FileType
 
 __all__ = ['EasyID3', 'Open', 'delete']
@@ -36,7 +36,9 @@ class EasyID3KeyError(KeyError, ValueError, error):
     catching KeyError is preferred.
     """
 
-class EasyID3(collections.abc.MutableMapping):
+
+
+class EasyID3(DictMixin, mutagen.Metadata):
     """A file with an ID3 tag.
 
     Like Vorbis comments, EasyID3 keys are case-insensitive ASCII
@@ -306,7 +308,8 @@ def performer_delete(id3, key):
         del(id3["TMCL"])
 
 def performer_list(id3, key):
-    try: mcl = id3["TMCL"]
+    try:
+        mcl = id3["TMCL"]
     except KeyError:
         return []
     else:
@@ -351,7 +354,7 @@ def gain_get(id3, key):
     except KeyError:
         raise EasyID3KeyError(key)
     else:
-        return ["{+f} dB".format(frame.gain)]
+        return ["{:+f} dB".format(frame.gain)]
 
 def gain_set(id3, key, value):
     if len(value) != 1:
@@ -382,7 +385,7 @@ def peak_get(id3, key):
     except KeyError:
         raise EasyID3KeyError(key)
     else:
-        return ["{}".format(frame.peak)]
+        return ["{:f}".format(frame.peak)]
 
 def peak_set(id3, key, value):
     if len(value) != 1:
@@ -454,7 +457,6 @@ EasyID3.RegisterKey(
     performer_list)
 EasyID3.RegisterKey("musicbrainz_trackid", musicbrainz_trackid_get,
                     musicbrainz_trackid_set, musicbrainz_trackid_delete)
-EasyID3.RegisterKey("website", website_get, website_set, website_delete)
 EasyID3.RegisterKey("website", website_get, website_set, website_delete)
 EasyID3.RegisterKey(
     "replaygain_*_gain", gain_get, gain_set, gain_delete, peakgain_list)
