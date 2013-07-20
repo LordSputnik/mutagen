@@ -36,8 +36,6 @@ class EasyID3KeyError(KeyError, ValueError, error):
     catching KeyError is preferred.
     """
 
-
-
 class EasyID3(DictMixin, mutagen.Metadata):
     """A file with an ID3 tag.
 
@@ -71,8 +69,6 @@ class EasyID3(DictMixin, mutagen.Metadata):
     Get = {}
     Delete = {}
     List = {}
-
-    EasyMappings = {}
 
     # For compatibility.
     valid_keys = Get
@@ -137,8 +133,6 @@ class EasyID3(DictMixin, mutagen.Metadata):
 
         cls.RegisterKey(key, getter, setter, deleter)
 
-        cls.EasyMappings[frameid] = key
-
     @classmethod
     def RegisterTXXXKey(cls, key, desc):
         """Register a user-defined text frame key.
@@ -160,7 +154,8 @@ class EasyID3(DictMixin, mutagen.Metadata):
                 enc = 0
                 # Store 8859-1 if we can, per MusicBrainz spec.
                 try:
-                    value.encode('latin_1')
+                    for v in value:
+                        v.encode('latin_1')
                 except UnicodeError:
                     enc = 3
 
@@ -172,8 +167,6 @@ class EasyID3(DictMixin, mutagen.Metadata):
             del(id3[frameid])
 
         cls.RegisterKey(key, getter, setter, deleter)
-
-        cls.EasyMappings[frameid] = key
 
     def __init__(self, filename=None):
         self.__id3 = ID3()
@@ -202,7 +195,7 @@ class EasyID3(DictMixin, mutagen.Metadata):
         if func is not None:
             return func(self.__id3, key)
         else:
-            raise EasyID3KeyError("{} is not a valid key" % key)
+            raise EasyID3KeyError("{} is not a valid key".format(key))
 
     def __setitem__(self, key, value):
         key = key.lower()
@@ -222,13 +215,16 @@ class EasyID3(DictMixin, mutagen.Metadata):
         else:
             raise EasyID3KeyError("%r is not a valid key" % key)
 
-    def __iter__(self):
-        return iter(self.EasyMappings[k] for k in self.__id3.keys()
-                    if k in self.EasyMappings)
-
-    def __len__(self):
-        return len(self.EasyMappings[k] for k in self.__id3.keys()
-                   if k in self.EasyMappings)
+    def keys(self):
+        keys = []
+        for key in self.Get.keys():
+            if key in self.List:
+                keys.extend(self.List[key](self.__id3, key))
+            elif key in self:
+                keys.append(key)
+        if self.ListFallback is not None:
+            keys.extend(self.ListFallback(self.__id3, ""))
+        return keys
 
     def pprint(self):
         """Print tag key=value pairs."""

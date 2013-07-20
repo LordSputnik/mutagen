@@ -22,7 +22,6 @@ class TEasyID3(TestCase):
         mp3.pprint()
         self.failUnless(isinstance(mp3.tags, EasyID3))
 
-
     def test_delete(self):
         self.id3["artist"] = "foobar"
         self.id3.save(self.filename)
@@ -35,8 +34,8 @@ class TEasyID3(TestCase):
         self.id3["artist"] = "baz"
         self.id3.pprint()
 
-    def test_has_key(self):
-        self.failIf(self.id3.has_key("foo"))
+    def test_in(self):
+        self.failIf("foo" in self.id3)
 
     def test_empty_file(self):
         empty = os.path.join('tests', 'data', 'emptyfile.mp3')
@@ -58,14 +57,14 @@ class TEasyID3(TestCase):
             self.id3.save(self.filename)
             id3 = EasyID3(self.filename)
             self.failUnlessEqual(id3[key], ["a test value"])
-            self.failUnlessEqual(id3.keys(), [key])
+            self.failUnlessEqual(list(id3.keys()), [key])
 
             # And non-creation setting.
             self.id3[key] = "a test value"
             self.id3.save(self.filename)
             id3 = EasyID3(self.filename)
             self.failUnlessEqual(id3[key], ["a test value"])
-            self.failUnlessEqual(id3.keys(), [key])
+            self.failUnlessEqual(list(id3.keys()), [key])
 
             del(self.id3[key])
 
@@ -82,13 +81,13 @@ class TEasyID3(TestCase):
             self.id3.save(self.filename)
             id3 = EasyID3(self.filename)
             self.failUnlessEqual(id3.get(key), ["a test", "value"])
-            self.failUnlessEqual(id3.keys(), [key])
+            self.failUnlessEqual(list(id3.keys()), [key])
 
             self.id3[key] = ["a test", "value"]
             self.id3.save(self.filename)
             id3 = EasyID3(self.filename)
             self.failUnlessEqual(id3.get(key), ["a test", "value"])
-            self.failUnlessEqual(id3.keys(), [key])
+            self.failUnlessEqual(list(id3.keys()), [key])
 
             del(self.id3[key])
 
@@ -125,6 +124,7 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(ValueError, self.id3.__delitem__, "notvalid")
         self.failUnlessRaises(ValueError, self.id3.__setitem__, "notvalid",
                               "tests")
+
     def test_perfomer(self):
         self.id3["performer:coder"] = ["piman", "mu"]
         self.id3.save(self.filename)
@@ -193,7 +193,8 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["foo"])
         self.failUnlessRaises(
-            ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["1", "2"])
+            ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["1", "2"]
+        )
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
 
     def test_peak_bad_key(self):
@@ -206,7 +207,8 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["foo"])
         self.failUnlessRaises(
-            ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["1", "1"])
+            ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["1", "1"]
+        )
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["3"])
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))

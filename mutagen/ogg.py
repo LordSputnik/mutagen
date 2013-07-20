@@ -75,9 +75,9 @@ class OggPage(object):
             raise EOFError
 
         try:
-            (oggs, self.version, self.__type_flags, self.position,
-             self.serial, self.sequence, crc, segments) = struct.unpack(
-             "<4sBBqIIiB", header)
+            (oggs, self.version, self.__type_flags, self.position, self.serial,
+             self.sequence, crc, segments) = \
+                struct.unpack("<4sBBqIIiB", header)
         except struct.error:
             raise error("unable to read full header; got {}".format(header))
 
@@ -120,10 +120,11 @@ class OggPage(object):
     def __repr__(self):
         attrs = ['version', 'position', 'serial', 'sequence', 'offset',
                  'complete', 'continued', 'first', 'last']
-        values = ["{}={}".format(attr, repr(getattr(self, attr))) for attr in attrs]
+        values = ["{}={}".format(attr, repr(getattr(self, attr)))
+                  for attr in attrs]
         return "<{} {}, {} bytes in {} packets>".format(
-            type(self).__name__, " ".join(values), sum(len(p) for p in self.packets),
-            len(self.packets))
+            type(self).__name__, " ".join(values),
+            sum(len(p) for p in self.packets), len(self.packets))
 
     def write(self):
         """Return a string encoding of the page header and data.
@@ -261,9 +262,11 @@ class OggPage(object):
 
         for page in pages:
             if serial != page.serial:
-                raise ValueError("invalid serial number in {}".format(repr(page)))
+                raise ValueError("invalid serial "
+                                 "number in {}".format(repr(page)))
             elif sequence != page.sequence:
-                raise ValueError("bad sequence number in {}".format(repr(page)))
+                raise ValueError("bad sequence "
+                                 "number in {}".format(repr(page)))
             else:
                 sequence += 1
 
@@ -501,7 +504,7 @@ class OggFileType(FileType):
         try:
             try:
                 self.tags._inject(fileobj)
-            except error(e):
+            except error as e:
                 raise self._Error(e).with_traceback(sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
