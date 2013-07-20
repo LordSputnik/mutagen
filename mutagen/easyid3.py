@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
+
 # Simpler (but far more limited) API for ID3 editing
+
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
@@ -6,6 +9,8 @@
 # published by the Free Software Foundation.
 #
 # $Id: id3.py 3086 2006-04-04 02:13:21Z piman $
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Easier access to ID3 tags.
 

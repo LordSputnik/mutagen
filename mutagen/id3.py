@@ -1,4 +1,14 @@
-# Written for Python 3
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2005  Michael Urman
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
+#
+# $Id: id3.py 4285 2008-09-06 08:01:31Z piman $
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 import os.path
 import struct
@@ -24,11 +34,11 @@ def is_valid_frame_id(frame_id):
 class ID3(mutagen.Metadata):
 
     filename = None
+    PEDANTIC = True
 
     def __init__(self, *args, **kwargs):
         self.unknown_frames = list()
 
-        self.PEDANTIC = True
         self.version = (2, 4, 0)
         self.__readbytes = 0
         self.__flags = 0

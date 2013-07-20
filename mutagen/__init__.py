@@ -1,3 +1,14 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2005  Michael Urman
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
+#
+# $Id: __init__.py 4348 2008-12-02 02:41:15Z piman $
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 version = (1, 21)
 version_string = ".".join(str(v) for v in version)
