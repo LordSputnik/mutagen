@@ -17,6 +17,7 @@ from fnmatch import fnmatchcase
 
 import mutagen
 import mutagen.id3
+import collections
 
 from mutagen._util import dict_match
 from mutagen.id3 import ID3, error, delete, ID3FileType
@@ -30,7 +31,7 @@ class EasyID3KeyError(KeyError, ValueError, error):
     catching KeyError is preferred.
     """
 
-class EasyID3(mutagen.Metadata):
+class EasyID3(collections.abc.MutableMapping):
     """A file with an ID3 tag.
 
     Like Vorbis comments, EasyID3 keys are case-insensitive ASCII
@@ -63,6 +64,8 @@ class EasyID3(mutagen.Metadata):
     Get = {}
     Delete = {}
     List = {}
+
+    EasyMappings = {}
 
     # For compatibility.
     valid_keys = Get
@@ -127,6 +130,8 @@ class EasyID3(mutagen.Metadata):
 
         cls.RegisterKey(key, getter, setter, deleter)
 
+        cls.EasyMappings[frameid] = key
+
     @classmethod
     def RegisterTXXXKey(cls, key, desc):
         """Register a user-defined text frame key.
@@ -160,6 +165,8 @@ class EasyID3(mutagen.Metadata):
             del(id3[frameid])
 
         cls.RegisterKey(key, getter, setter, deleter)
+
+        cls.EasyMappings[frameid] = key
 
     def __init__(self, filename=None):
         self.__id3 = ID3()
@@ -208,32 +215,17 @@ class EasyID3(mutagen.Metadata):
         else:
             raise EasyID3KeyError("%r is not a valid key" % key)
 
-    # This is BAD. Need to rewrite EasyID3, probably - it shouldn't really be a
-    # subclass of metadata, it's a wrapper around an actual metadata class.
-    def __contains__(self, key):
-        try:
-            self.__getitem__(key)
-        except KeyError:
-            return False
-        else:
-            return True
+    def __iter__(self):
+        return iter(self.EasyMappings[k] for k in self.__id3.keys()
+                    if k in self.EasyMappings)
 
-    # Note - this returns a list, not a view - shouldn't break anything though.
-    def keys(self):
-        keys = []
-        for key in self.Get.keys():
-            if key in self.List:
-                keys.extend(self.List[key](self.__id3, key))
-            elif key in self:
-                keys.append(key)
-        if self.ListFallback is not None:
-            keys.extend(self.ListFallback(self.__id3, ""))
-        return keys
+    def __len__(self):
+        return len(self.EasyMappings[k] for k in self.__id3.keys()
+                   if k in self.EasyMappings)
 
     def pprint(self):
         """Print tag key=value pairs."""
         strings = []
-        print(self.keys())
         for key in sorted(self.keys()):
             values = self[key]
             for value in values:
@@ -467,6 +459,7 @@ EasyID3.RegisterKey("replaygain_*_peak", peak_get, peak_set, peak_delete)
 # http://musicbrainz.org/docs/specs/metadata_tags.html
 # http://bugs.musicbrainz.org/ticket/1383
 # http://musicbrainz.org/doc/MusicBrainzTag
+# Had to remove ALBUMARTISTSORT, because it conflicts with iTunes' TSO2.
 for desc, key in {
     "MusicBrainz Artist Id": "musicbrainz_artistid",
     "MusicBrainz Album Id": "musicbrainz_albumid",
@@ -479,7 +472,6 @@ for desc, key in {
     "MusicBrainz Album Release Country": "releasecountry",
     "MusicBrainz Disc Id": "musicbrainz_discid",
     "ASIN": "asin",
-    "ALBUMARTISTSORT": "albumartistsort",
     "BARCODE": "barcode"
 }.items():
     EasyID3.RegisterTXXXKey(key, desc)
