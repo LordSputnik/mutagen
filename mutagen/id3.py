@@ -14,10 +14,12 @@ import os.path
 import struct
 import sys
 import re
+import zlib
 
 import mutagen
 from mutagen._constants import GENRES
 from mutagen._util import insert_bytes, delete_bytes, DictProxy
+from warnings import warn
 
 class error(Exception): pass
 class ID3NoHeaderError(error, ValueError): pass
@@ -507,6 +509,7 @@ class ID3(DictProxy, mutagen.Metadata):
                     frame = BinaryFrame.fromData(self, flags, frame[10:])
                 except (struct.error, error):
                     continue
+                name = name.decode('ascii')
                 converted.append(self.__save_frame(frame, name=name))
             self.unknown_frames[:] = converted
             self.__unknown_updated = True
@@ -740,6 +743,9 @@ class SizedIntegerSpec(Spec):
         return BitPaddedInt.to_bytes(value, bits=8, width=self.__sz)
 
     def validate(self, frame, value):
+        if value is None:
+            return None
+
         return int(value)
 
 class EncodingSpec(ByteSpec):
@@ -1231,14 +1237,14 @@ class Frame(object):
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG24_COMPRESS:
                 try:
-                    data = data.decode('zlib')
-                except zlibError as err:
+                    data = zlib.decompress(data)
+                except zlib.error as err:
                     # the initial mutagen that went out with QL 0.12 did not
                     # write the 4 bytes of uncompressed size. Compensate.
                     data = datalen_bytes + data
                     try:
-                        data = data.decode('zlib')
-                    except zlibError as err:
+                        data = zlib.decompress(data)
+                    except zlib.error as err:
                         if id3.PEDANTIC:
                             raise ID3BadCompressedData('{}: {}'.format(err,
                                                        repr(data)))
@@ -1251,8 +1257,8 @@ class Frame(object):
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG23_COMPRESS:
                 try:
-                    data = data.decode('zlib')
-                except zlibError as err:
+                    data = zlib.decompress(data)
+                except zlib.error as err:
                     if id3.PEDANTIC:
                         raise ID3BadCompressedData('{}: {}'.format(err,
                                                    repr(data)))
@@ -1298,7 +1304,7 @@ class FrameOpt(Frame):
                 else:
                     break
                 setattr(self, r.name, value)
-        if data.strip('\x00'):
+        if data.strip(b'\x00'):
             warn("Leftover data: {}: {} (from {})".format(type(self).__name__,
                  repr(data), repr(odata)), ID3Warning)
 

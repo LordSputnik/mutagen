@@ -4,6 +4,12 @@ from tests import add
 from mutagen.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
 
 import io
+import warnings
+warnings.simplefilter('error', ID3Warning)
+
+_22 = ID3(); _22.version = (2,2,0)
+_23 = ID3(); _23.version = (2,3,0)
+_24 = ID3(); _24.version = (2,4,0)
 
 class ID3GetSetDel(TestCase):
     uses_mmap = False
@@ -171,5 +177,115 @@ class ID3Loading(TestCase):
         self.assertRaises(ValueError, id3._ID3__fullread, -3)
         self.assertRaises(EOFError, id3._ID3__fullread, 3)
 
+class Issue21(TestCase):
+    uses_mmap = False
+
+    # Files with bad extended header flags failed to read tags.
+    # Ensure the extended header is turned off, and the frames are
+    # read.
+    def setUp(self):
+        self.id3 = ID3(os.path.join('tests', 'data', 'issue_21.id3'))
+
+    def test_no_ext(self):
+        self.failIf(self.id3.f_extended)
+
+    def test_has_tags(self):
+        self.failUnless("TIT2" in self.id3)
+        self.failUnless("TALB" in self.id3)
+
+    def test_tit2_value(self):
+        self.failUnlessEqual(self.id3["TIT2"].text, ["Punk To Funk"])
+
+add(Issue21)
+
+class ID3Tags(TestCase):
+    uses_mmap = False
+
+    def setUp(self):
+        self.silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
+
+    def test_None(self):
+        id3 = ID3(self.silence, known_frames={})
+        self.assertEquals(0, len(id3.keys()))
+        self.assertEquals(9, len(id3.unknown_frames))
+
+    def test_has_docs(self):
+        for Kind in (list(Frames.values()) + list(Frames_2_2.values())):
+            self.failUnless(Kind.__doc__, "{} has no docstring".format(Kind))
+
+    def test_23(self):
+        id3 = ID3(self.silence)
+        self.assertEquals(8, len(id3.keys()))
+        self.assertEquals(0, len(id3.unknown_frames))
+        self.assertEquals('Quod Libet Test Data', id3['TALB'])
+        self.assertEquals('Silence', str(id3['TCON']))
+        self.assertEquals('Silence', str(id3['TIT1']))
+        self.assertEquals('Silence', str(id3['TIT2']))
+        self.assertEquals(3000, +id3['TLEN'])
+        self.assertNotEquals(['piman','jzig'], id3['TPE1'])
+        self.assertEquals('02/10', id3['TRCK'])
+        self.assertEquals(2, +id3['TRCK'])
+        self.assertEquals('2004', id3['TDRC'])
+
+    def test_23_multiframe_hack(self):
+        class ID3hack(ID3):
+            "Override 'correct' behavior with desired behavior"
+            def add(self, frame):
+                if frame.HashKey in self:
+                    self[frame.HashKey].extend(frame[:])
+                else:
+                    self[frame.HashKey] = frame
+
+        id3 = ID3hack(self.silence)
+        self.assertEquals(8, len(id3.keys()))
+        self.assertEquals(0, len(id3.unknown_frames))
+        self.assertEquals('Quod Libet Test Data', id3['TALB'])
+        self.assertEquals('Silence', str(id3['TCON']))
+        self.assertEquals('Silence', str(id3['TIT1']))
+        self.assertEquals('Silence', str(id3['TIT2']))
+        self.assertEquals(3000, +id3['TLEN'])
+        self.assertEquals(['piman','jzig'], id3['TPE1'])
+        self.assertEquals('02/10', id3['TRCK'])
+        self.assertEquals(2, +id3['TRCK'])
+        self.assertEquals('2004', id3['TDRC'])
+
+    def test_badencoding(self):
+        self.assertRaises(IndexError, Frames["TPE1"].fromData, _24, 0, b"\x09ab")
+        self.assertRaises(ValueError, Frames["TPE1"], encoding=9, text="ab")
+
+    def test_badsync(self):
+        self.assertRaises(
+            ValueError, Frames["TPE1"].fromData, _24, 0x02, b"\x00\xff\xfe")
+
+    def test_noencrypt(self):
+        self.assertRaises(
+            NotImplementedError, Frames["TPE1"].fromData, _24, 0x04, b"\x00")
+        self.assertRaises(
+            NotImplementedError, Frames["TPE1"].fromData, _23, 0x40, b"\x00")
+
+    def test_badcompress(self):
+        self.assertRaises(
+            ValueError, Frames["TPE1"].fromData, _24, 0x08, b"\x00\x00\x00\x00#")
+        self.assertRaises(
+            ValueError, Frames["TPE1"].fromData, _23, 0x80, b"\x00\x00\x00\x00#")
+
+    def test_junkframe(self):
+        self.assertRaises(ValueError, Frames["TPE1"].fromData, _24, 0, b"")
+
+    def test_bad_sylt(self):
+        self.assertRaises(
+            ID3JunkFrameError, Frames["SYLT"].fromData, _24, 0x0,
+            b"\x00eng\x01description\x00foobar")
+        self.assertRaises(
+            ID3JunkFrameError, Frames["SYLT"].fromData, _24, 0x0,
+            b"\x00eng\x01description\x00foobar\x00\xFF\xFF\xFF")
+
+    def test_extradata(self):
+        from mutagen.id3 import RVRB, RBUF
+        self.assertRaises(ID3Warning, RVRB()._readData, b'L1R1BBFFFFPP#xyz')
+        self.assertRaises(ID3Warning, RBUF()._readData,
+                          b'\x00\x01\x00\x01\x00\x00\x00\x00#xyz')
+
 add(ID3Loading)
 add(ID3GetSetDel)
+add(ID3Tags)

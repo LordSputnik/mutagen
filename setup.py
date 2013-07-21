@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 
+from imp import reload
 from distutils.core import setup, Command
 
 from distutils.command.clean import clean as distutils_clean
@@ -151,14 +152,14 @@ class coverage_cmd(Command):
         total_lines = 0
         bad_lines = 0
         for filename in glob.glob(os.path.join(coverage, "*.cover")):
-            lines = file(filename, "rU").readlines()
+            lines = open(filename, "rU").readlines()
             total_lines += len(lines)
             bad_lines += len(
                 [line for line in lines if
                  (line.startswith(">>>>>>") and
                   "finally:" not in line and '"""' not in line)])
         pct = 100.0 * (total_lines - bad_lines) / float(total_lines)
-        print("Coverage data written to {} ({}/{}, {:0.2f}%%)".format(
+        print("Coverage data written to {} ({}/{}, {:0.2f}%)".format(
               coverage, total_lines - bad_lines, total_lines, pct))
 
         if pct < 98.66:
