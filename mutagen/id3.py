@@ -64,7 +64,7 @@ class ID3(DictProxy, mutagen.Metadata):
         #Read binary data (bytes)
         data = self.__fileobj.read(size)
         if len(data) != size:
-            raise EOFError
+            raise EOFError("Read: {:d} Requested: {:d}".format(len(data),size))
 
         self.__readbytes += size
         return data
@@ -135,14 +135,15 @@ class ID3(DictProxy, mutagen.Metadata):
         if self.PEDANTIC:
             if ((2, 4, 0) <= self.version) and (flags & 0x0f):
                 raise ValueError("'{}' has invalid "
-                                 "flags {#02x}".format(fn, flags))
+                                 "flags {:#02x}".format(fn, flags))
             elif ((2, 3, 0) <= self.version < (2, 4, 0)) and (flags & 0x1f):
                 raise ValueError("'{}' has invalid "
-                                 "flags {#02x}".format(fn, flags))
+                                 "flags {:#02x}".format(fn, flags))
 
         if self.f_extended:
             extsize = self.__fullread(4)
-            if extsize in Frames:
+
+            if extsize.decode('ascii') in Frames:
                 # Some tagger sets the extended header flag but
                 # doesn't write an extended header; in this case, the
                 # ID3 data follows immediately. Since no extended
@@ -659,17 +660,17 @@ class unsynch(object):
         for val in value:
             if safe:
                 append(val)
-                safe = (val != b'\xFF')
+                safe = (val != 0xFF)
             else:
-                if val >= b'\xE0':
+                if val >= 0xE0:
                     raise ValueError("invalid sync-safe string")
-                elif val != b'\x00':
+                elif val != 0x00:
                     append(val)
                 safe = True
         if not safe:
             raise ValueError("string ended unsafe")
 
-        return b''.join(output)
+        return bytes(output)
 
     @staticmethod
     def encode(value):
@@ -679,19 +680,19 @@ class unsynch(object):
         for val in value:
             if safe:
                 append(val)
-                if val == b'\xFF':
+                if val == 0xFF:
                     safe = False
-            elif (val == b'\x00') or (val >= b'\xE0'):
-                append(b'\x00')
+            elif (val == 0x00) or (val >= 0xE0):
+                append(0x00)
                 append(val)
-                safe = (val != b'\xFF')
+                safe = (val != 0xFF0)
             else:
                 append(val)
                 safe = True
         if not safe:
-            append(b'\x00')
+            append(0x00)
 
-        return b''.join(output)
+        return bytes(output)
 
 
 # As far as I can tell, the purpose of validate is to return valid data for
@@ -1211,7 +1212,6 @@ class Frame(object):
     @classmethod
     def fromData(cls, id3, tflags, data):
         """Construct this ID3 frame from raw string data."""
-
         if (2, 4, 0) <= id3.version:
             if tflags & (Frame.FLAG24_COMPRESS | Frame.FLAG24_DATALEN):
                 # The data length int is syncsafe in 2.4 (but not 2.3).

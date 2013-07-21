@@ -18,6 +18,8 @@ intended for internal use in Mutagen only.
 
 from fnmatch import fnmatchcase
 
+import collections
+
 class DictMixin(object):
     """Implement the dict API using keys() and __*item__ methods.
 
@@ -115,7 +117,8 @@ class DictMixin(object):
 
 class DictProxy(DictMixin):
     def __init__(self, *args, **kwargs):
-        self._dict = {}
+        #Needs to be an ordered dict to get around a testing issue in EasyID3
+        self._dict = collections.OrderedDict()
         super(DictProxy, self).__init__(*args, **kwargs)
 
     def __getitem__(self, key):
