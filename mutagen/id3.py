@@ -15,9 +15,9 @@ import struct
 import sys
 import re
 import zlib
+import functools
 
 import mutagen
-from mutagen._constants import GENRES
 from mutagen._util import insert_bytes, delete_bytes, DictProxy
 from warnings import warn
 
@@ -918,6 +918,7 @@ class MultiSpec(Spec):
 
         raise ValueError("Invalid MultiSpec data: {}".format(repr(value)))
 
+@functools.total_ordering
 class ID3TimeStamp(object):
     """A time stamp in ID3v2 format.
 
@@ -967,8 +968,11 @@ class ID3TimeStamp(object):
     def __repr__(self):
         return repr(self.text)
 
-    def __cmp__(self, other):
-        return cmp(self.text, other.text)
+    def __eq__(self, other):
+        return self.text == other.text
+
+    def __lt__(self, other):
+        return self.text < other.text
 
     __hash__ = object.__hash__
 
@@ -1156,7 +1160,7 @@ class Frame(object):
 
     def __init__(self, *args, **kwargs):
         if (len(args) == 1 and len(kwargs) == 0 and
-                isinstance(args[0], type(self))):
+            isinstance(args[0], type(self))):
 
             other = args[0]
             for checker in self._framespec:
@@ -1460,6 +1464,8 @@ class TCON(TextFrame):
     ID3 has several ways genres can be represented; for convenience,
     use the 'genres' property rather than the 'text' attribute.
     """
+
+    from mutagen._constants import GENRES
 
     def __get_genres(self):
         genres = []
@@ -2336,7 +2342,7 @@ def ParseID3v1(data):
 
     # Don't read a track number if it looks like the comment was
     # padded with spaces instead of nulls (thanks, WinAmp).
-    if track and (track != 32 or string[-3] == b'\x00'):
+    if track and (track != 32 or data[-3] == 0):
         frames['TRCK'] = TRCK(encoding=0, text=str(track))
 
     if genre != 255:
@@ -2379,8 +2385,8 @@ def MakeID3v1(id3):
         except IndexError:
             pass
         else:
-            if genre in GENRES:
-                v1['genre'] = bytes([GENRES.index(genre)])
+            if genre in TCON.GENRES:
+                v1['genre'] = bytes([TCON.GENRES.index(genre)])
 
     if 'genre' not in v1:
         v1['genre'] = b"\xff"

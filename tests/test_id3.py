@@ -2,7 +2,7 @@ import os.path
 from unittest import TestCase
 from tests import add
 from mutagen.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
-
+import shutil
 import io
 import warnings
 warnings.simplefilter('error', ID3Warning)
@@ -286,6 +286,153 @@ class ID3Tags(TestCase):
         self.assertRaises(ID3Warning, RBUF()._readData,
                           b'\x00\x01\x00\x01\x00\x00\x00\x00#xyz')
 
+
+class ID3v1Tags(TestCase):
+    uses_mmap = False
+
+    def setUp(self):
+        self.silence = os.path.join('tests', 'data', 'silence-44-s-v1.mp3')
+        self.id3 = ID3(self.silence)
+
+    def test_album(self):
+        self.assertEquals('Quod Libet Test Data', self.id3['TALB'])
+    def test_genre(self):
+        self.assertEquals('Darkwave', self.id3['TCON'].genres[0])
+    def test_title(self):
+        self.assertEquals('Silence', str(self.id3['TIT2']))
+    def test_artist(self):
+        self.assertEquals(['piman'], self.id3['TPE1'])
+    def test_track(self):
+        self.assertEquals('2', self.id3['TRCK'])
+        self.assertEquals(2, +self.id3['TRCK'])
+    def test_year(self):
+        self.assertEquals('2004', self.id3['TDRC'])
+
+    def test_v1_not_v11(self):
+        from mutagen.id3 import MakeID3v1, ParseID3v1, TRCK
+        self.id3["TRCK"] = TRCK(encoding=0, text="32")
+        tag = MakeID3v1(self.id3)
+        self.failUnless(32, ParseID3v1(tag)["TRCK"])
+        del(self.id3["TRCK"])
+        tag = MakeID3v1(self.id3)
+        tag = tag[:125] + b'  ' + bytes([tag[-1]])
+        self.failIf("TRCK" in ParseID3v1(tag))
+
+    def test_nulls(self):
+        from mutagen.id3 import ParseID3v1
+        artist = (b'abcd\00fg' + b'\x00' * 30)[:30]
+        title = (b'hijklmn\x00p' + b'\x00' * 30)[:30]
+        album = (b'qrst\x00v' + b'\x00' * 30)[:30]
+        cmt = (b'wxyz' + b'\x00' * 29)[:29]
+        year = (b'1224' + b'\x00' * 4)[:4]
+        s = b'TAG' + title + artist + album + year + cmt + b'\x03\x01'
+        tags = ParseID3v1(s)
+        self.assertEquals(b'abcd'.decode('latin1'), tags['TPE1'])
+        self.assertEquals(b'hijklmn'.decode('latin1'), tags['TIT2'])
+        self.assertEquals(b'qrst'.decode('latin1'), tags['TALB'])
+
+    def test_nonascii(self):
+        from mutagen.id3 import ParseID3v1
+        artist = (b'abcd\xe9fg' + b'\x00' * 30)[:30]
+        title = (b'hijklmn\xf3p' + b'\x00' * 30)[:30]
+        album = (b'qrst\xfcv' + b'\x00' * 30)[:30]
+        cmt = (b'wxyz' + b'\x00' * 29)[:29]
+        year = (b'1234' + b'\x00' * 4)[:4]
+        s = b'TAG' + title + artist + album + year + cmt + b'\x03\x01'
+        tags = ParseID3v1(s)
+        self.assertEquals(b'abcd\xe9fg'.decode('latin1'), tags['TPE1'])
+        self.assertEquals(b'hijklmn\xf3p'.decode('latin1'), tags['TIT2'])
+        self.assertEquals(b'qrst\xfcv'.decode('latin1'), tags['TALB'])
+        self.assertEquals("wxyz", tags['COMM'])
+        self.assertEquals("3", tags['TRCK'])
+        self.assertEquals("1234", str(tags['TDRC']))
+
+    def test_roundtrip(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1
+        frames = {}
+        for key in ["TIT2", "TALB", "TPE1", "TDRC"]:
+            frames[key] = self.id3[key]
+
+        self.assertEquals(ParseID3v1(MakeID3v1(frames)), frames)
+
+    def test_make_from_empty(self):
+        from mutagen.id3 import MakeID3v1, TCON, COMM
+        empty = b'TAG' + b'\x00' * 124 + b'\xff'
+        self.assertEquals(MakeID3v1({}), empty)
+        self.assertEquals(MakeID3v1({'TCON': TCON()}), empty)
+        self.assertEquals(
+            MakeID3v1({'COMM': COMM(encoding=0, text="")}), empty)
+
+    def test_make_v1_from_tyer(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TYER, TDRC
+        self.assertEquals(
+            MakeID3v1({"TDRC": TDRC(encoding=0, text="2010-10-10")}),
+            MakeID3v1({"TYER": TYER(encoding=0, text="2010")}))
+        self.assertEquals(
+            ParseID3v1(MakeID3v1({"TDRC": TDRC(encoding=0, text="2010-10-10")})),
+            ParseID3v1(MakeID3v1({"TYER": TYER(encoding=0, text="2010")})))
+
+    def test_invalid(self):
+        from mutagen.id3 import ParseID3v1
+        self.failUnless(ParseID3v1(b"") is None)
+
+    def test_invalid_track(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TRCK
+        tag = {}
+        tag["TRCK"] = TRCK(encoding=0, text="not a number")
+        v1tag = MakeID3v1(tag)
+        self.failIf("TRCK" in ParseID3v1(v1tag))
+
+    def test_v1_genre(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TCON
+        tag = {}
+        tag["TCON"] = TCON(encoding=0, text="Pop")
+        v1tag = MakeID3v1(tag)
+        self.failUnlessEqual(ParseID3v1(v1tag)["TCON"].genres, ["Pop"])
+
+class TestWriteID3v1(TestCase):
+    SILENCE = os.path.join("tests", "data", "silence-44-s.mp3")
+    def setUp(self):
+        from tempfile import mkstemp
+        fd, self.filename = mkstemp(suffix='.mp3')
+        os.close(fd)
+        shutil.copy(self.SILENCE, self.filename)
+        self.audio = ID3(self.filename)
+
+    def failIfV1(self):
+        fileobj = open(self.filename, "rb")
+        fileobj.seek(-128, 2)
+        self.failIf(fileobj.read(3) == b"TAG")
+
+    def failUnlessV1(self):
+        fileobj = open(self.filename, "rb")
+        fileobj.seek(-128, 2)
+        self.failUnless(fileobj.read(3) == b"TAG")
+
+    def test_save_delete(self):
+        self.audio.save(v1=0)
+        self.failIfV1()
+
+    def test_save_add(self):
+        self.audio.save(v1=2)
+        self.failUnlessV1()
+
+    def test_save_defaults(self):
+        self.audio.save(v1=0)
+        self.failIfV1()
+        self.audio.save(v1=1)
+        self.failIfV1()
+        self.audio.save(v1=2)
+        self.failUnlessV1()
+        self.audio.save(v1=1)
+        self.failUnlessV1()
+
+    def tearDown(self):
+        os.unlink(self.filename)
+
+add(TestWriteID3v1)
+
 add(ID3Loading)
 add(ID3GetSetDel)
 add(ID3Tags)
+add(ID3v1Tags)
