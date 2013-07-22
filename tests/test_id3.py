@@ -526,14 +526,14 @@ def TestReadTags():
     ['ETCO', b'\x01\x12\x00\x00\x7f\xff', [(18, 32767)], '', dict(format=1)],
 
     ['COMM', b'\x00ENUT\x00Com', 'Com', '',
-        dict(desc='T', lang=b'ENU', encoding=0)],
+        dict(desc='T', lang='ENU', encoding=0)],
     # found in a real MP3
     ['COMM', b'\x00\x00\xcc\x01\x00     ', '     ', '',
-        dict(desc='', lang=b'\x00\xcc\x01', encoding=0)],
+        dict(desc='', lang='\x00\xcc\x01', encoding=0)],
 
     ['APIC', b'\x00-->\x00\x03cover\x00cover.jpg', b'cover.jpg', '',
         dict(mime='-->', type=3, desc='cover', encoding=0)],
-    ['USER', b'\x00ENUCom', 'Com', '', dict(lang=b'ENU', encoding=0)],
+    ['USER', b'\x00ENUCom', 'Com', '', dict(lang='ENU', encoding=0)],
 
     ['RVA2', b'testdata\x00\x01\xfb\x8c\x10\x12\x23',
         'Master volume: -2.2266 dB/0.1417', '',
@@ -563,15 +563,15 @@ def TestReadTags():
         dict(encoding=0, mime='mime', filename='name', desc='desc')],
 
     ['USLT', b'\x00engsome lyrics\x00woo\nfun', 'woo\nfun', '',
-     dict(encoding=0, lang=b'eng', desc='some lyrics', text='woo\nfun')],
+     dict(encoding=0, lang='eng', desc='some lyrics', text='woo\nfun')],
 
     ['SYLT', (b'\x00eng\x02\x01some lyrics\x00foo\x00\x00\x00\x00\x01bar'
               b'\x00\x00\x00\x00\x10'), "foobar", '',
-     dict(encoding=0, lang=b'eng', type=1, format=2, desc='some lyrics')],
+     dict(encoding=0, lang='eng', type=1, format=2, desc='some lyrics')],
 
     ['POSS', b'\x01\x0f', 15, 15, dict(format=1, position=15)],
     ['OWNE', b'\x00USD10.01\x0020041010CDBaby', 'CDBaby', 'CDBaby',
-     dict(encoding=0, price="USD10.01", date=b'20041010', seller='CDBaby')],
+     dict(encoding=0, price="USD10.01", date='20041010', seller='CDBaby')],
 
     ['PRIV', b'a@b.org\x00random data', b'random data', 'random data',
      dict(owner='a@b.org', data=b'random data')],
@@ -608,19 +608,19 @@ def TestReadTags():
 
     ['COMR', b'\x00USD10.00\x0020051010ql@sc.net\x00\x09Joe\x00A song\x00'
      b'x-image/fake\x00some data',
-     COMR(encoding=0, price="USD10.00", valid_until=b"20051010",
+     COMR(encoding=0, price="USD10.00", valid_until="20051010",
           contact="ql@sc.net", format=9, seller="Joe", desc="A song",
           mime='x-image/fake', logo=b'some data'), '',
      dict(
-        encoding=0, price="USD10.00", valid_until=b"20051010",
+        encoding=0, price="USD10.00", valid_until="20051010",
         contact="ql@sc.net", format=9, seller="Joe", desc="A song",
         mime='x-image/fake', logo=b'some data')],
 
     ['COMR', b'\x00USD10.00\x0020051010ql@sc.net\x00\x09Joe\x00A song\x00',
-     COMR(encoding=0, price="USD10.00", valid_until=b"20051010",
+     COMR(encoding=0, price="USD10.00", valid_until="20051010",
           contact="ql@sc.net", format=9, seller="Joe", desc="A song"), '',
      dict(
-        encoding=0, price="USD10.00", valid_until=b"20051010",
+        encoding=0, price="USD10.00", valid_until="20051010",
         contact="ql@sc.net", format=9, seller="Joe", desc="A song")],
 
     ['MLLT', b'\x00\x01\x00\x00\x02\x00\x00\x03\x04\x08foobar', b'foobar', '',
@@ -637,18 +637,18 @@ def TestReadTags():
      b'\x00\x01\x00\x02\x00\x03', [1, 2, 3], '', dict(S=0, L=16, N=3, b=16)],
 
     ['LINK', b'TIT1http://www.example.org/TIT1.txt\x00',
-     (b"TIT1", 'http://www.example.org/TIT1.txt'), '',
-     dict(frameid=b'TIT1', url='http://www.example.org/TIT1.txt')],
+     ("TIT1", 'http://www.example.org/TIT1.txt'), '',
+     dict(frameid='TIT1', url='http://www.example.org/TIT1.txt')],
     ['LINK', b'COMMhttp://www.example.org/COMM.txt\x00engfoo',
-     (b"COMM", 'http://www.example.org/COMM.txt', b'engfoo'), '',
-     dict(frameid=b'COMM', url='http://www.example.org/COMM.txt',
+     ("COMM", 'http://www.example.org/COMM.txt', b'engfoo'), '',
+     dict(frameid='COMM', url='http://www.example.org/COMM.txt',
           data=b'engfoo')],
 
     # 2.2 tags
     ['UFI', b'own\x00data', b'data', '', dict(data=b'data', owner='own')],
     ['SLT', (b'\x00eng\x02\x01some lyrics\x00foo\x00\x00\x00\x00\x01bar'
              b'\x00\x00\x00\x00\x10'), "foobar", '',
-     dict(encoding=0, lang=b'eng', type=1, format=2, desc='some lyrics')],
+     dict(encoding=0, lang='eng', type=1, format=2, desc='some lyrics')],
     ['TT1', b'\x00ab\x00', 'ab', '', dict(encoding=0)],
     ['TT2', b'\x00ab', 'ab', '', dict(encoding=0)],
     ['TT3', b'\x00ab', 'ab', '', dict(encoding=0)],
@@ -703,9 +703,9 @@ def TestReadTags():
     ['ETC', b'\x01\x12\x00\x00\x7f\xff', [(18, 32767)], '', dict(format=1)],
 
     ['COM', b'\x00ENUT\x00Com', 'Com', '',
-        dict(desc='T', lang=b'ENU', encoding=0)],
+        dict(desc='T', lang='ENU', encoding=0)],
     ['PIC', b'\x00-->\x03cover\x00cover.jpg', b'cover.jpg', '',
-        dict(mime=b'-->', type=3, desc='cover', encoding=0)],
+        dict(mime='-->', type=3, desc='cover', encoding=0)],
 
     ['POP', b'foo@bar.org\x00\xde\x00\x00\x00\x11', 222, 222,
         dict(email="foo@bar.org", rating=222, count=17)],
@@ -713,7 +713,7 @@ def TestReadTags():
     ['GEO', b'\x00mime\x00name\x00desc\x00data', b'data', '',
         dict(encoding=0, mime='mime', filename='name', desc='desc')],
     ['ULT', b'\x00engsome lyrics\x00woo\nfun', 'woo\nfun', '',
-     dict(encoding=0, lang=b'eng', desc='some lyrics', text='woo\nfun')],
+     dict(encoding=0, lang='eng', desc='some lyrics', text='woo\nfun')],
 
     ['BUF', b'\x00\x12\x00', 0x12*256, 0x12*256, dict(size=0x12*256)],
 
@@ -732,8 +732,8 @@ def TestReadTags():
      dict(frames=1, bytes=2, milliseconds=3, bits_for_bytes=4,
           bits_for_milliseconds=8, data=b'foobar')],
     ['LNK', b'TT1http://www.example.org/TIT1.txt\x00',
-     (b"TT1", 'http://www.example.org/TIT1.txt'), '',
-     dict(frameid=b'TT1', url='http://www.example.org/TIT1.txt')],
+     ("TT1", 'http://www.example.org/TIT1.txt'), '',
+     dict(frameid='TT1', url='http://www.example.org/TIT1.txt')],
     ['CRM', b'foo@example.org\x00test\x00woo',
      b'woo', '', dict(owner='foo@example.org', desc='test', data=b'woo')],
 
@@ -912,14 +912,14 @@ class SpecSanityChecks(TestCase):
         self.assertRaises(TypeError, s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
-    def test_binarystringspec(self):
-        from mutagen.id3 import BinaryStringSpec
-        s = BinaryStringSpec('name', 3)
-        self.assertEquals((b'abc', b'defg'),  s.read(None, b'abcdefg'))
-        self.assertEquals(b'abc', s.write(None, b'abcdefg'))
+    def test_fixedwidthstringspec(self):
+        from mutagen.id3 import FixedWidthStringSpec
+        s = FixedWidthStringSpec('name', 3)
+        self.assertEquals(('abc', b'defg'),  s.read(None, b'abcdefg'))
+        self.assertEquals(b'abc', s.write(None, 'abcdefg'))
         self.assertEquals(b'\x00\x00\x00', s.write(None, None))
-        self.assertEquals(b'\x00\x00\x00', s.write(None, b'\x00'))
-        self.assertEquals(b'a\x00\x00', s.write(None, b'a'))
+        self.assertEquals(b'\x00\x00\x00', s.write(None, '\x00'))
+        self.assertEquals(b'a\x00\x00', s.write(None, 'a'))
 
     def test_binarydataspec(self):
         from mutagen.id3 import BinaryDataSpec
@@ -1093,7 +1093,7 @@ class FrameSanityChecks(TestCase):
         self.assertEquals(COMM(encoding=0, text="a").HashKey, COMM(encoding=0, text="b").HashKey)
         self.assertNotEquals(COMM(encoding=0, desc="a").HashKey, COMM(encoding=0, desc="b").HashKey)
         self.assertNotEquals(
-            COMM(lang=b"abc").HashKey, COMM(lang=b"def").HashKey)
+            COMM(lang="abc").HashKey, COMM(lang="def").HashKey)
 
     def test_multi_RVA2(self):
         from mutagen.id3 import RVA2
@@ -1124,7 +1124,66 @@ class FrameSanityChecks(TestCase):
         from mutagen.id3 import USER
         self.assertEquals(USER(encoding=0, text="a").HashKey, USER(encoding=0, text="b").HashKey)
         self.assertNotEquals(
-            USER(lang=b"abc").HashKey, USER(lang=b"def").HashKey)
+            USER(lang="abc").HashKey, USER(lang="def").HashKey)
+
+
+
+class UpdateTo24(TestCase):
+    uses_mmap = False
+
+    def test_pic(self):
+        from mutagen.id3 import PIC
+        id3 = ID3()
+        id3.version = (2, 2)
+        id3.add(PIC(encoding=0, mime="PNG", desc="cover", type=3, data=b""))
+        id3.update_to_v24()
+        self.failUnlessEqual(id3["APIC:cover"].mime, "image/png")
+
+    def test_tyer(self):
+        from mutagen.id3 import TYER
+        id3 = ID3()
+        id3.version = (2, 3)
+        id3.add(TYER(encoding=0, text="2006"))
+        id3.update_to_v24()
+        self.failUnlessEqual(id3["TDRC"], "2006")
+
+    def test_tyer_tdat(self):
+        from mutagen.id3 import TYER, TDAT
+        id3 = ID3()
+        id3.version = (2, 3)
+        id3.add(TYER(encoding=0, text="2006"))
+        id3.add(TDAT(encoding=0, text="0603"))
+        id3.update_to_v24()
+        self.failUnlessEqual(id3["TDRC"], "2006-03-06")
+
+    def test_tyer_tdat_time(self):
+        from mutagen.id3 import TYER, TDAT, TIME
+        id3 = ID3()
+        id3.version = (2, 3)
+        id3.add(TYER(encoding=0, text="2006"))
+        id3.add(TDAT(encoding=0, text="0603"))
+        id3.add(TIME(encoding=0, text="1127"))
+        id3.update_to_v24()
+        self.failUnlessEqual(id3["TDRC"], "2006-03-06 11:27:00")
+
+    def test_tory(self):
+        from mutagen.id3 import TORY
+        id3 = ID3()
+        id3.version = (2, 3)
+        id3.add(TORY(encoding=0, text="2006"))
+        id3.update_to_v24()
+        self.failUnlessEqual(id3["TDOR"], "2006")
+
+    def test_ipls(self):
+        from mutagen.id3 import IPLS
+        id3 = ID3()
+        id3.version = (2, 3)
+        id3.add(IPLS(encoding=0, people=[["a", "b"], ["c", "d"]]))
+        id3.update_to_v24()
+        self.failUnlessEqual(id3["TIPL"], [["a", "b"], ["c", "d"]])
+
+
+add(UpdateTo24)
 
 
 add(TestWriteID3v1)

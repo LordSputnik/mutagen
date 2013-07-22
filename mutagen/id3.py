@@ -554,9 +554,9 @@ class ID3(DictProxy, mutagen.Metadata):
 
         if self.version < (2, 3):
             # ID3v2.2 PIC frames are slightly different.
-            pics = self.getall("PIC")
+            pics = self.getall("APIC")
             mimes = {"PNG": "image/png", "JPG": "image/jpeg"}
-            self.delall("PIC")
+            self.delall("APIC")
             for pic in pics:
                 newpic = APIC(encoding=pic.encoding,
                               mime=mimes.get(pic.mime, pic.mime),
@@ -792,19 +792,19 @@ class BinaryDataSpec(Spec):
 
         return bytes(value)
 
-class BinaryStringSpec(Spec):
+class FixedWidthStringSpec(Spec):
     def __init__(self, name, length):
-        super(BinaryStringSpec, self).__init__(name)
+        super(FixedWidthStringSpec, self).__init__(name)
         self.length = length
 
     def read(self, frame, data):
-        return data[:self.length], data[self.length:]
+        return data[:self.length].decode('latin1'), data[self.length:]
 
     def write(self, frame, value):
         if value is None:
             return b'\x00' * self.length
         else:
-            return (value + b'\x00' * self.length)[:self.length]
+            return (value.encode('latin1') + b'\x00' * self.length)[:self.length]
 
     def validate(self, frame, value):
         if value is None:
@@ -1703,7 +1703,7 @@ class USLT(Frame):
     description ('desc'), and a block of plain text ('text').
     """
 
-    _framespec = [EncodingSpec('encoding'), BinaryStringSpec('lang', 3),
+    _framespec = [EncodingSpec('encoding'), FixedWidthStringSpec('lang', 3),
                   EncodedTextSpec('desc'), EncodedTextSpec('text')]
 
     HashKey = property(lambda s: '{}:{}:{}'.format(s.FrameID, s.desc,
@@ -1720,7 +1720,7 @@ class USLT(Frame):
 class SYLT(Frame):
     """Synchronised lyrics/text."""
 
-    _framespec = [EncodingSpec('encoding'), BinaryStringSpec('lang', 3),
+    _framespec = [EncodingSpec('encoding'), FixedWidthStringSpec('lang', 3),
                   ByteSpec('format'), ByteSpec('type'),
                   EncodedTextSpec('desc'), SynchronizedTextSpec('text')]
 
@@ -1741,7 +1741,7 @@ class COMM(TextFrame):
     User comment frames have a descrption, like TXXX, and also a three
     letter ISO language code in the 'lang' attribute.
     """
-    _framespec = [EncodingSpec('encoding'), BinaryStringSpec('lang', 3),
+    _framespec = [EncodingSpec('encoding'), FixedWidthStringSpec('lang', 3),
                   EncodedTextSpec('desc'),
                   MultiSpec('text', EncodedTextSpec('text'), sep='\u0000')]
 
@@ -1979,7 +1979,7 @@ class LINK(FrameOpt):
     data -- further ID information for the frame
     """
 
-    _framespec = [BinaryStringSpec('frameid', 4), Latin1TextSpec('url')]
+    _framespec = [FixedWidthStringSpec('frameid', 4), Latin1TextSpec('url')]
     _optionalspec = [BinaryDataSpec('data')]
 
     def __HashKey(self):
@@ -2051,7 +2051,7 @@ class USER(Frame):
     lang -- ISO three letter language code
     text -- licensing terms for the audio
     """
-    _framespec = [EncodingSpec('encoding'), BinaryStringSpec('lang', 3),
+    _framespec = [EncodingSpec('encoding'), FixedWidthStringSpec('lang', 3),
                   EncodedTextSpec('text')]
 
     HashKey = property(lambda s: '{}:{}'.format(s.FrameID, repr(s.lang)))
@@ -2070,7 +2070,7 @@ class USER(Frame):
 class OWNE(Frame):
     """Ownership frame."""
     _framespec = [EncodingSpec('encoding'), Latin1TextSpec('price'),
-                  BinaryStringSpec('date', 8), EncodedTextSpec('seller')]
+                  FixedWidthStringSpec('date', 8), EncodedTextSpec('seller')]
 
     def __str__(self):
         return self.seller
@@ -2083,7 +2083,7 @@ class OWNE(Frame):
 class COMR(FrameOpt):
     """Commercial frame."""
     _framespec = [EncodingSpec('encoding'), Latin1TextSpec('price'),
-                  BinaryStringSpec('valid_until', 8), Latin1TextSpec('contact'),
+                  FixedWidthStringSpec('valid_until', 8), Latin1TextSpec('contact'),
                   ByteSpec('format'), EncodedTextSpec('seller'),
                   EncodedTextSpec('desc')]
 
@@ -2271,7 +2271,7 @@ class PIC(APIC):
     The 'mime' attribute of an ID3v2.2 attached picture must be either
     'PNG' or 'JPG'.
     """
-    _framespec = [EncodingSpec('encoding'), BinaryStringSpec('mime', 3),
+    _framespec = [EncodingSpec('encoding'), FixedWidthStringSpec('mime', 3),
                   ByteSpec('type'), EncodedTextSpec('desc'),
                   BinaryDataSpec('data')]
 
@@ -2294,7 +2294,7 @@ class CRA(AENC): "Audio encryption"
 
 class LNK(LINK):
     """Linked information"""
-    _framespec = [BinaryStringSpec('frameid', 3), Latin1TextSpec('url')]
+    _framespec = [FixedWidthStringSpec('frameid', 3), Latin1TextSpec('url')]
     _optionalspec = [BinaryDataSpec('data')]
 
 Frames_2_2 = {k: v for k, v in globals().items() if
