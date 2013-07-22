@@ -655,6 +655,9 @@ class BitPaddedInt(int):
 
         return bytes(reformed_bytes)
 
+    def as_bytes(self, bits=7, bigendian=True, width=4):
+        return BitPaddedInt.to_bytes(self,bits,bigendian,width)
+
 # TODO Must be a better way to do this with bytearray?
 class unsynch(object):
     @staticmethod
@@ -690,7 +693,7 @@ class unsynch(object):
             elif (val == 0x00) or (val >= 0xE0):
                 append(0x00)
                 append(val)
-                safe = (val != 0xFF0)
+                safe = (val != 0xFF)
             else:
                 append(val)
                 safe = True
@@ -775,7 +778,13 @@ class BinaryDataSpec(Spec):
         return data, b''
 
     def write(self, frame, value):
-        return value
+        if value is None:
+            return None
+
+        if isinstance(value, int):
+            return bytes([value])
+
+        return bytes(value)
 
     def validate(self, frame, value):
         if value is None:

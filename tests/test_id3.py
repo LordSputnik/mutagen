@@ -822,9 +822,317 @@ def TestReadTags():
 TestReadTags()
 del TestReadTags
 
+
+class BitPaddedIntTest(TestCase):
+    uses_mmap = False
+
+    def test_zero(self):
+        self.assertEquals(BitPaddedInt(b'\x00\x00\x00\x00'), 0)
+
+    def test_1(self):
+        self.assertEquals(BitPaddedInt(b'\x00\x00\x00\x01'), 1)
+
+    def test_1l(self):
+        self.assertEquals(BitPaddedInt(b'\x01\x00\x00\x00', bigendian=False), 1)
+
+    def test_129(self):
+        self.assertEquals(BitPaddedInt(b'\x00\x00\x01\x01'), 0x81)
+
+    def test_129b(self):
+        self.assertEquals(BitPaddedInt(b'\x00\x00\x01\x81'), 0x81)
+
+    def test_65(self):
+        self.assertEquals(BitPaddedInt(b'\x00\x00\x01\x81', 6), 0x41)
+
+    def test_32b(self):
+        self.assertEquals(BitPaddedInt(b'\xFF\xFF\xFF\xFF', bits=8),
+            0xFFFFFFFF)
+
+    def test_32bi(self):
+        self.assertEquals(BitPaddedInt(0xFFFFFFFF, bits=8), 0xFFFFFFFF)
+
+    def test_s32b(self):
+        self.assertEquals(BitPaddedInt(b'\xFF\xFF\xFF\xFF', bits=8).as_bytes(),
+            b'\xFF\xFF\xFF\xFF')
+
+    def test_s0(self):
+        self.assertEquals(BitPaddedInt.to_bytes(0), b'\x00\x00\x00\x00')
+
+    def test_s1(self):
+        self.assertEquals(BitPaddedInt.to_bytes(1), b'\x00\x00\x00\x01')
+
+    def test_s1l(self):
+        self.assertEquals(
+            BitPaddedInt.to_bytes(1, bigendian=False), b'\x01\x00\x00\x00')
+
+    def test_s129(self):
+        self.assertEquals(BitPaddedInt.to_bytes(129), b'\x00\x00\x01\x01')
+
+    def test_s65(self):
+        self.assertEquals(BitPaddedInt.to_bytes(0x41, 6), b'\x00\x00\x01\x01')
+
+    def test_w129(self):
+        self.assertEquals(BitPaddedInt.to_bytes(129, width=2), b'\x01\x01')
+
+    def test_w129l(self):
+        self.assertEquals(
+            BitPaddedInt.to_bytes(129, width=2, bigendian=False), b'\x01\x01')
+
+    def test_wsmall(self):
+        self.assertRaises(ValueError, BitPaddedInt.to_bytes, 129, width=1)
+
+    def test_str_int_init(self):
+        from struct import pack
+        self.assertEquals(BitPaddedInt(238).as_bytes(),
+                BitPaddedInt(pack('>L', 238)).as_bytes())
+
+    def test_varwidth(self):
+        self.assertEquals(len(BitPaddedInt.to_bytes(100)), 4)
+        self.assertEquals(len(BitPaddedInt.to_bytes(100, width=-1)), 4)
+        self.assertEquals(len(BitPaddedInt.to_bytes(2 ** 32, width=-1)), 5)
+
+
+class SpecSanityChecks(TestCase):
+    uses_mmap = False
+
+    def test_bytespec(self):
+        from mutagen.id3 import ByteSpec
+        s = ByteSpec('name')
+        self.assertEquals((97, b'bcdefg'), s.read(None, b'abcdefg'))
+        self.assertEquals(b'a', s.write(None, 97))
+        self.assertRaises(TypeError, s.write, None, 'abc')
+        self.assertRaises(TypeError, s.write, None, None)
+
+    def test_encodingspec(self):
+        from mutagen.id3 import EncodingSpec
+        s = EncodingSpec('name')
+        self.assertEquals((0, b'abcdefg'), s.read(None, b'abcdefg'))
+        self.assertEquals((3, b'abcdefg'), s.read(None, b'\x03abcdefg'))
+        self.assertEquals(b'\x00', s.write(None, 0))
+        self.assertRaises(TypeError, s.write, None, 'abc')
+        self.assertRaises(TypeError, s.write, None, None)
+
+    def test_binarystringspec(self):
+        from mutagen.id3 import BinaryStringSpec
+        s = BinaryStringSpec('name', 3)
+        self.assertEquals((b'abc', b'defg'),  s.read(None, b'abcdefg'))
+        self.assertEquals(b'abc', s.write(None, b'abcdefg'))
+        self.assertEquals(b'\x00\x00\x00', s.write(None, None))
+        self.assertEquals(b'\x00\x00\x00', s.write(None, b'\x00'))
+        self.assertEquals(b'a\x00\x00', s.write(None, b'a'))
+
+    def test_binarydataspec(self):
+        from mutagen.id3 import BinaryDataSpec
+        s = BinaryDataSpec('name')
+        self.assertEquals((b'abcdefg', b''), s.read(None, b'abcdefg'))
+        self.assertEquals(None,  s.write(None, None))
+        self.assertEquals(bytes([43]),  s.write(None, 43))
+
+    def test_encodedtextspec(self):
+        from mutagen.id3 import EncodedTextSpec, Frame
+        s = EncodedTextSpec('name')
+        f = Frame(); f.encoding = 0
+        self.assertEquals(('abcd', b'fg'), s.read(f, b'abcd\x00fg'))
+        self.assertEquals(b'abcdefg\x00', s.write(f, 'abcdefg'))
+        self.assertRaises(AttributeError, s.write, f, None)
+
+    def test_timestampspec(self):
+        from mutagen.id3 import TimeStampSpec, Frame, ID3TimeStamp
+        s = TimeStampSpec('name')
+        f = Frame(); f.encoding = 0
+        self.assertEquals((ID3TimeStamp('ab'), b'fg'), s.read(f, b'ab\x00fg'))
+        self.assertEquals((ID3TimeStamp('1234'), b''), s.read(f, b'1234\x00'))
+        self.assertEquals(b'1234\x00', s.write(f, ID3TimeStamp('1234')))
+        self.assertRaises(AttributeError, s.write, f, None)
+
+    def test_volumeadjustmentspec(self):
+        from mutagen.id3 import VolumeAdjustmentSpec
+        s = VolumeAdjustmentSpec('gain')
+        self.assertEquals((0.0, b''), s.read(None, b'\x00\x00'))
+        self.assertEquals((2.0, b''), s.read(None, b'\x04\x00'))
+        self.assertEquals((-2.0, b''), s.read(None, b'\xfc\x00'))
+        self.assertEquals(b'\x00\x00', s.write(None, 0.0))
+        self.assertEquals(b'\x04\x00', s.write(None, 2.0))
+        self.assertEquals(b'\xfc\x00', s.write(None, -2.0))
+
+class FrameSanityChecks(TestCase):
+    uses_mmap = False
+
+    def test_TF(self):
+        from mutagen.id3 import TextFrame
+        self.assert_(isinstance(TextFrame(encoding=0, text='text'), TextFrame))
+
+    def test_UF(self):
+        from mutagen.id3 import UrlFrame
+        self.assert_(isinstance(UrlFrame('url'), UrlFrame))
+
+    def test_WXXX(self):
+        from mutagen.id3 import WXXX
+        self.assert_(isinstance(WXXX(url='durl'), WXXX))
+
+    def test_NTF(self):
+        from mutagen.id3 import NumericTextFrame
+        self.assert_(isinstance(NumericTextFrame(encoding=0, text='1'), NumericTextFrame))
+
+    def test_NTPF(self):
+        from mutagen.id3 import NumericPartTextFrame
+        self.assert_(
+            isinstance(NumericPartTextFrame(encoding=0, text='1/2'), NumericPartTextFrame))
+
+    def test_MTF(self):
+        from mutagen.id3 import TextFrame
+        self.assert_(isinstance(TextFrame(encoding=0, text=['a','b']), TextFrame))
+
+    def test_TXXX(self):
+        from mutagen.id3 import TXXX
+        self.assert_(isinstance(TXXX(encoding=0, desc='d',text='text'), TXXX))
+
+    def test_22_uses_direct_ints(self):
+        data = b'TT1\x00\x00\x83\x00' + (b'123456789abcdef' * 16)
+        id3 = ID3()
+        id3.version = (2,2,0)
+        tag = list(id3._ID3__read_frames(data, Frames_2_2))[0]
+        self.assertEquals(data[7:7+0x82].decode('latin1'), tag.text[0])
+
+    def test_frame_too_small(self):
+        self.assertEquals([], list(_24._ID3__read_frames(b'012345678', Frames)))
+        self.assertEquals([], list(_23._ID3__read_frames(b'012345678', Frames)))
+        self.assertEquals([], list(_22._ID3__read_frames(b'01234', Frames_2_2)))
+        self.assertEquals(
+            [], list(_22._ID3__read_frames(b'TT1'+b'\x00'*3, Frames_2_2)))
+
+    def test_unknown_22_frame(self):
+        data = b'XYZ\x00\x00\x01\x00'
+        self.assertEquals([data], list(_22._ID3__read_frames(data, {})))
+
+
+    def test_zlib_latin1(self):
+        from mutagen.id3 import TPE1
+        tag = TPE1.fromData(_24, 0x9, b'\x00\x00\x00\x0f'
+                b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
+        self.assertEquals(tag.encoding, 0)
+        self.assertEquals(tag, ['this is a/test'])
+
+    def test_datalen_but_not_compressed(self):
+        from mutagen.id3 import TPE1
+        tag = TPE1.fromData(_24, 0x01, b'\x00\x00\x00\x06\x00A test')
+        self.assertEquals(tag.encoding, 0)
+        self.assertEquals(tag, ['A test'])
+
+    def test_utf8(self):
+        from mutagen.id3 import TPE1
+        tag = TPE1.fromData(_23, 0x00, b'\x03this is a test')
+        self.assertEquals(tag.encoding, 3)
+        self.assertEquals(tag, 'this is a test')
+
+    def test_zlib_utf16(self):
+        from mutagen.id3 import TPE1
+        data = (b'\x00\x00\x00\x1fx\x9cc\xfc\xff\xaf\x84!\x83!\x93\xa1\x98A'
+                b'\x01J&2\xe83\x940\xa4\x02\xd9%\x0c\x00\x87\xc6\x07#')
+        tag = TPE1.fromData(_23, 0x80, data)
+        self.assertEquals(tag.encoding, 1)
+        self.assertEquals(tag, ['this is a/test'])
+
+        tag = TPE1.fromData(_24, 0x08, data)
+        self.assertEquals(tag.encoding, 1)
+        self.assertEquals(tag, ['this is a/test'])
+
+    def test_unsync_encode(self):
+        from mutagen.id3 import unsynch as un
+        for d in (b'\xff\xff\xff\xff', b'\xff\xf0\x0f\x00', b'\xff\x00\x0f\xf0'):
+            self.assertEquals(d, un.decode(un.encode(d)))
+            self.assertNotEqual(d, un.encode(d))
+        self.assertEquals(b'\xff\x44', un.encode(b'\xff\x44'))
+        self.assertEquals(b'\xff\x00\x00', un.encode(b'\xff\x00'))
+
+    def test_unsync_decode(self):
+        from mutagen.id3 import unsynch as un
+        self.assertRaises(ValueError, un.decode, b'\xff\xff\xff\xff')
+        self.assertRaises(ValueError, un.decode, b'\xff\xf0\x0f\x00')
+        self.assertRaises(ValueError, un.decode, b'\xff\xe0')
+        self.assertEquals(b'\xff\x44', un.decode(b'\xff\x44'))
+
+    def test_load_write(self):
+        from mutagen.id3 import TPE1, Frames
+        artists= [s.decode('utf8') for s in
+                  [b'\xc2\xb5', b'\xe6\x97\xa5\xe6\x9c\xac']]
+        artist = TPE1(encoding=3, text=artists)
+        id3 = ID3()
+        tag = list(id3._ID3__read_frames(
+            id3._ID3__save_frame(artist), Frames))[0]
+        self.assertEquals('TPE1', type(tag).__name__)
+        self.assertEquals(artist.text, tag.text)
+
+    def test_22_to_24(self):
+        from mutagen.id3 import TT1, TIT1
+        id3 = ID3()
+        tt1 = TT1(encoding=0, text='whatcha staring at?')
+        id3.add(tt1)
+        tit1 = id3['TIT1']
+
+        self.assertEquals(tt1.encoding, tit1.encoding)
+        self.assertEquals(tt1.text, tit1.text)
+        self.assert_('TT1' not in id3)
+
+    def test_single_TXYZ(self):
+        from mutagen.id3 import TIT2
+        self.assertEquals(TIT2(encoding=0, text="a").HashKey, TIT2(encoding=0, text="b").HashKey)
+
+    def test_multi_TXXX(self):
+        from mutagen.id3 import TXXX
+        self.assertEquals(TXXX(encoding=0, text="a").HashKey, TXXX(encoding=0, text="b").HashKey)
+        self.assertNotEquals(TXXX(encoding=0, desc="a").HashKey, TXXX(encoding=0, desc="b").HashKey)
+
+    def test_multi_WXXX(self):
+        from mutagen.id3 import WXXX
+        self.assertEquals(WXXX(encoding=0, text="a").HashKey, WXXX(encoding=0, text="b").HashKey)
+        self.assertNotEquals(WXXX(encoding=0, desc="a").HashKey, WXXX(encoding=0, desc="b").HashKey)
+
+    def test_multi_COMM(self):
+        from mutagen.id3 import COMM
+        self.assertEquals(COMM(encoding=0, text="a").HashKey, COMM(encoding=0, text="b").HashKey)
+        self.assertNotEquals(COMM(encoding=0, desc="a").HashKey, COMM(encoding=0, desc="b").HashKey)
+        self.assertNotEquals(
+            COMM(lang=b"abc").HashKey, COMM(lang=b"def").HashKey)
+
+    def test_multi_RVA2(self):
+        from mutagen.id3 import RVA2
+        self.assertEquals(RVA2(gain="1").HashKey, RVA2(gain="2").HashKey)
+        self.assertNotEquals(RVA2(desc="a").HashKey, RVA2(desc="b").HashKey)
+
+    def test_multi_APIC(self):
+        from mutagen.id3 import APIC
+        self.assertEquals(APIC(data=b"1").HashKey, APIC(data=b"2").HashKey)
+        self.assertNotEquals(APIC(encoding=0, desc="a").HashKey, APIC(encoding=0, desc="b").HashKey)
+
+    def test_multi_POPM(self):
+        from mutagen.id3 import POPM
+        self.assertEquals(POPM(count=1).HashKey, POPM(count=2).HashKey)
+        self.assertNotEquals(POPM(email="a").HashKey, POPM(email="b").HashKey)
+
+    def test_multi_GEOB(self):
+        from mutagen.id3 import GEOB
+        self.assertEquals(GEOB(data=b"1").HashKey, GEOB(data=b"2").HashKey)
+        self.assertNotEquals(GEOB(encoding=0, desc="a").HashKey, GEOB(encoding=0, desc="b").HashKey)
+
+    def test_multi_UFID(self):
+        from mutagen.id3 import UFID
+        self.assertEquals(UFID(data=b"1").HashKey, UFID(data=b"2").HashKey)
+        self.assertNotEquals(UFID(owner="a").HashKey, UFID(owner="b").HashKey)
+
+    def test_multi_USER(self):
+        from mutagen.id3 import USER
+        self.assertEquals(USER(encoding=0, text="a").HashKey, USER(encoding=0, text="b").HashKey)
+        self.assertNotEquals(
+            USER(lang=b"abc").HashKey, USER(lang=b"def").HashKey)
+
+
 add(TestWriteID3v1)
 
 add(ID3Loading)
 add(ID3GetSetDel)
 add(ID3Tags)
 add(ID3v1Tags)
+add(BitPaddedIntTest)
+add(FrameSanityChecks)
+add(SpecSanityChecks)
