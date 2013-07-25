@@ -1837,3 +1837,10 @@ add(BadTYER)
 add(BadPOPM)
 add(TimeStampTextFrame)
 add(Issue69_BadV1Year)
+
+try:
+    import eyeD3
+except ImportError:
+    pass
+else:
+    add(WriteForEyeD3)
