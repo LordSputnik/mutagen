@@ -232,7 +232,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 if name.strip(b'\x00') == b'':
                     return
 
-                name = name.decode('ascii')
+                name = name.decode('latin1')
 
                 size = bpi(size)
                 framedata = data[10:10 + size]
@@ -265,7 +265,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 if name.strip(b'\x00') == b'':
                     return
 
-                name = name.decode('ascii')
+                name = name.decode('latin1')
 
                 framedata = data[6:6 + size]
                 data = data[6 + size:]
@@ -959,8 +959,14 @@ class ID3TimeStamp(object):
                 (self.day, '{:02d} '), (self.hour, '{:02d}:'),
                 (self.minute, '{:02d}:'), (self.second, '{:02d}x')]
 
-        return ''.join(p[1].format(p[0])
-                       for p in data if p[0] is not None)[:-1]
+        string_parts = []
+        for p in data:
+            if p[0] is None:
+                break
+            string_parts.append(p[1].format(p[0]))
+
+        return ''.join(string_parts)[:-1]
+
 
     def set_text(self, text, splitre=re.compile('[-T:/.]|\s+')):
         data = splitre.split(text + ':::::')[:6]
@@ -992,6 +998,7 @@ class ID3TimeStamp(object):
 
 class TimeStampSpec(EncodedTextSpec):
     def read(self, frame, data):
+        # EncodedTextSpec.read returns str, bytes
         value, data = super(TimeStampSpec, self).read(frame, data)
         return self.validate(frame, value), data
 

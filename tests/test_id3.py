@@ -1312,13 +1312,528 @@ class Genres(TestCase):
         gen.genres = gen.genres
         self.assertEquals(gen.genres, ["Unknown", "genre"])
 
+
+class BrokenDiscarded(TestCase):
+    uses_mmap = False
+
+    def test_empty(self):
+        from mutagen.id3 import TPE1, ID3JunkFrameError
+        self.assertRaises(ID3JunkFrameError, TPE1.fromData, _24, 0x00, b'')
+
+    def test_wacky_truncated_RVA2(self):
+        from mutagen.id3 import RVA2, ID3JunkFrameError
+        data = b'\x01{\xf0\x10\xff\xff\x00'
+        self.assertRaises(ID3JunkFrameError, RVA2.fromData, _24, 0x00, data)
+
+    def test_bad_number_of_bits_RVA2(self):
+        from mutagen.id3 import RVA2, ID3JunkFrameError
+        data = b'\x00\x00\x01\xe6\xfc\x10{\xd7'
+        self.assertRaises(ID3JunkFrameError, RVA2.fromData, _24, 0x00, data)
+
+    def test_drops_truncated_frames(self):
+        from mutagen.id3 import Frames
+        id3 = ID3()
+        tail = b'\x00\x00\x00\x03\x00\x00' b'\x01\x02\x03'
+        for head in b'RVA2 TXXX APIC'.split():
+            data = head + tail
+            self.assertEquals(
+                0, len(list(id3._ID3__read_frames(data, Frames))))
+
+    def test_drops_nonalphanum_frames(self):
+        from mutagen.id3 import Frames
+        id3 = ID3()
+        tail = b'\x00\x00\x00\x03\x00\x00' b'\x01\x02\x03'
+        for head in [b'\x06\xaf\xfe\x20', b'ABC\x00', b'A   ']:
+            data = head + tail
+            self.assertEquals(
+                0, len(list(id3._ID3__read_frames(data, Frames))))
+
+    def test_bad_unicodedecode(self):
+        from mutagen.id3 import COMM, ID3JunkFrameError
+        # 7 bytes of "UTF16" data.
+        data = b'\x01\x00\x00\x00\xff\xfe\x00\xff\xfeh\x00'
+        self.assertRaises(ID3JunkFrameError, COMM.fromData, _24, 0x00, data)
+
+class BrokenButParsed(TestCase):
+    uses_mmap = False
+
+    def test_missing_encoding(self):
+        from mutagen.id3 import TIT2
+        tag = TIT2.fromData(_23, 0x00, b'a test')
+        self.assertEquals(0, tag.encoding)
+        self.assertEquals('a test', tag)
+        self.assertEquals(['a test'], tag)
+        self.assertEquals(['a test'], tag.text)
+
+    def test_zerolength_framedata(self):
+        from mutagen.id3 import Frames
+        id3 = ID3()
+        tail = b'\x00' * 6
+        for head in b'WOAR TENC TCOP TOPE WXXX'.split():
+            data = head + tail
+            self.assertEquals(
+                0, len(list(id3._ID3__read_frames(data, Frames))))
+
+    def test_lengthone_utf16(self):
+        from mutagen.id3 import TPE1
+        tpe1 = TPE1.fromData(_24, 0, b'\x01\x00')
+        self.assertEquals('', tpe1)
+        tpe1 = TPE1.fromData(_24, 0, b'\x01\x00\x00\x00\x00')
+        self.assertEquals(['', ''], tpe1)
+
+    def test_fake_zlib_pedantic(self):
+        from mutagen.id3 import TPE1, Frame, ID3BadCompressedData
+        id3 = ID3()
+        id3.PEDANTIC = True
+        self.assertRaises(ID3BadCompressedData, TPE1.fromData, id3,
+                          Frame.FLAG24_COMPRESS, b'\x03abcdefg')
+
+    def test_zlib_bpi(self):
+        from mutagen.id3 import TPE1, Frame, ID3BadCompressedData
+        id3 = ID3()
+        tpe1 = TPE1(encoding=0, text="a" * (0xFFFF - 2))
+        data = id3._ID3__save_frame(tpe1)
+        datalen_size = data[4 + 4 + 2:4 + 4 + 2 + 4]
+        self.failIf(
+            max(datalen_size) >= 0x80, "data is not syncsafe: %r" % data)
+
+    def test_fake_zlib_nopedantic(self):
+        from mutagen.id3 import TPE1, Frame, ID3BadCompressedData
+        id3 = ID3()
+        id3.PEDANTIC = False
+        tpe1 = TPE1.fromData(id3, Frame.FLAG24_COMPRESS, b'\x03abcdefg')
+        self.assertEquals('abcdefg', tpe1)
+
+    def test_ql_0_12_missing_uncompressed_size(self):
+        from mutagen.id3 import TPE1
+        tag = TPE1.fromData(_24, 0x08, b'x\x9cc\xfc\xff\xaf\x84!\x83!\x93'
+                b'\xa1\x98A\x01J&2\xe83\x940\xa4\x02\xd9%\x0c\x00\x87\xc6\x07#')
+        self.assertEquals(tag.encoding, 1)
+        self.assertEquals(tag, ['this is a/test'])
+
+    def test_zlib_latin1_missing_datalen(self):
+        from mutagen.id3 import TPE1
+        tag = TPE1.fromData(_24, 0x8, b'\x00\x00\x00\x0f'
+                b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
+        self.assertEquals(tag.encoding, 0)
+        self.assertEquals(tag, ['this is a/test'])
+
+    def test_detect_23_ints_in_24_frames(self):
+        from mutagen.id3 import Frames
+        head = b'TIT1\x00\x00\x01\x00\x00\x00\x00'
+        tail = b'TPE1\x00\x00\x00\x04\x00\x00Yay!'
+
+        tagsgood = list(_24._ID3__read_frames(head + b'a'*127 + tail, Frames))
+        tagsbad = list(_24._ID3__read_frames(head + b'a'*255 + tail, Frames))
+        self.assertEquals(2, len(tagsgood))
+        self.assertEquals(2, len(tagsbad))
+        self.assertEquals('a'*127, tagsgood[0])
+        self.assertEquals('a'*255, tagsbad[0])
+        self.assertEquals('Yay!', tagsgood[1])
+        self.assertEquals('Yay!', tagsbad[1])
+
+        tagsgood = list(_24._ID3__read_frames(head + b'a'*127, Frames))
+        tagsbad = list(_24._ID3__read_frames(head + b'a'*255, Frames))
+        self.assertEquals(1, len(tagsgood))
+        self.assertEquals(1, len(tagsbad))
+        self.assertEquals('a'*127, tagsgood[0])
+        self.assertEquals('a'*255, tagsbad[0])
+
+
+class TimeStamp(TestCase):
+    uses_mmap = False
+
+    from mutagen.id3 import ID3TimeStamp as Stamp
+
+    def test_Y(self):
+        s = self.Stamp('1234')
+        self.assertEquals(s.year, 1234)
+        self.assertEquals(s.text, '1234')
+
+    def test_yM(self):
+        s = self.Stamp('1234-56')
+        self.assertEquals(s.year, 1234)
+        self.assertEquals(s.month, 56)
+        self.assertEquals(s.text, '1234-56')
+
+    def test_ymD(self):
+        s = self.Stamp('1234-56-78')
+        self.assertEquals(s.year, 1234)
+        self.assertEquals(s.month, 56)
+        self.assertEquals(s.day, 78)
+        self.assertEquals(s.text, '1234-56-78')
+
+    def test_ymdH(self):
+        s = self.Stamp('1234-56-78T12')
+        self.assertEquals(s.year, 1234)
+        self.assertEquals(s.month, 56)
+        self.assertEquals(s.day, 78)
+        self.assertEquals(s.hour, 12)
+        self.assertEquals(s.text, '1234-56-78 12')
+
+    def test_ymdhM(self):
+        s = self.Stamp('1234-56-78T12:34')
+        self.assertEquals(s.year, 1234)
+        self.assertEquals(s.month, 56)
+        self.assertEquals(s.day, 78)
+        self.assertEquals(s.hour, 12)
+        self.assertEquals(s.minute, 34)
+        self.assertEquals(s.text, '1234-56-78 12:34')
+
+    def test_ymdhmS(self):
+        s = self.Stamp('1234-56-78T12:34:56')
+        self.assertEquals(s.year, 1234)
+        self.assertEquals(s.month, 56)
+        self.assertEquals(s.day, 78)
+        self.assertEquals(s.hour, 12)
+        self.assertEquals(s.minute, 34)
+        self.assertEquals(s.second, 56)
+        self.assertEquals(s.text, '1234-56-78 12:34:56')
+
+    def test_Ymdhms(self):
+        s = self.Stamp('1234-56-78T12:34:56')
+        s.month = None
+        self.assertEquals(s.text, '1234')
+
+    def test_alternate_reprs(self):
+        s = self.Stamp('1234-56.78 12:34:56')
+        self.assertEquals(s.text, '1234-56-78 12:34:56')
+
+    def test_order(self):
+        s = self.Stamp('1234')
+        t = self.Stamp('1233-12')
+        u = self.Stamp('1234-01')
+
+        self.assert_(t < s < u)
+        self.assert_(u > s > t)
+
+class OddWrites(TestCase):
+    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
+    newsilence = os.path.join('tests', 'data', 'silence-written.mp3')
+    def setUp(self):
+        shutil.copy(self.silence, self.newsilence)
+
+    def test_toemptyfile(self):
+        os.unlink(self.newsilence)
+        open(self.newsilence, "wb").close()
+        ID3(self.silence).save(self.newsilence)
+
+    def test_tononfile(self):
+        os.unlink(self.newsilence)
+        ID3(self.silence).save(self.newsilence)
+
+    def test_1bfile(self):
+        os.unlink(self.newsilence)
+        f = open(self.newsilence, "wb")
+        f.write(b"!")
+        f.close()
+        ID3(self.silence).save(self.newsilence)
+        self.assert_(os.path.getsize(self.newsilence) > 1)
+        self.assertEquals(open(self.newsilence, "rb").read()[-1], b"!"[0])
+
+    def tearDown(self):
+        try:
+            os.unlink(self.newsilence)
+        except OSError:
+            pass
+
+class WriteRoundtrip(TestCase):
+    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
+    newsilence = os.path.join('tests', 'data', 'silence-written.mp3')
+    def setUp(self):
+        shutil.copy(self.silence, self.newsilence)
+
+    def test_same(self):
+        ID3(self.newsilence).save()
+        id3 = ID3(self.newsilence)
+        self.assertEquals(id3["TALB"], "Quod Libet Test Data")
+        self.assertEquals(id3["TCON"], "Silence")
+        self.assertEquals(id3["TIT2"], "Silence")
+        self.assertEquals(id3["TPE1"], ["jzig"])
+
+    def test_addframe(self):
+        from mutagen.id3 import TIT3
+        f = ID3(self.newsilence)
+        self.assert_("TIT3" not in f)
+        f["TIT3"] = TIT3(encoding=0, text="A subtitle!")
+        f.save()
+        id3 = ID3(self.newsilence)
+        self.assertEquals(id3["TIT3"], "A subtitle!")
+
+    def test_changeframe(self):
+        from mutagen.id3 import TIT2
+        f = ID3(self.newsilence)
+        self.assertEquals(f["TIT2"], "Silence")
+        f["TIT2"].text = ["The sound of silence."]
+        f.save()
+        id3 = ID3(self.newsilence)
+        self.assertEquals(id3["TIT2"], "The sound of silence.")
+
+    def test_replaceframe(self):
+        from mutagen.id3 import TPE1
+        f = ID3(self.newsilence)
+        self.assertEquals(f["TPE1"], "jzig")
+        f["TPE1"] = TPE1(encoding=0, text="jzig\x00piman")
+        f.save()
+        id3 = ID3(self.newsilence)
+        self.assertEquals(id3["TPE1"], ["jzig", "piman"])
+
+    def test_compressibly_large(self):
+        from mutagen.id3 import TPE2
+        f = ID3(self.newsilence)
+        self.assert_("TPE2" not in f)
+        f["TPE2"] = TPE2(encoding=0, text="Ab" * 1025)
+        f.save()
+        id3 = ID3(self.newsilence)
+        self.assertEquals(id3["TPE2"], "Ab" * 1025)
+
+    def test_nofile_emptytag(self):
+        os.unlink(self.newsilence)
+        ID3().save(self.newsilence)
+        self.assertRaises(EnvironmentError, open, self.newsilence)
+
+    def test_nofile_silencetag(self):
+        id3 = ID3(self.newsilence)
+        os.unlink(self.newsilence)
+        id3.save(self.newsilence)
+        self.assertEquals(b'ID3', open(self.newsilence, "rb").read(3))
+        self.test_same()
+
+    def test_emptyfile_silencetag(self):
+        id3 = ID3(self.newsilence)
+        open(self.newsilence, 'wb').truncate()
+        id3.save(self.newsilence)
+        self.assertEquals(b'ID3', open(self.newsilence, "rb").read(3))
+        self.test_same()
+
+    def test_empty_plustag_minustag_empty(self):
+        id3 = ID3(self.newsilence)
+        open(self.newsilence, 'wb').truncate()
+        id3.save()
+        id3.delete()
+        self.failIf(id3)
+        self.assertEquals(open(self.newsilence, "rb").read(10), b'')
+
+    def test_empty_plustag_emptytag_empty(self):
+        id3 = ID3(self.newsilence)
+        open(self.newsilence, 'wb').truncate()
+        id3.save()
+        id3.clear()
+        id3.save()
+        self.assertEquals(open(self.newsilence, "rb").read(10), b'')
+
+    def test_delete_invalid_zero(self):
+        f = open(self.newsilence, 'wb')
+        f.write(b'ID3\x04\x00\x00\x00\x00\x00\x00abc')
+        f.close()
+        ID3(self.newsilence).delete()
+        self.assertEquals(open(self.newsilence, "rb").read(10), b'abc')
+
+    def test_frame_order(self):
+        from mutagen.id3 import TIT2, APIC, TALB, COMM
+        f = ID3(self.newsilence)
+        f["TIT2"] = TIT2(encoding=0, text="A title!")
+        f["APIC"] = APIC(encoding=0, mime="b", type=3, desc='', data=b"a")
+        f["TALB"] = TALB(encoding=0, text="c")
+        f["COMM"] = COMM(encoding=0, desc="x", text="y")
+        f.save()
+        data = open(self.newsilence, 'rb').read()
+        self.assert_(data.find(b"TIT2") < data.find(b"APIC"))
+        self.assert_(data.find(b"TIT2") < data.find(b"COMM"))
+        self.assert_(data.find(b"TALB") < data.find(b"APIC"))
+        self.assert_(data.find(b"TALB") < data.find(b"COMM"))
+        self.assert_(data.find(b"TIT2") < data.find(b"TALB"))
+
+    def tearDown(self):
+        try: os.unlink(self.newsilence)
+        except EnvironmentError: pass
+
+class WriteForEyeD3(TestCase):
+    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
+    newsilence = os.path.join('tests', 'data', 'silence-written.mp3')
+    def setUp(self):
+        shutil.copy(self.silence, self.newsilence)
+        # remove ID3v1 tag
+        f = open(self.newsilence, "rb+")
+        f.seek(-128, 2)
+        f.truncate()
+        f.close()
+
+    def test_same(self):
+        ID3(self.newsilence).save()
+        id3 = eyeD3.tag.Tag(eyeD3.ID3_V2_4)
+        id3.link(self.newsilence)
+
+        self.assertEquals(id3.frames["TALB"][0].text, "Quod Libet Test Data")
+        self.assertEquals(id3.frames["TCON"][0].text, "Silence")
+        self.assertEquals(id3.frames["TIT2"][0].text, "Silence")
+        # "piman" should have been cleared
+        self.assertEquals(len(id3.frames["TPE1"]), 1)
+        self.assertEquals(id3.frames["TPE1"][0].text, "jzig")
+
+    def test_addframe(self):
+        from mutagen.id3 import TIT3
+        f = ID3(self.newsilence)
+        self.assert_("TIT3" not in f)
+        f["TIT3"] = TIT3(encoding=0, text="A subtitle!")
+        f.save()
+        id3 = eyeD3.tag.Tag(eyeD3.ID3_V2_4)
+        id3.link(self.newsilence)
+        self.assertEquals(id3.frames["TIT3"][0].text, "A subtitle!")
+
+    def test_changeframe(self):
+        from mutagen.id3 import TIT2
+        f = ID3(self.newsilence)
+        self.assertEquals(f["TIT2"], "Silence")
+        f["TIT2"].text = [u"The sound of silence."]
+        f.save()
+        id3 = eyeD3.tag.Tag(eyeD3.ID3_V2_4)
+        id3.link(self.newsilence)
+        self.assertEquals(id3.frames["TIT2"][0].text, "The sound of silence.")
+
+    def tearDown(self):
+        os.unlink(self.newsilence)
+
+class NoHash(TestCase):
+    uses_mmap = False
+
+    def test_spec(self):
+        from mutagen.id3 import Spec
+        self.failUnlessRaises(TypeError, {}.__setitem__, Spec("foo"), None)
+
+    def test_frame(self):
+        from mutagen.id3 import TIT1
+        self.failUnlessRaises(
+            TypeError, {}.__setitem__, TIT1(encoding=0, text="foo"), None)
+
+class FrameIDValidate(TestCase):
+    uses_mmap = False
+
+    def test_valid(self):
+        from mutagen.id3 import is_valid_frame_id
+        self.failUnless(is_valid_frame_id(b"APIC"))
+        self.failUnless(is_valid_frame_id(b"TPE2"))
+
+    def test_invalid(self):
+        from mutagen.id3 import is_valid_frame_id
+        self.failIf(is_valid_frame_id(b"MP3e"))
+        self.failIf(is_valid_frame_id(b"+ABC"))
+
+class BadTYER(TestCase):
+    uses_mmap = False
+    filename = os.path.join('tests', 'data', 'bad-TYER-frame.mp3')
+    def setUp(self):
+        self.audio = ID3(self.filename)
+
+    def test_no_year(self):
+        self.failIf("TYER" in self.audio)
+
+    def test_has_title(self):
+        self.failUnless("TIT2" in self.audio)
+
+    def tearDown(self):
+        del(self.audio)
+
+class BadPOPM(TestCase):
+    uses_mmap = False
+    filename = os.path.join('tests', 'data', 'bad-POPM-frame.mp3')
+    newfilename = os.path.join('tests', 'data', 'bad-POPM-frame-written.mp3')
+
+    def setUp(self):
+        shutil.copy(self.filename, self.newfilename)
+
+    def tearDown(self):
+        try: os.unlink(self.newfilename)
+        except EnvironmentError: pass
+
+    def test_read_popm_long_counter(self):
+        f = ID3(self.newfilename)
+        self.failUnless("POPM:Windows Media Player 9 Series" in f)
+        popm = f["POPM:Windows Media Player 9 Series"]
+        self.assertEquals(popm.rating, 255)
+        self.assertEquals(popm.count, 2709193061)
+
+    def test_write_popm_long_counter(self):
+        from mutagen.id3 import POPM
+        f = ID3(self.newfilename)
+        f.add(POPM(email="foo@example.com", rating=125, count=2**32+1))
+        f.save()
+        f = ID3(self.newfilename)
+        self.failUnless("POPM:foo@example.com" in f)
+        self.failUnless("POPM:Windows Media Player 9 Series" in f)
+        popm = f["POPM:foo@example.com"]
+        self.assertEquals(popm.rating, 125)
+        self.assertEquals(popm.count, 2**32+1)
+
+class TimeStampTextFrame(TestCase):
+    uses_mmap = False
+
+    from mutagen.id3 import TimeStampTextFrame as Frame
+
+    def test_compare_to_unicode(self):
+        frame = self.Frame(encoding=0, text=['1987', '1988'])
+        self.failUnlessEqual(frame, str(frame))
+
+class Issue69_BadV1Year(TestCase):
+    uses_mmap = False
+
+    def test_missing_year(self):
+        from mutagen.id3 import ParseID3v1
+        tag = ParseID3v1(b'ABCTAGhello world\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff')
+        self.failUnlessEqual(tag["TIT2"], "hello world")
+
+    def test_short_year(self):
+        from mutagen.id3 import ParseID3v1
+        tag = ParseID3v1(b'XTAGhello world\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x001\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff')
+        self.failUnlessEqual(tag["TIT2"], "hello world")
+        self.failUnlessEqual(tag["TDRC"], "0001")
+
+    def test_none(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TDRC
+        s = MakeID3v1(dict())
+        self.failUnlessEqual(len(s), 128)
+        tag = ParseID3v1(s)
+        self.failIf("TDRC" in tag)
+
+    def test_empty(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TDRC
+        s = MakeID3v1(dict(TDRC=""))
+        self.failUnlessEqual(len(s), 128)
+        tag = ParseID3v1(s)
+        self.failIf("TDRC" in tag)
+
+    def test_short(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TDRC
+        s = MakeID3v1(dict(TDRC="1"))
+        self.failUnlessEqual(len(s), 128)
+        tag = ParseID3v1(s)
+        self.failUnlessEqual(tag["TDRC"], "0001")
+
+    def test_long(self):
+        from mutagen.id3 import ParseID3v1, MakeID3v1, TDRC
+        s = MakeID3v1(dict(TDRC="123456789"))
+        self.failUnlessEqual(len(s), 128)
+        tag = ParseID3v1(s)
+        self.failUnlessEqual(tag["TDRC"], "1234")
+
 add(TestWriteID3v1)
 
 add(ID3Loading)
 add(ID3GetSetDel)
+add(BitPaddedIntTest)
 add(ID3Tags)
 add(ID3v1Tags)
-add(BitPaddedIntTest)
+add(BrokenDiscarded)
+add(BrokenButParsed)
 add(FrameSanityChecks)
 add(SpecSanityChecks)
 add(Genres)
+add(TimeStamp)
+add(WriteRoundtrip)
+add(OddWrites)
+add(NoHash)
+add(FrameIDValidate)
+add(BadTYER)
+add(BadPOPM)
+add(TimeStampTextFrame)
+add(Issue69_BadV1Year)
