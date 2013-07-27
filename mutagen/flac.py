@@ -85,8 +85,8 @@ class MetadataBlock(object):
             if len(datum) > 2 ** 24:
                 raise error("block is too long to write")
             length = struct.pack(">I", len(datum))[-3:]
-            data.append(byte + length + datum)
-        return bytes(data)
+            data.append(bytes([byte]) + length + datum)
+        return b''.join(data)
 
     @staticmethod
     def group_padding(blocks):
@@ -94,7 +94,7 @@ class MetadataBlock(object):
 
         The overall size of the rendered blocks does not change, so
         this adds several bytes of padding for each merged block."""
-        paddings = [b for b in block if isinstance(b, Padding)]
+        paddings = [b for b in blocks if isinstance(b, Padding)]
 
         for padding in paddings:
             blocks.remove(padding)
