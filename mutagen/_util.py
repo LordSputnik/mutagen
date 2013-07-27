@@ -279,3 +279,74 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2 ** 16):
     finally:
         if locked:
             unlock(fobj)
+
+class cdata(object):
+    """C character buffer to Python numeric type conversions."""
+
+    from struct import error
+
+    @staticmethod
+    def short_le(data): return struct.unpack('<h', data)[0]
+    @staticmethod
+    def ushort_le(data): return struct.unpack('<H', data)[0]
+
+    @staticmethod
+    def short_be(data): return struct.unpack('>h', data)[0]
+    @staticmethod
+    def ushort_be(data): return struct.unpack('>H', data)[0]
+
+    @staticmethod
+    def int_le(data): return struct.unpack('<i', data)[0]
+    @staticmethod
+    def uint_le(data): return struct.unpack('<I', data)[0]
+
+    @staticmethod
+    def int_be(data): return struct.unpack('>i', data)[0]
+    @staticmethod
+    def uint_be(data): return struct.unpack('>I', data)[0]
+
+    @staticmethod
+    def longlong_le(data): return struct.unpack('<q', data)[0]
+    @staticmethod
+    def ulonglong_le(data): return struct.unpack('<Q', data)[0]
+
+    @staticmethod
+    def longlong_be(data): return struct.unpack('>q', data)[0]
+    @staticmethod
+    def ulonglong_be(data): return struct.unpack('>Q', data)[0]
+
+    @staticmethod
+    def to_short_le(data): return struct.pack('<h', data)
+    @staticmethod
+    def to_ushort_le(data): return struct.pack('<H', data)
+
+    @staticmethod
+    def to_short_be(data): return struct.pack('>h', data)
+    @staticmethod
+    def to_ushort_be(data): return struct.pack('>H', data)
+
+    @staticmethod
+    def to_int_le(data): return struct.pack('<i', data)
+    @staticmethod
+    def to_uint_le(data): return struct.pack('<I', data)
+
+    @staticmethod
+    def to_int_be(data): return struct.pack('>i', data)
+    @staticmethod
+    def to_uint_be(data): return struct.pack('>I', data)
+
+    @staticmethod
+    def to_longlong_le(data): return struct.pack('<q', data)
+    @staticmethod
+    def to_ulonglong_le(data): return struct.pack('<Q', data)
+
+    @staticmethod
+    def to_longlong_be(data): return struct.pack('>q', data)
+    @staticmethod
+    def to_ulonglong_be(data): return struct.pack('>Q', data)
+
+    bitswap = bytes(sum(((val >> i) & 1) << (7-i) for i in range(8))
+                       for val in range(256))
+
+    @staticmethod
+    def test_bit(value, n): return bool((value >> n) & 1)
