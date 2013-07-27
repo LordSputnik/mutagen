@@ -19,6 +19,7 @@ intended for internal use in Mutagen only.
 from fnmatch import fnmatchcase
 
 import collections
+import struct
 
 class DictMixin(object):
     """Implement the dict API using keys() and __*item__ methods.
@@ -48,10 +49,10 @@ class DictMixin(object):
     __contains__ = has_key
 
     def values(self):
-        return map(self.__getitem__, self.keys())
+        return [self.__getitem__(k) for k in self.keys()]
 
     def items(self):
-        return zip(self.keys(), self.values())
+        return list(zip(self.keys(), self.values()))
 
     def clear(self):
         for k in list(self.keys()):

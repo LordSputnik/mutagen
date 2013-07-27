@@ -13,6 +13,8 @@ __all__ = ["FLAC", "Open", "delete"]
 from mutagen import FileType
 from functools import reduce
 import io
+import struct
+from mutagen._vorbis import VCommentDict
 
 class error(IOError): pass
 class FLACNoHeaderError(error): pass
@@ -21,7 +23,7 @@ class FLACVorbisError(ValueError, error): pass
 def to_int_be(data):
     """Convert an arbitrarily-long string to a long using big-endian
     byte order."""
-    return reduce(lambda a, b: (a << 8) + ord(b), data, 0)
+    return reduce(lambda a, b: (a << 8) + b, data, 0)
 
 class StrictFileObject(object):
     """Wraps a file-like object and raises an exception if the requested
