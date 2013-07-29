@@ -166,7 +166,7 @@ class StreamInfo(MetadataBlock):
         self.md5_signature = to_int_be(data.read(16))
 
     def write(self):
-        f = StringIO()
+        f = io.BytesIO()
         f.write(struct.pack(">I", self.min_blocksize)[-2:])
         f.write(struct.pack(">I", self.max_blocksize)[-2:])
         f.write(struct.pack(">I", self.min_framesize)[-3:])
@@ -182,7 +182,7 @@ class StreamInfo(MetadataBlock):
         # 4 bits of bps, 4 of sample count
         byte = ((self.bits_per_sample - 1) & 0xF)  << 4
         byte += (self.total_samples >> 32) & 0xF
-        f.write(bytes(byte))
+        f.write(bytes([byte]))
         # last 32 of sample count
         f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature
@@ -251,7 +251,7 @@ class SeekTable(MetadataBlock):
             sp = data.tryread(self.__SEEKPOINT_SIZE)
 
     def write(self):
-        f = StringIO()
+        f = io.BytesIO()
         for seekpoint in self.seekpoints:
             packed = struct.pack(self.__SEEKPOINT_FORMAT,
                 seekpoint.first_sample, seekpoint.byte_offset,
@@ -339,7 +339,7 @@ class CueSheetTrack(object):
 
     def __repr__(self):
         return ("<{} number={}, offset={}, isrc={}, type={}, "
-                "pre_emphasis={}, indexes={})>") % (
+                "pre_emphasis={}, indexes={})>").format(
             type(self).__name__, repr(self.track_number), self.start_offset,
             repr(self.isrc), repr(self.type), repr(self.pre_emphasis), repr(self.indexes))
 
@@ -389,7 +389,7 @@ class CueSheet(MetadataBlock):
         header = data.read(self.__CUESHEET_SIZE)
         media_catalog_number, lead_in_samples, flags, num_tracks = \
             struct.unpack(self.__CUESHEET_FORMAT, header)
-        self.media_catalog_number = media_catalog_number.rstrip(b'\0')
+        self.media_catalog_number = media_catalog_number.rstrip(b'\0').decode('ascii')
         self.lead_in_samples = lead_in_samples
         self.compact_disc = bool(flags & 0x80)
         self.tracks = []
@@ -397,7 +397,7 @@ class CueSheet(MetadataBlock):
             track = data.read(self.__CUESHEET_TRACK_SIZE)
             start_offset, track_number, isrc_padded, flags, num_indexes = \
                 struct.unpack(self.__CUESHEET_TRACK_FORMAT, track)
-            isrc = isrc_padded.rstrip(b'\0')
+            isrc = isrc_padded.rstrip(b'\0').decode('ascii')
             type_ = (flags & 0x80) >> 7
             pre_emphasis = bool(flags & 0x40)
             val = CueSheetTrack(
@@ -411,12 +411,12 @@ class CueSheet(MetadataBlock):
             self.tracks.append(val)
 
     def write(self):
-        f = BytesIO()
+        f = io.BytesIO()
         flags = 0
         if self.compact_disc:
             flags |= 0x80
 
-        packed = struct.pack(self.__CUESHEET_FORMAT, self.media_catalog_number,
+        packed = struct.pack(self.__CUESHEET_FORMAT, self.media_catalog_number.encode('ascii'),
                              self.lead_in_samples, flags, len(self.tracks))
         f.write(packed)
         for track in self.tracks:
@@ -426,7 +426,7 @@ class CueSheet(MetadataBlock):
                 track_flags |= 0x40
             track_packed = struct.pack(
                 self.__CUESHEET_TRACK_FORMAT, track.start_offset,
-                track.track_number, track.isrc, track_flags,
+                track.track_number, track.isrc.encode('ascii'), track_flags,
                 len(track.indexes))
             f.write(track_packed)
             for index in track.indexes:
