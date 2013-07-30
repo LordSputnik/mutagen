@@ -98,6 +98,26 @@ class FileType(dict):
         else:
             return self.tags.keys()
 
+    def values(self):
+        """Return a list of keys in the metadata tag.
+
+        If the file has no tags at all, an empty list is returned.
+        """
+        if self.tags is None:
+            return []
+        else:
+            return self.tags.values()
+
+    def items(self):
+        """Return a list of keys in the metadata tag.
+
+        If the file has no tags at all, an empty list is returned.
+        """
+        if self.tags is None:
+            return []
+        else:
+            return self.tags.items()
+
     def delete(self, filename=None):
         """Remove tags from a file."""
         if self.tags is not None:

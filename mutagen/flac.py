@@ -15,6 +15,8 @@ from functools import reduce
 import io
 import struct
 from mutagen._vorbis import VCommentDict
+from mutagen._util import insert_bytes
+from mutagen.id3 import BitPaddedInt
 
 class error(IOError): pass
 class FLACNoHeaderError(error): pass
@@ -469,7 +471,7 @@ class Picture(MetadataBlock):
         self.height = 0
         self.depth = 0
         self.colors = 0
-        self.data = ''
+        self.data = b''
         super(Picture, self).__init__(data)
 
     def __eq__(self, other):
@@ -496,7 +498,7 @@ class Picture(MetadataBlock):
         self.data = data.read(length)
 
     def write(self):
-        f = StringIO()
+        f = io.BytesIO()
         mime = self.mime.encode('UTF-8')
         f.write(struct.pack('>2I', self.type, len(mime)))
         f.write(mime)
@@ -778,4 +780,5 @@ Open = FLAC
 def delete(filename):
     """Remove tags from a file."""
     FLAC(filename).delete()
+
 
