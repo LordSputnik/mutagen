@@ -2436,8 +2436,8 @@ class ID3FileType(mutagen.FileType):
         pprint = staticmethod(lambda: "Unknown format with ID3 tag")
 
     @staticmethod
-    def score(filename, fileobj, header):
-        return header.startswith("ID3")
+    def score(filename, fileobj, header_data):
+        return header_data.startswith(b"ID3")
 
     def add_tags(self, ID3=None):
         """Add an empty ID3 tag to the file.
