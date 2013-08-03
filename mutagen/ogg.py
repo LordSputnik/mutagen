@@ -25,6 +25,9 @@ import sys
 import zlib
 import io
 
+from mutagen import FileType
+from mutagen._util import cdata, insert_bytes, delete_bytes
+
 class error(IOError):
     """Ogg stream parsing errors."""
     pass
@@ -58,7 +61,7 @@ class OggPage(object):
     def __init__(self, fileobj=None):
         self.__type_flags = 0
         self.version = 0
-        self.position = 0L
+        self.position = 0
         self.serial = 0
         self.sequence = 0
         self.offset = None
@@ -82,11 +85,11 @@ class OggPage(object):
             raise error("unable to read full header; got {}".format(header))
 
         if oggs != b"OggS":
-            raise error("read {}, expected {}, at {#x}".format(
+            raise error("read {}, expected {}, at {:#x}".format(
                 repr(oggs), repr(b"OggS"), fileobj.tell() - 27))
 
         if self.version != 0:
-            raise error("version {} unsupported".format(self.version)
+            raise error("version {} unsupported".format(self.version))
 
         total = 0
         lacings = []
@@ -143,7 +146,7 @@ class OggPage(object):
             quot, rem = divmod(len(datum), 255)
             lacing_data.append(b"\xff" * quot + bytes([rem]))
         lacing_data = b"".join(lacing_data)
-        if not self.complete and lacing_data.endswith("\x00"):
+        if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
         data.append(bytes([len(lacing_data)]))
         data.append(lacing_data)
@@ -278,8 +281,8 @@ class OggPage(object):
 
         return packets
 
-        @staticmethod
-        def from_packets(packets, sequence=0, default_size=4096,
+    @staticmethod
+    def from_packets(packets, sequence=0, default_size=4096,
                          wiggle_room=2048):
         """Construct a list of Ogg pages from a list of packet data.
 
@@ -321,7 +324,7 @@ class OggPage(object):
                     if page.packets[-1]:
                         page.complete = False
                         if len(page.packets) == 1:
-                            page.position = -1L
+                            page.position = -1
                     else:
                         page.packets.pop(-1)
                     pages.append(page)
@@ -366,7 +369,7 @@ class OggPage(object):
         new_pages[-1].last = old_pages[-1].last
         new_pages[-1].complete = old_pages[-1].complete
         if not new_pages[-1].complete and len(new_pages[-1].packets) == 1:
-            new_pages[-1].position = -1L
+            new_pages[-1].position = -1
 
         new_data = b"".join(cls.write(p) for p in new_pages)
 
@@ -460,6 +463,7 @@ class OggFileType(FileType):
 
         self.filename = filename
         fileobj = open(filename, "rb")
+        print(filename)
         try:
             try:
                 self.info = self._Info(fileobj)
