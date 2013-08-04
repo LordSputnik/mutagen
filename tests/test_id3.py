@@ -315,7 +315,7 @@ class ID3v1Tags(TestCase):
         self.failUnless(32, ParseID3v1(tag)["TRCK"])
         del(self.id3["TRCK"])
         tag = MakeID3v1(self.id3)
-        tag = tag[:125] + b'  ' + bytes([tag[-1]])
+        tag = tag[:125] + b'  ' + bytes((tag[-1],))
         self.failIf("TRCK" in ParseID3v1(tag))
 
     def test_nulls(self):
@@ -926,7 +926,7 @@ class SpecSanityChecks(TestCase):
         s = BinaryDataSpec('name')
         self.assertEquals((b'abcdefg', b''), s.read(None, b'abcdefg'))
         self.assertEquals(None,  s.write(None, None))
-        self.assertEquals(bytes([43]),  s.write(None, 43))
+        self.assertEquals(bytes((43,)),  s.write(None, 43))
 
     def test_encodedtextspec(self):
         from mutagen.id3 import EncodedTextSpec, Frame

@@ -87,7 +87,7 @@ class MetadataBlock(object):
             if len(datum) > 2 ** 24:
                 raise error("block is too long to write")
             length = struct.pack(">I", len(datum))[-3:]
-            data.append(bytes([byte]) + length + datum)
+            data.append(bytes((byte,)) + length + datum)
         return b''.join(data)
 
     @staticmethod
@@ -180,11 +180,11 @@ class StreamInfo(MetadataBlock):
         byte = (self.sample_rate & 0xF) << 4
         byte += ((self.channels - 1) & 7) << 1
         byte += ((self.bits_per_sample - 1) >> 4) & 1
-        f.write(bytes([byte]))
+        f.write(bytes((byte,)))
         # 4 bits of bps, 4 of sample count
         byte = ((self.bits_per_sample - 1) & 0xF)  << 4
         byte += (self.total_samples >> 32) & 0xF
-        f.write(bytes([byte]))
+        f.write(bytes((byte,)))
         # last 32 of sample count
         f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature
@@ -634,7 +634,7 @@ class FLAC(FileType):
         """
         if filename is None:
             filename = self.filename
-        for s in list(self.metadata_blocks):
+        for s in self.metadata_blocks:
             if isinstance(s, VCFLACDict):
                 self.metadata_blocks.remove(s)
                 self.tags = None

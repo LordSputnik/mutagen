@@ -385,7 +385,7 @@ class TFLAC(TestCase):
         self.failUnless(self.flac.pprint())
 
     def test_double_load(self):
-        blocks = list(self.flac.metadata_blocks)
+        blocks = self.flac.metadata_blocks
         self.flac.load(self.flac.filename)
         self.failUnlessEqual(blocks, self.flac.metadata_blocks)
 

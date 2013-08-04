@@ -366,7 +366,6 @@ class ID3(DictProxy, mutagen.Metadata):
 
         order = {b: a for a, b in enumerate(order)}
         last = len(order)
-        frames = list(self.items())
         frames = sorted(self.items(), key=lambda a: order.get(a[0][:4], last))
 
         f_data = [self.__save_frame(frame) for (key, frame) in frames]
@@ -719,13 +718,13 @@ class ByteSpec(Spec):
         return data[0], data[1:]
 
     def write(self, frame, value):
-        return bytes([value])
+        return bytes((value,))
 
     def validate(self, frame, value):
         if value is None:
             return None
 
-        return bytes([value])[0]
+        return bytes((value,))[0]
 
 class IntegerSpec(Spec):
     def read(self, frame, data):
@@ -762,7 +761,7 @@ class EncodingSpec(ByteSpec):
         if enc < 16:
             return enc, data
         else:
-            return 0, bytes(bytes([enc]) + data)
+            return 0, bytes(bytes((enc,)) + data)
 
     def validate(self, frame, value):
         if value is None:
@@ -782,7 +781,7 @@ class BinaryDataSpec(Spec):
             return None
 
         if isinstance(value, int):
-            return bytes([value])
+            return bytes((value,))
 
         return bytes(value)
 
@@ -2391,7 +2390,7 @@ def MakeID3v1(id3):
 
     if "TRCK" in id3:
         try:
-            v1['track'] = bytes([+id3["TRCK"]])
+            v1['track'] = bytes((+id3["TRCK"],))
         except ValueError:
             v1['track'] = b'\x00'
     else:
@@ -2404,7 +2403,7 @@ def MakeID3v1(id3):
             pass
         else:
             if genre in TCON.GENRES:
-                v1['genre'] = bytes([TCON.GENRES.index(genre)])
+                v1['genre'] = bytes((TCON.GENRES.index(genre),))
 
     if 'genre' not in v1:
         v1['genre'] = b"\xff"
