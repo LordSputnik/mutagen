@@ -193,9 +193,9 @@ def File(filename, options=None, easy=False):
 
         """from mutagen.oggflac import OggFLAC
         from mutagen.oggspeex import OggSpeex
-        from mutagen.oggtheora import OggTheora
+        from mutagen.oggtheora import OggTheora"""
         from mutagen.oggvorbis import OggVorbis
-        from mutagen.oggopus import OggOpus"""
+        """from mutagen.oggopus import OggOpus"""
 
         """if easy:
             from mutagen.trueaudio import EasyTrueAudio as TrueAudio
@@ -216,7 +216,7 @@ def File(filename, options=None, easy=False):
                    FLAC, APEv2File, MP4, ID3FileType, WavPack, Musepack,
                    MonkeysAudio, OptimFROG, ASF, OggOpus]"""
 
-        options = [MP3, FLAC, ID3FileType]
+        options = [MP3, OggVorbis, FLAC, ID3FileType]
 
     if not options:
         return None

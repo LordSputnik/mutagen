@@ -10,6 +10,7 @@ from tests import TestCase, add
 from mutagen import File, Metadata, FileType
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.flac import FLAC
+from mutagen.oggvorbis import OggVorbis
 
 from os import devnull
 
@@ -81,11 +82,11 @@ class TFile(TestCase):
             filename = os.path.join("tests", "data", "empty.ogg")
             self.failIf(File(filename, options=[]))
 
-    """def test_oggvorbis(self):
+    def test_oggvorbis(self):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "empty.ogg")), OggVorbis))
 
-    def test_oggflac(self):
+    """def test_oggflac(self):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "empty.oggflac")), OggFLAC))
 

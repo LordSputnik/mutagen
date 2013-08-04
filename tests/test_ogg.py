@@ -491,15 +491,15 @@ class TOggFileType(TestCase):
     def ogg_reference(self, filename):
         self.scan_file()
         if have_ogginfo:
-            value = os.system("ogginfo {} > {} 2> {}".format(filename, devnull,
-                              devnull))
+            value = os.system("ogginfo {} > {} 2> {}".format(filename, os.devnull,
+                              os.devnull))
             self.failIf(value and value != NOTFOUND,
                         "ogginfo failed on {}".format(filename))
         if have_oggz_validate:
             if filename.endswith(".opus") and not have_oggz_validate_opus:
                 return
             value = os.system(
-                "oggz-validate {} > {}".format(filename, devnull))
+                "oggz-validate {} > {}".format(filename, os.devnull))
             self.failIf(value and value != NOTFOUND,
                         "oggz-validate failed on {}".format(filename))
 

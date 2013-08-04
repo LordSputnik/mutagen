@@ -463,7 +463,6 @@ class OggFileType(FileType):
 
         self.filename = filename
         fileobj = open(filename, "rb")
-        print(filename)
         try:
             try:
                 self.info = self._Info(fileobj)

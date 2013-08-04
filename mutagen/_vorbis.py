@@ -148,7 +148,7 @@ class VComment(mutagen.Metadata, list):
 
     def clear(self):
         """Clear all keys from the comment."""
-        del(self[:])
+        del self[:]
 
     def write(self, framing=True):
         """Return a string representation of the data.
@@ -245,6 +245,18 @@ class VCommentDict(VComment, DictMixin):
             pass
         for value in values:
             self.append((key, value))
+
+    def clear(self):
+        """This needs to exist because __delitem__ is overridden.
+
+        Previously, when del self[:] was called, this class's
+        __delitem__(self, self[:]) was getting called. The key "self[:]" had no
+        method lower(), so an exception occurred. Not sure why this didn't
+        affect Python 2.
+
+        """
+        for k in self.keys():
+            self.__delitem__(k)
 
     def keys(self):
         """Return all keys in the comment."""
