@@ -36,7 +36,7 @@ class EasyID3KeyError(KeyError, ValueError, error):
     catching KeyError is preferred.
     """
 
-class EasyID3(DictMixin, mutagen.Metadata):
+class EasyID3(collections.abc.MutableMapping, mutagen.Metadata):
     """A file with an ID3 tag.
 
     Like Vorbis comments, EasyID3 keys are case-insensitive ASCII
@@ -215,7 +215,7 @@ class EasyID3(DictMixin, mutagen.Metadata):
         else:
             raise EasyID3KeyError("%r is not a valid key" % key)
 
-    def keys(self):
+    def __iter__(self):
         keys = []
         for key in self.Get.keys():
             if key in self.List:
@@ -224,7 +224,18 @@ class EasyID3(DictMixin, mutagen.Metadata):
                 keys.append(key)
         if self.ListFallback is not None:
             keys.extend(self.ListFallback(self.__id3, ""))
-        return keys
+        return iter(keys)
+
+    def __len__(self):
+        keys = []
+        for key in self.Get.keys():
+            if key in self.List:
+                keys.extend(self.List[key](self.__id3, key))
+            elif key in self:
+                keys.append(key)
+        if self.ListFallback is not None:
+            keys.extend(self.ListFallback(self.__id3, ""))
+        return len(keys)
 
     def pprint(self):
         """Print tag key=value pairs."""

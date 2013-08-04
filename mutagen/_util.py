@@ -36,18 +36,6 @@ class DictMixin(object):
     override some of these functions if speed is required.
     """
 
-    def __iter__(self):
-        return iter(self.keys())
-
-    def has_key(self, key):
-        try:
-            self[key]
-        except KeyError:
-            return False
-        else:
-            return True
-    __contains__ = has_key
-
     def values(self):
         return [self.__getitem__(k) for k in self.keys()]
 
@@ -116,7 +104,7 @@ class DictMixin(object):
     def __len__(self):
         return len(self.keys())
 
-class DictProxy(DictMixin):
+class DictProxy(collections.abc.MutableMapping):
     def __init__(self, *args, **kwargs):
         #Needs to be an ordered dict to get around a testing issue in EasyID3
         self._dict = collections.OrderedDict()
@@ -131,8 +119,11 @@ class DictProxy(DictMixin):
     def __delitem__(self, key):
         del(self._dict[key])
 
-    def keys(self):
-        return self._dict.keys()
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
 
 def dict_match(d, key, default=None):
     try:
