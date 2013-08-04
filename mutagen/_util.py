@@ -17,10 +17,12 @@ intended for internal use in Mutagen only.
 """
 
 from fnmatch import fnmatchcase
+from functools import total_ordering
 
 import collections
 import struct
 
+@total_ordering
 class DictMixin(object):
     """Implement the dict API using keys() and __*item__ methods.
 
@@ -36,11 +38,27 @@ class DictMixin(object):
     override some of these functions if speed is required.
     """
 
+    def __iter__(self):
+        return iter(self.keys())
+
+    def has_key(self, key):
+        try:
+            self[key]
+        except KeyError:
+            return False
+        else:
+            return True
+    __contains__ = has_key
+
+    iterkeys = lambda self: iter(self.keys())
+
     def values(self):
         return [self.__getitem__(k) for k in self.keys()]
+    itervalues = lambda self: iter(self.values())
 
     def items(self):
         return list(zip(self.keys(), self.values()))
+    iteritems = lambda s: iter(s.items())
 
     def clear(self):
         for k in list(self.keys()):
@@ -61,7 +79,7 @@ class DictMixin(object):
 
     def popitem(self):
         try:
-            key = self.keys()[0]
+            key = list(self.keys())[0]
             return key, self.pop(key)
         except IndexError:
             raise KeyError("dictionary is empty")
@@ -71,11 +89,8 @@ class DictMixin(object):
             self.update(kwargs)
             other = {}
 
-        try:
-            map(self.__setitem__, other.keys(), other.values())
-        except AttributeError:
-            for key, value in other:
-                self[key] = value
+        for key, value in dict(other).items():
+            self[key] = value
 
     def setdefault(self, key, default=None):
         try:
@@ -103,6 +118,12 @@ class DictMixin(object):
 
     def __len__(self):
         return len(self.keys())
+
+    def __eq__(self, other):
+        return {k:v for k,v in self.items()} == other
+
+    def __lt__(self, other):
+        return {k:v for k,v in self.items()} < other
 
 class DictProxy(collections.abc.MutableMapping):
     def __init__(self, *args, **kwargs):
@@ -342,3 +363,12 @@ class cdata(object):
 
     @staticmethod
     def test_bit(value, n): return bool((value >> n) & 1)
+
+def utf8(data):
+    """Converts anything resembling a string to UTF8-encoded bytes."""
+    if isinstance(data, bytes):
+        return data.decode("utf-8", "replace").encode("utf-8")
+    elif isinstance(data, str):
+        return data.encode("utf-8")
+    else:
+        raise TypeError("only str/bytes types can be converted to UTF-8")

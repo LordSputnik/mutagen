@@ -803,10 +803,10 @@ def TestReadTags():
     add(testcase)
     testcase = type('TestReadReprTags', (TestCase,), repr_tests)
     testcase.uses_mmap = False
-    #add(testcase)
+    add(testcase)
     testcase = type('TestReadWriteTags', (TestCase,), write_tests)
     testcase.uses_mmap = False
-    #add(testcase)
+    add(testcase)
 
     test_tests = {}
     from mutagen.id3 import Frames, Frames_2_2
@@ -817,7 +817,7 @@ def TestReadTags():
         tested_tags['test_' + tag + '_tested'] = check
     testcase = type('TestTestedTags', (TestCase,), tested_tags)
     testcase.uses_mmap = False
-    #add(testcase)
+    add(testcase)
 
 TestReadTags()
 del TestReadTags

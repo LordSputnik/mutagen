@@ -90,6 +90,12 @@ class FileType(dict):
         else:
             del(self.tags[key])
 
+    def __contains__(self,key):
+        if self.tags is None:
+            return False
+        else:
+            return key in self.tags
+
     def keys(self):
         """Return a list of keys in the metadata tag.
 
