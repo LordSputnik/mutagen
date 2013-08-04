@@ -1,3 +1,21 @@
+mutagenx
+--------
+mutagenx is a Python 3 library that aims to reimplement all of the features of
+the Python 2 library mutagen, plus a bit extra here and there. The port fixes
+things like string/bytes differentiation, archaic Python 2.3 functions,
+non-PEP8 styling and use of outdated (non-Python 3) libraries.
+
+Currently in the very early stages of development, but please feel free to have
+a look at the latest testing branch and submit any issues you find with it! The
+library has been tested on Python 3.3.1, so that's currently the minimum
+official version. Please let me know if it works on Python 3.2 and 3.1, but
+don't bother with 3.0!
+
+The rest of this README features text from the original mutagen 1.21 README
+file.
+
+What is Mutagen?
+----------------
 Mutagen is a Python module to handle audio metadata. It supports ASF,
 FLAC, M4A, Monkey's Audio, MP3, Musepack, Ogg FLAC, Ogg Speex, Ogg
 Theora, Ogg Vorbis, True Audio, WavPack and OptimFROG audio files. All
@@ -25,7 +43,7 @@ the source code.
 The tools/ directory contains several useful examples, and there is a
 brief tutorial in TUTORIAL.
 
-The API-NOTES file lists parts of the API that are either unstable or 
+The API-NOTES file lists parts of the API that are either unstable or
 will be removed in the future.
 
 Testing the Module
