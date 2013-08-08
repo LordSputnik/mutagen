@@ -60,7 +60,7 @@ class TMP3(TestCase):
         self.failUnlessEqual(self.mp3_4.info.bitrate, 9300)
 
     def test_notmp3(self):
-        self.failUnlessRaises(MP3Error, MP3, "README")
+        self.failUnlessRaises(MP3Error, MP3, "README.md")
 
     def test_sketchy(self):
         self.failIf(self.mp3.info.sketchy)
