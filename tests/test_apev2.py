@@ -6,6 +6,8 @@ from unittest import TestCase
 
 from tests import add
 
+import mutagen.apev2
+
 from mutagen.apev2 import APEv2File, APEv2, is_valid_apev2_key
 
 DIR = os.path.dirname(__file__)

@@ -38,7 +38,8 @@ import collections
 import functools
 
 def is_valid_apev2_key(key):
-    return (2 <= len(key) <= 255 and min(key) >= ' ' and max(key) <= '~' and
+    return (2 <= len(key) <= 255
+            and min(key) >= ' ' and max(key) <= '~' and
             key not in ["OggS", "TAG", "ID3", "MP+"])
 
 # There are three different kinds of APE tag values.
@@ -258,18 +259,24 @@ class APEv2(collections.abc.MutableMapping, Metadata):
             if key[-1:] == b"\x00":
                 key = key[:-1]
             value = fileobj.read(size)
+            key = key.decode('ascii')
             self[key] = APEValue(value, kind)
 
     def __getitem__(self, key):
         if not is_valid_apev2_key(key):
             raise KeyError("{!r} is not a valid APEv2 key".format(key))
-        key = key.encode('ascii')
+        
+        # Ensure the key has the correct case.
+        if key != self.__casemap.get(key.lower(), None):
+            raise KeyError(key)
+        
         return self.__dict[key.lower()]
 
     def __delitem__(self, key):
         if not is_valid_apev2_key(key):
             raise KeyError("{!r} is not a valid APEv2 key".format(key))
-        key = key.encode('ascii')
+        
+        del(self.__casemap[key.lower()])
         del(self.__dict[key.lower()])
 
     def __setitem__(self, key, value):
@@ -288,10 +295,8 @@ class APEv2(collections.abc.MutableMapping, Metadata):
             from mutagen.apev2 import APEValue, EXTERNAL
             tag['Website'] = APEValue('http://example.org', EXTERNAL)
         """
-
         if not is_valid_apev2_key(key):
             raise KeyError("{!r} is not a valid APEv2 key".format(key))
-        key = key.encode('ascii')
 
         if not isinstance(value, _APEValue):
             # let's guess at the content if we're not already a value...
@@ -317,7 +322,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         return iter(self.__casemap.get(key, key) for key in self.__dict.keys())
 
     def __len__(self):
-        return len(self.__casemap.get(key, key) for key in self.__dict.keys())
+        return len([self.__casemap.get(key, key) for key in self.__dict.keys()])
 
     def save(self, filename=None):
         """Save changes to a file.
@@ -348,12 +353,12 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         # be sorted by importance/byte, but this is not feasible."
         tags = sorted((v._internal(k) for k, v in self.items()), key=len)
         num_tags = len(tags)
-        tags = "".join(tags)
+        tags = b"".join(tags)
 
         header = (b"APETAGEX" +
                   # version, tag size, item count, flags
                   struct.pack("<4I", 2000, len(tags) + 32, num_tags,
-                              HAS_HEADER | IS_HEADER),
+                              HAS_HEADER | IS_HEADER) +
                   b"\0" * 8)
         fileobj.write(header)
 
@@ -362,7 +367,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         footer = (b"APETAGEX" +
                   # version, tag size, item count, flags
                   struct.pack("<4I", 2000, len(tags) + 32, num_tags,
-                              HAS_HEADER),
+                              HAS_HEADER) +
                   b"\0" * 8)
         fileobj.write(footer)
         fileobj.close()
@@ -421,7 +426,7 @@ class _APEValue(object):
     # 1B: Null
     # Key value
     def _internal(self, key):
-        return struct.pack("<2I", len(self.value), self.kind << 1) + key + b"\0" + self.value
+        return struct.pack("<2I", len(self.value), self.kind << 1) + key.encode("ascii") + b"\0" + self.value
 
     def __repr__(self):
         return "{}({!r}, {})".format(type(self).__name__, self.value, self.kind)
