@@ -221,8 +221,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
 
     def pprint(self):
         """Return tag key=value pairs in a human-readable format."""
-        items = self.items()
-        items.sort()
+        items = sorted(self.items())
         return "\n".join("{}={}".format(k, v.pprint()) for k, v in items)
 
     def load(self, filename):
@@ -260,15 +259,15 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                 key = key[:-1]
             value = fileobj.read(size)
             key = key.decode('ascii')
+            
+            if kind != BINARY:
+                value = value.decode('utf-8')
+                
             self[key] = APEValue(value, kind)
 
     def __getitem__(self, key):
         if not is_valid_apev2_key(key):
             raise KeyError("{!r} is not a valid APEv2 key".format(key))
-        
-        # Ensure the key has the correct case.
-        if key != self.__casemap.get(key.lower(), None):
-            raise KeyError(key)
         
         return self.__dict[key.lower()]
 
@@ -302,10 +301,11 @@ class APEv2(collections.abc.MutableMapping, Metadata):
             # let's guess at the content if we're not already a value...
             if isinstance(value, str):
                 # unicode? we've got to be text.
-                value = APEValue(utf8(value), TEXT)
+                value = APEValue(value, TEXT)
             elif isinstance(value, list):
                 # list? text.
-                value = APEValue(b"\0".join(map(utf8, value)), TEXT)
+                value = [utf8(v).decode('utf-8') for v in value]
+                value = APEValue("\0".join(value), TEXT)
             else:
                 try:
                     dummy = value.decode("utf-8")
@@ -314,7 +314,8 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                     value = APEValue(value, BINARY)
                 else:
                     # valid UTF8, probably text
-                    value = APEValue(value, TEXT)
+                    value = APEValue(dummy, TEXT)
+                    
         self.__casemap[key.lower()] = key
         self.__dict[key.lower()] = value
 
@@ -322,7 +323,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         return iter(self.__casemap.get(key, key) for key in self.__dict.keys())
 
     def __len__(self):
-        return len([self.__casemap.get(key, key) for key in self.__dict.keys()])
+        return len(self.__dict.keys())
 
     def save(self, filename=None):
         """Save changes to a file.
@@ -417,7 +418,7 @@ class _APEValue(object):
         return len(self.value)
 
     def __str__(self):
-        return self.value.decode("utf-8")
+        return self.value
 
     # Packed format for an item:
     # 4B: Value length
@@ -426,7 +427,7 @@ class _APEValue(object):
     # 1B: Null
     # Key value
     def _internal(self, key):
-        return struct.pack("<2I", len(self.value), self.kind << 1) + key.encode("ascii") + b"\0" + self.value
+        return struct.pack("<2I", len(self.value.encode('utf-8')), self.kind << 1) + key.encode("ascii") + b"\0" + self.value.encode('utf-8')
 
     def __repr__(self):
         return "{}({!r}, {})".format(type(self).__name__, self.value, self.kind)
@@ -440,35 +441,41 @@ class APETextValue(_APEValue):
 
     def __iter__(self):
         """Iterate over the strings of the value (not the characters)"""
-        return iter(str(self).split("\0"))
+        return iter(self.value.split("\0"))
 
     def __getitem__(self, index):
-        return str(self).split("\0")[index]
+        return self.value.split("\0")[index]
 
     def __len__(self):
-        return self.value.count(b"\0") + 1
+        return self.value.count("\0") + 1
 
     def __eq__(self, other):
-        return str(self) == other
+        return self.value == other
 
     def __lt__(self, other):
-        return str(self) < other
+        return self.value < other
 
     __hash__ = _APEValue.__hash__
 
     def __setitem__(self, index, value):
         values = list(self)
-        values[index] = value.encode("utf-8")
-        self.value = b"\0".join(values)
+        values[index] = value
+        self.value = "\0".join(values)
 
     def pprint(self):
-        return " / ".join(str(x) for x in self)
+        return " / ".join(x for x in self)
 
 class APEBinaryValue(_APEValue):
     """An APEv2 binary value."""
 
+    def __str__(self):
+        return self.pprint()
+
     def pprint(self):
         return "[{} bytes]".format(len(self))
+
+    def _internal(self, key):
+        return struct.pack("<2I", len(self.value), self.kind << 1) + key.encode("ascii") + b"\0" + self.value
 
 class APEExtValue(_APEValue):
     """An APEv2 external value.
@@ -476,7 +483,7 @@ class APEExtValue(_APEValue):
     External values are usually URI or IRI strings.
     """
     def pprint(self):
-        return "[External] {}".format(str(self))
+        return "[External] {}".format(self.value)
 
 class APEv2File(FileType):
     class _Info(object):
