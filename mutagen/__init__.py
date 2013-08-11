@@ -11,6 +11,7 @@
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 import warnings
+import collections.abc
 
 version = (1, 21)
 version_string = ".".join(str(v) for v in version)
@@ -29,7 +30,7 @@ class Metadata(object):
     def delete(self, filename=None):
         raise NotImplementedError
 
-class FileType(dict):
+class FileType(collections.abc.MutableMapping):
     """An abstract object wrapping tags and audio stream information.
 
     Attributes:
@@ -90,41 +91,17 @@ class FileType(dict):
         else:
             del(self.tags[key])
 
-    def __contains__(self,key):
+    def __iter__(self):
         if self.tags is None:
-            return False
+            return iter([])
         else:
-            return key in self.tags
+            return iter(list(self.tags.keys()))
 
-    def keys(self):
-        """Return a list of keys in the metadata tag.
-
-        If the file has no tags at all, an empty list is returned.
-        """
-        if self.tags is None:
-            return []
+    def __len__(self):
+        if self.tags in None:
+            return 0
         else:
-            return self.tags.keys()
-
-    def values(self):
-        """Return a list of keys in the metadata tag.
-
-        If the file has no tags at all, an empty list is returned.
-        """
-        if self.tags is None:
-            return []
-        else:
-            return self.tags.values()
-
-    def items(self):
-        """Return a list of keys in the metadata tag.
-
-        If the file has no tags at all, an empty list is returned.
-        """
-        if self.tags is None:
-            return []
-        else:
-            return self.tags.items()
+            return len(list(self.tags.keys()))
 
     def delete(self, filename=None):
         """Remove tags from a file."""

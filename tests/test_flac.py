@@ -283,10 +283,10 @@ class TFLAC(TestCase):
         self.failUnlessAlmostEqual(FLAC(self.NEW).info.length, 3.7, 1)
 
     def test_keys(self):
-        self.failUnlessEqual(self.flac.keys(), self.flac.tags.keys())
+        self.failUnlessEqual(list(self.flac.keys()), self.flac.tags.keys())
 
     def test_values(self):
-        self.failUnlessEqual(self.flac.values(), self.flac.tags.values())
+        self.failUnlessEqual(list(self.flac.values()), self.flac.tags.values())
 
     def test_items(self):
         self.failUnlessEqual(list(self.flac.items()), self.flac.tags.items())
