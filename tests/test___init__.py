@@ -11,6 +11,13 @@ from mutagen import File, Metadata, FileType
 from mutagen.mp3 import MP3, EasyMP3
 from mutagen.flac import FLAC
 from mutagen.oggvorbis import OggVorbis
+from mutagen.oggflac import OggFLAC
+from mutagen.oggspeex import OggSpeex
+from mutagen.oggtheora import OggTheora
+from mutagen.oggopus import OggOpus
+from mutagen.apev2 import APEv2File
+from mutagen.mp4 import MP4
+from mutagen.asf import ASF
 
 from os import devnull
 
@@ -86,7 +93,7 @@ class TFile(TestCase):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "empty.ogg")), OggVorbis))
 
-    """def test_oggflac(self):
+    def test_oggflac(self):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "empty.oggflac")), OggFLAC))
 
@@ -100,7 +107,7 @@ class TFile(TestCase):
 
     def test_oggopus(self):
         self.failUnless(isinstance(File(
-            os.path.join("tests", "data", "example.opus")), OggOpus))"""
+            os.path.join("tests", "data", "example.opus")), OggOpus))
 
     def test_mp3(self):
         self.failUnless(isinstance(
@@ -152,7 +159,7 @@ class TFile(TestCase):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "silence-44-s.wv")), WavPack))"""
 
-    """def test_mp4(self):
+    def test_mp4(self):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "has-tags.m4a")), MP4))
         self.failUnless(isinstance(
@@ -160,7 +167,7 @@ class TFile(TestCase):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "no-tags.3g2")), MP4))
         self.failUnless(isinstance(
-            File(os.path.join("tests", "data", "truncated-64bit.mp4")), MP4))"""
+            File(os.path.join("tests", "data", "truncated-64bit.mp4")), MP4))
 
     """def test_optimfrog(self):
         self.failUnless(isinstance(
@@ -168,13 +175,13 @@ class TFile(TestCase):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "empty.ofs")), OptimFROG))"""
 
-    """def test_asf(self):
+    def test_asf(self):
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "silence-1.wma")), ASF))
         self.failUnless(isinstance(
             File(os.path.join("tests", "data", "silence-2.wma")), ASF))
         self.failUnless(isinstance(
-            File(os.path.join("tests", "data", "silence-3.wma")), ASF))"""
+            File(os.path.join("tests", "data", "silence-3.wma")), ASF))
 
     """def test_id3_indicates_mp3_not_tta(self):
         header = b"ID3 the rest of this is garbage"
@@ -193,7 +200,9 @@ class TFileUpperExt(TestCase):
              (os.path.join("tests", "data", "silence-44-s.flac"), FLAC),
              ]"""
 
-    FILES = [(os.path.join("tests", "data", "silence-44-s.flac"), FLAC),
+    FILES = [(os.path.join("tests", "data", "silence-3.wma"), ASF),
+             (os.path.join("tests", "data", "truncated-64bit.mp4"), MP4),
+             (os.path.join("tests", "data", "silence-44-s.flac"), FLAC),
              ]
 
     def setUp(self):

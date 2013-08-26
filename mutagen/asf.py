@@ -16,6 +16,8 @@ from mutagen import FileType, Metadata
 from mutagen._util import insert_bytes, delete_bytes
 import collections.abc
 
+from functools import total_ordering
+
 
 class error(IOError): pass
 class ASFError(error): pass
@@ -43,6 +45,9 @@ class ASFTags(collections.abc.MutableMapping, Metadata):
 
     def __init__(self):
         self._internal = []
+
+    def append(self, x):
+        self._internal.append(x)
 
     def pprint(self):
         return "\n".join("{}={}".format(k, v) for k, v in self.items())
@@ -164,12 +169,13 @@ class ASFBaseAttribute(object):
                             len(name), self.TYPE, len(data)) + name + data)
 
 
+@total_ordering
 class ASFUnicodeAttribute(ASFBaseAttribute):
     """Unicode string attribute."""
     TYPE = 0x0000
 
     def parse(self, data):
-        return data.decode("utf-16-le").strip(b"\x00")
+        return data.decode("utf-16-le").strip("\x00")
 
     def _render(self):
         return self.value.encode("utf-16-le") + b"\x00\x00"
@@ -180,12 +186,16 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
     def __str__(self):
         return self.value
 
-    def __cmp__(self, other):
-        return cmp(str(self), other)
+    def __eq__(self, other):
+        return str(self) == other
+
+    def __lt__(self, other):
+        return str(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
+@total_ordering
 class ASFByteArrayAttribute(ASFBaseAttribute):
     """Byte array attribute."""
     TYPE = 0x0001
@@ -205,12 +215,16 @@ class ASFByteArrayAttribute(ASFBaseAttribute):
     def __str__(self):
         return "[binary data ({} bytes)]".format(len(self.value))
 
-    def __cmp__(self, other):
-        return cmp(bytes(self), other)
+    def __eq__(self, other):
+        return bytes(self) == other
+
+    def __lt__(self, other):
+        return bytes(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
+@total_ordering
 class ASFBoolAttribute(ASFBaseAttribute):
     """Bool attribute."""
     TYPE = 0x0002
@@ -236,12 +250,15 @@ class ASFBoolAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(bool(self), other)
+    def __eq__(self, other):
+        return bool(self) == other
+
+    def __lt__(self, other):
+        return bool(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
-
+@total_ordering
 class ASFDWordAttribute(ASFBaseAttribute):
     """DWORD attribute."""
     TYPE = 0x0003
@@ -261,12 +278,16 @@ class ASFDWordAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(int(self), other)
+    def __eq__(self, other):
+        return int(self) == other
+
+    def __lt__(self, other):
+        return int(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
+@total_ordering
 class ASFQWordAttribute(ASFBaseAttribute):
     """QWORD attribute."""
     TYPE = 0x0004
@@ -286,12 +307,16 @@ class ASFQWordAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(int(self), other)
+    def __eq__(self, other):
+        return int(self) == other
+
+    def __lt__(self, other):
+        return int(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
+@total_ordering
 class ASFWordAttribute(ASFBaseAttribute):
     """WORD attribute."""
     TYPE = 0x0005
@@ -311,8 +336,11 @@ class ASFWordAttribute(ASFBaseAttribute):
     def __str__(self):
         return str(self.value)
 
-    def __cmp__(self, other):
-        return cmp(int(self), other)
+    def __eq__(self, other):
+        return int(self) == other
+
+    def __lt__(self, other):
+        return int(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -336,8 +364,8 @@ class ASFGUIDAttribute(ASFBaseAttribute):
     def __str__(self):
         return "".join("{:02X}".format(i) for i in self.value)
 
-    def __cmp__(self, other):
-        return cmp(bytes(self), other)
+    def __eq__(self, other):
+        return bytes(self) == other
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -436,8 +464,9 @@ class ContentDescriptionObject(BaseObject):
                 return value[0].encode("utf-16-le") + b"\x00\x00"
             else:
                 return b""
-        texts = map(render_text, _standard_attribute_names)
+        texts = [render_text(x) for x in _standard_attribute_names]
         data = struct.pack("<HHHHH", *map(len, texts)) + b"".join(texts)
+
         return self.GUID + struct.pack("<Q", 24 + len(data)) + data
 
 
@@ -617,7 +646,7 @@ class ASF(FileType):
         self.to_extended_content_description = {}
         self.to_metadata = {}
         self.to_metadata_library = []
-        for name, value in self.tags.items():
+        for name, value in self.tags._internal:
             if name in _standard_attribute_names:
                 continue
             library_only = (value.data_size() > 0xFFFF or value.TYPE == GUID)

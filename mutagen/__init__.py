@@ -160,8 +160,8 @@ def File(filename, options=None, easy=False):
     """
 
     if options is None:
-        """from mutagen.asf import ASF
-        from mutagen.apev2 import APEv2File"""
+        from mutagen.asf import ASF
+        from mutagen.apev2 import APEv2File
         from mutagen.flac import FLAC
 
         if easy:
@@ -174,24 +174,24 @@ def File(filename, options=None, easy=False):
         else:
             from mutagen.mp3 import MP3
 
-        """from mutagen.oggflac import OggFLAC
+        from mutagen.oggflac import OggFLAC
         from mutagen.oggspeex import OggSpeex
-        from mutagen.oggtheora import OggTheora"""
+        from mutagen.oggtheora import OggTheora
         from mutagen.oggvorbis import OggVorbis
-        """from mutagen.oggopus import OggOpus"""
+        from mutagen.oggopus import OggOpus
 
         """if easy:
             from mutagen.trueaudio import EasyTrueAudio as TrueAudio
         else:
             from mutagen.trueaudio import TrueAudio
 
-        from mutagen.wavpack import WavPack
+        from mutagen.wavpack import WavPack"""
         if easy:
             from mutagen.easymp4 import EasyMP4 as MP4
         else:
             from mutagen.mp4 import MP4
 
-        from mutagen.musepack import Musepack
+        """from mutagen.musepack import Musepack
         from mutagen.monkeysaudio import MonkeysAudio
         from mutagen.optimfrog import OptimFROG
 
@@ -199,7 +199,9 @@ def File(filename, options=None, easy=False):
                    FLAC, APEv2File, MP4, ID3FileType, WavPack, Musepack,
                    MonkeysAudio, OptimFROG, ASF, OggOpus]"""
 
-        options = [MP3, OggVorbis, FLAC, ID3FileType]
+        options = [MP3, OggTheora, OggSpeex, OggVorbis, OggFLAC,
+                   FLAC, APEv2File, MP4, ID3FileType,
+                   ASF, OggOpus]
 
     if not options:
         return None
