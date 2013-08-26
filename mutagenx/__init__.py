@@ -180,28 +180,24 @@ def File(filename, options=None, easy=False):
         from mutagenx.oggvorbis import OggVorbis
         from mutagenx.oggopus import OggOpus
 
-        """if easy:
+        if easy:
             from mutagenx.trueaudio import EasyTrueAudio as TrueAudio
         else:
             from mutagenx.trueaudio import TrueAudio
 
-        from mutagenx.wavpack import WavPack"""
+        from mutagenx.wavpack import WavPack
         if easy:
             from mutagenx.easymp4 import EasyMP4 as MP4
         else:
             from mutagenx.mp4 import MP4
 
-        """from mutagenx.musepack import Musepack
+        from mutagenx.musepack import Musepack
         from mutagenx.monkeysaudio import MonkeysAudio
         from mutagenx.optimfrog import OptimFROG
 
         options = [MP3, TrueAudio, OggTheora, OggSpeex, OggVorbis, OggFLAC,
                    FLAC, APEv2File, MP4, ID3FileType, WavPack, Musepack,
-                   MonkeysAudio, OptimFROG, ASF, OggOpus]"""
-
-        options = [MP3, OggTheora, OggSpeex, OggVorbis, OggFLAC,
-                   FLAC, APEv2File, MP4, ID3FileType,
-                   ASF, OggOpus]
+                   MonkeysAudio, OptimFROG, ASF, OggOpus]
 
     if not options:
         return None

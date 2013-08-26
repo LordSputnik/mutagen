@@ -1,4 +1,4 @@
-# MP3 stream header information support for Mutagen.
+# MP3 stream header information support for mutagenx.
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
