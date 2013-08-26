@@ -21,7 +21,7 @@ http://lists.xiph.org/pipermail/speex-dev/2006-July/004676.html.
 
 __all__ = ["OggSpeex", "Open", "delete"]
 
-from mutagen._vorbis import VCommentDict
+from mutagen._vorbis import VComment
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 from mutagen._util import cdata
 
@@ -64,7 +64,7 @@ class OggSpeexInfo(object):
     def pprint(self):
         return "Ogg Speex, {:.2f} seconds".format(self.length)
 
-class OggSpeexVComment(VCommentDict):
+class OggSpeexVComment(VComment):
     """Speex comments embedded in an Ogg bitstream."""
 
     def __init__(self, fileobj, info):

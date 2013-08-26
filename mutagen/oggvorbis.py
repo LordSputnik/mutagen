@@ -21,7 +21,7 @@ __all__ = ["OggVorbis", "Open", "delete"]
 
 import struct
 
-from mutagen._vorbis import VCommentDict
+from mutagen._vorbis import VComment
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 
 class error(OggError): pass
@@ -73,7 +73,7 @@ class OggVorbisInfo(object):
     def pprint(self):
         return "Ogg Vorbis, {:.2f} seconds, {} bps".format(self.length, self.bitrate)
 
-class OggVCommentDict(VCommentDict):
+class OggVCommentDict(VComment):
     """Vorbis comments embedded in an Ogg bitstream."""
 
     def __init__(self, fileobj, info):

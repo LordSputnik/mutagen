@@ -18,7 +18,9 @@ import sys
 import io
 
 import mutagen
-from mutagen._util import DictMixin, cdata
+from mutagen._util import cdata
+
+import collections.abc
 
 def is_valid_key(key):
     """Return true if a string is a valid Vorbis comment key.
@@ -43,23 +45,27 @@ class error(IOError): pass
 class VorbisUnsetFrameError(error): pass
 class VorbisEncodingError(error): pass
 
-class VComment(mutagen.Metadata, list):
-    """A Vorbis comment parser, accessor, and renderer.
 
-    All comment ordering is preserved. A VComment is a list of
-    key/value pairs, and so any Python list method can be used on it.
+class VComment(collections.abc.MutableMapping, mutagen.Metadata):
+    """A VComment that looks like a dictionary.
 
-    Vorbis comments are always wrapped in something like an Ogg Vorbis
-    bitstream or a FLAC metadata block, so this loads string data or a
-    file-like object, not a filename.
+    This object differs from a dictionary in two ways. First,
+    len(comment) will still return the number of values, not the
+    number of keys. Secondly, iterating through the object will
+    iterate over (key, value) pairs, not keys. Since a key may have
+    multiple values, the same value may appear multiple times while
+    iterating.
 
-    Attributes:
-    vendor -- the stream 'vendor' (i.e. writer); default 'Mutagen'
+    Since Vorbis comment keys are case-insensitive, all keys are
+    normalized to lowercase ASCII.
     """
+
 
     vendor = "Mutagen " + mutagen.version_string
 
     def __init__(self, data=None, *args, **kwargs):
+        self._internal = []
+
         # Collect the args to pass to load, this lets child classes
         # override just load and get equivalent magic for the
         # constructor.
@@ -69,6 +75,12 @@ class VComment(mutagen.Metadata, list):
             elif not hasattr(data, 'read'):
                 raise TypeError("VComment requires string data or a file-like")
             self.load(data, *args, **kwargs)
+
+    def append(self, x):
+        self._internal.append(x)
+
+    def pprint(self):
+        return "\n".join("{}={}".format(k, v) for k, v in self._internal)
 
     def load(self, fileobj, errors='replace', framing=True):
         """Parse a Vorbis comment from a file-like object.
@@ -131,7 +143,7 @@ class VComment(mutagen.Metadata, list):
             except UnicodeDecodeError:
                 raise ValueError
 
-        for key, value in self:
+        for key, value in self._internal:
             try:
                 if not is_valid_key(key):
                     raise ValueError
@@ -145,10 +157,6 @@ class VComment(mutagen.Metadata, list):
                     raise ValueError("{} is not a valid value".format(repr(value)))
         else:
             return True
-
-    def clear(self):
-        """Clear all keys from the comment."""
-        del self[:]
 
     def write(self, framing=True):
         """Return a string representation of the data.
@@ -166,30 +174,13 @@ class VComment(mutagen.Metadata, list):
         f.write(cdata.to_uint_le(len(self.vendor.encode('utf-8'))))
         f.write(self.vendor.encode('utf-8'))
         f.write(cdata.to_uint_le(len(self)))
-        for tag, value in self:
+        for tag, value in self._internal:
             comment = tag.encode('ascii') + b"=" + value.encode('utf-8')
             f.write(cdata.to_uint_le(len(comment)))
             f.write(comment)
         if framing:
             f.write(b"\x01")
         return f.getvalue()
-
-    def pprint(self):
-        return "\n".join(["{}={}".format(k.lower(), v) for k, v in self])
-
-class VCommentDict(VComment, DictMixin):
-    """A VComment that looks like a dictionary.
-
-    This object differs from a dictionary in two ways. First,
-    len(comment) will still return the number of values, not the
-    number of keys. Secondly, iterating through the object will
-    iterate over (key, value) pairs, not keys. Since a key may have
-    multiple values, the same value may appear multiple times while
-    iterating.
-
-    Since Vorbis comment keys are case-insensitive, all keys are
-    normalized to lowercase ASCII.
-    """
 
     def __getitem__(self, key):
         """A list of values for the key.
@@ -199,8 +190,7 @@ class VCommentDict(VComment, DictMixin):
 
         """
         key = key.lower().encode('ascii').decode('ascii')
-
-        values = [value for (k, value) in self if k.lower() == key]
+        values = [value for (k, value) in self._internal if k.lower() == key]
         if not values:
             raise KeyError(key)
         else:
@@ -208,24 +198,16 @@ class VCommentDict(VComment, DictMixin):
 
     def __delitem__(self, key):
         """Delete all values associated with the key."""
+
         key = key.lower().encode('ascii').decode('ascii')
 
-        to_delete = [x for x in self if x[0].lower() == key]
+        to_delete = [x for x in self._internal if x[0].lower() == key]
 
         if not to_delete:
             raise KeyError(key)
         else:
-            for d in to_delete:
-                self.remove(d)
-
-    def __contains__(self, key):
-        """Return true if the key has any values."""
-        key = key.lower()
-        for k, value in self:
-            if k.lower() == key:
-                return True
-        else:
-            return False
+            for x in to_delete:
+                self._internal.remove(x)
 
     def __setitem__(self, key, values):
         """Set a key's value or values.
@@ -239,30 +221,30 @@ class VCommentDict(VComment, DictMixin):
 
         if not isinstance(values, list):
             values = [values]
+
         try:
             del(self[key])
         except KeyError:
             pass
+
         for value in values:
             self.append((key, value))
 
-    def clear(self):
-        """This needs to exist because __delitem__ is overridden.
+    def __eq__(self, other):
+        if isinstance(other, list):
+            return self._internal == other
+        else:
+            return self.as_dict() == other
 
-        Previously, when del self[:] was called, this class's
-        __delitem__(self, self[:]) was getting called. The key "self[:]" had no
-        method lower(), so an exception occurred. Not sure why this didn't
-        affect Python 2.
+    def __iter__(self):
+        return iter({k.lower() for k,v in self._internal})
 
-        """
-        for k in self.keys():
-            self.__delitem__(k)
-
-    def keys(self):
-        """Return all keys in the comment."""
-        return self and list({k.lower() for k, v in self})
+    def __len__(self):
+        return len([k for k,v in self._internal])
 
     def as_dict(self):
         """Return a copy of the comment data in a real dict."""
-        return {key: self[key] for key in self.keys()}
-
+        d = {}
+        for key, value in self._internal:
+            d.setdefault(key.lower(), []).append(value)
+        return d

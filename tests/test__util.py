@@ -3,23 +3,7 @@ import random
 
 from tests import TestCase, add
 
-from mutagen._util import DictMixin, cdata, utf8, insert_bytes, delete_bytes
-
-class FDict(DictMixin):
-    uses_mmap = False
-
-    def __init__(self):
-        self.__d = {}
-        self.keys = self.__d.keys
-
-    def __getitem__(self, *args):
-        return self.__d.__getitem__(*args)
-
-    def __setitem__(self, *args):
-        return self.__d.__setitem__(*args)
-
-    def __delitem__(self, *args):
-        return self.__d.__delitem__(*args)
+from mutagen._util import cdata, utf8, insert_bytes, delete_bytes
 
 class Tutf8(TestCase):
     uses_mmap = False
@@ -49,98 +33,6 @@ class Tutf8(TestCase):
         self.failUnlessRaises(TypeError, utf8, 1234)
 
 add(Tutf8)
-
-class TDictMixin(TestCase):
-    uses_mmap = False
-
-    def setUp(self):
-        self.fdict = FDict()
-        self.rdict = {}
-        self.fdict["foo"] = self.rdict["foo"] = "bar"
-
-    def test_getsetitem(self):
-        self.failUnlessEqual(self.fdict["foo"], "bar")
-        self.failUnlessRaises(KeyError, self.fdict.__getitem__, "bar")
-
-    def test_has_key_contains(self):
-        self.failUnless("foo" in self.fdict)
-        self.failIf("bar" in self.fdict)
-        self.failUnless(self.fdict.has_key("foo"))
-        self.failIf(self.fdict.has_key("bar"))
-
-    def test_iter(self):
-        self.failUnlessEqual(list(iter(self.fdict)), ["foo"])
-
-    def test_clear(self):
-        self.fdict.clear()
-        self.rdict.clear()
-        self.failIf(self.fdict)
-
-    def test_keys(self):
-        self.failUnlessEqual(list(self.fdict.keys()), list(self.rdict.keys()))
-        self.failUnlessEqual(
-            list(self.fdict.iterkeys()), list(self.rdict.keys()))
-
-    def test_values(self):
-        self.failUnlessEqual(
-            list(self.fdict.values()), list(self.rdict.values()))
-        self.failUnlessEqual(
-            list(self.fdict.itervalues()), list(self.rdict.values()))
-
-    def test_items(self):
-        self.failUnlessEqual(
-            list(self.fdict.items()), list(self.rdict.items()))
-        self.failUnlessEqual(
-            list(self.fdict.iteritems()), list(self.rdict.items()))
-
-    def test_pop(self):
-        self.failUnlessEqual(self.fdict.pop("foo"), self.rdict.pop("foo"))
-        self.failUnlessRaises(KeyError, self.fdict.pop, "woo")
-
-    def test_pop_bad(self):
-        self.failUnlessRaises(TypeError, self.fdict.pop, "foo", 1, 2)
-
-    def test_popitem(self):
-        self.failUnlessEqual(self.fdict.popitem(), self.rdict.popitem())
-        self.failUnlessRaises(KeyError, self.fdict.popitem)
-
-    def test_update_other(self):
-        other = {"a": 1, "b": 2}
-        self.fdict.update(other)
-        self.rdict.update(other)
-
-    def test_update_other_is_list(self):
-        other = [("a", 1), ("b", 2)]
-        self.fdict.update(other)
-        self.rdict.update(other)
-
-    def test_update_kwargs(self):
-        self.fdict.update(a=1, b=2)
-        self.rdict.update(a=1, b=2)
-
-    def test_setdefault(self):
-        self.fdict.setdefault("foo", "baz")
-        self.rdict.setdefault("foo", "baz")
-        self.fdict.setdefault("bar", "baz")
-        self.rdict.setdefault("bar", "baz")
-
-    def test_get(self):
-        self.failUnlessEqual(self.rdict.get("a"), self.fdict.get("a"))
-        self.failUnlessEqual(
-            self.rdict.get("a", "b"), self.fdict.get("a", "b"))
-        self.failUnlessEqual(self.rdict.get("foo"), self.fdict.get("foo"))
-
-    def test_repr(self):
-        self.failUnlessEqual(repr(self.rdict), repr(self.fdict))
-
-    def test_len(self):
-        self.failUnlessEqual(len(self.rdict), len(self.fdict))
-
-    def tearDown(self):
-        self.failUnlessEqual(self.fdict, self.rdict)
-        self.failUnlessEqual(self.rdict, self.fdict)
-
-add(TDictMixin)
 
 class Tcdata(TestCase):
     uses_mmap = False

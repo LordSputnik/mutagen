@@ -1,5 +1,5 @@
 from tests import add, TestCase
-from mutagen._vorbis import VComment, VCommentDict, istag
+from mutagen._vorbis import VComment, istag
 
 class Tistag(TestCase):
     uses_mmap = False
@@ -19,27 +19,28 @@ add(Tistag)
 class TVComment(TestCase):
     uses_mmap = False
 
+    Kind = VComment
+
     def setUp(self):
-        self.c = VComment()
-        self.c.append(("artist", "piman"))
-        self.c.append(("artist", "mu"))
+        self.c = self.Kind()
+        self.c["artist"] = ["mu", "piman"]
         self.c.append(("title", "more fakes"))
 
     def test_invalid_init(self):
-        self.failUnlessRaises(TypeError, VComment, [])
+        self.failUnlessRaises(TypeError, self.Kind, [])
 
     def test_equal(self):
         self.failUnlessEqual(self.c, self.c)
 
     def test_not_header(self):
-        self.failUnlessRaises(IOError, VComment, b"foo")
+        self.failUnlessRaises(IOError, self.Kind, b"foo")
 
     def test_unset_framing_bit(self):
         self.failUnlessRaises(
             IOError, VComment, b"\x00\x00\x00\x00" * 2 + b"\x00")
 
     def test_empty_valid(self):
-        self.failIf(VComment(b"\x00\x00\x00\x00" * 2 + b"\x01"))
+        self.failIf(self.Kind(b"\x00\x00\x00\x00" * 2 + b"\x01"))
 
     def test_validate(self):
         self.failUnless(self.c.validate())
@@ -74,18 +75,18 @@ class TVComment(TestCase):
     def test_invalid_format_strict(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
                 b'\x00abc\x01')
-        self.failUnlessRaises(IOError, VComment, data, errors='strict')
+        self.failUnlessRaises(IOError, self.Kind, data, errors='strict')
 
     def test_invalid_format_replace(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
                 b'\x00abc\x01')
-        comment = VComment(data)
-        self.failUnlessEqual("abc", comment[0][1])
+        comment = self.Kind(data)
+        self.failUnlessEqual("abc", comment['unknown0'][0])
 
     def test_invalid_format_ignore(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
                 b'\x00abc\x01')
-        comment = VComment(data, errors='ignore')
+        comment = self.Kind(data, errors='ignore')
         self.failIf(len(comment))
 
     # Slightly different test data than above, we want the tag name
@@ -93,34 +94,22 @@ class TVComment(TestCase):
     def test_invalid_tag_strict(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
                 b'\x00\xc2\xaa=c\x01')
-        self.failUnlessRaises(IOError, VComment, data, errors='strict')
+        self.failUnlessRaises(IOError, self.Kind, data, errors='strict')
 
     def test_invalid_tag_replace(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
                 b'\x00\xc2\xaa=c\x01')
-        comment = VComment(data)
+        comment = self.Kind(data)
         self.failUnlessEqual("?=c", comment.pprint())
 
     def test_invalid_tag_ignore(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
                 b'\x00\xc2\xaa=c\x01')
-        comment = VComment(data, errors='ignore')
+        comment = self.Kind(data, errors='ignore')
         self.failIf(len(comment))
 
     def test_roundtrip(self):
-        self.failUnlessEqual(self.c, VComment(self.c.write()))
-add(TVComment)
-
-
-class TVCommentDict(TestCase):
-    uses_mmap = False
-
-    Kind = VCommentDict
-
-    def setUp(self):
-        self.c = self.Kind()
-        self.c["artist"] = ["mu", "piman"]
-        self.c["title"] = "more fakes"
+        self.failUnlessEqual(self.c, self.Kind(self.c.write()))
 
     def test_correct_len(self):
         self.failUnlessEqual(len(self.c), 3)
@@ -176,18 +165,12 @@ class TVCommentDict(TestCase):
     def test_del_failure(self):
         self.failUnlessRaises(KeyError, self.c.__delitem__, "woo")
 
-    def test_roundtrip(self):
-        self.failUnlessEqual(self.c, self.Kind(self.c.write()))
-
-    def test_roundtrip_vc(self):
-        self.failUnlessEqual(self.c, VComment(self.c.write()))
-
     def test_case_items_426(self):
         self.c.append(("WOO", "bar"))
         self.failUnless(("woo", ["bar"]) in self.c.items())
 
     def test_empty(self):
-        self.c = VCommentDict()
+        self.c = self.Kind()
         self.failIf(self.c.keys())
         self.failIf(self.c.values())
         self.failIf(self.c.items())
@@ -207,11 +190,12 @@ class TVCommentDict(TestCase):
             ValueError, self.c.__delitem__, "\u1234")
 
     def test_duplicate_keys(self):
-        self.c = VCommentDict()
+        self.c = self.Kind()
         keys = ("key", "Key", "KEY")
         for key in keys:
             self.c.append((key, "value"))
-        self.failUnlessEqual(len(self.c.keys()), 1)
+
+        self.failUnlessEqual(len(list(self.c.keys())), 1)
         self.failUnlessEqual(len(self.c.as_dict()), 1)
 
-add(TVCommentDict)
+add(TVComment)

@@ -2,7 +2,7 @@ from tests import TestCase, add
 from mutagen.id3 import ID3, TIT2, ID3NoHeaderError
 from mutagen.flac import to_int_be, Padding, VCFLACDict, MetadataBlock, error
 from mutagen.flac import StreamInfo, SeekTable, CueSheet, FLAC, delete, Picture
-from tests.test__vorbis import TVCommentDict, VComment
+from tests.test__vorbis import TVComment, VComment
 
 import os.path
 import io
@@ -32,13 +32,13 @@ class Tto_int_be(TestCase):
         self.failUnlessEqual(to_int_be(b"\x01\x00\x00\x00\x00"), 2**32)
 add(Tto_int_be)
 
-class TVCFLACDict(TVCommentDict):
+class TVCFLACDict(TVComment):
     uses_mmap = False
 
     Kind = VCFLACDict
 
     def test_roundtrip_vc(self):
-        self.failUnlessEqual(self.c, VComment(self.c.write() + b"\x01"))
+        self.failUnlessEqual(self.c, self.Kind(self.c.write() + b"\x01"))
 add(TVCFLACDict)
 
 class TMetadataBlock(TestCase):
@@ -283,13 +283,13 @@ class TFLAC(TestCase):
         self.failUnlessAlmostEqual(FLAC(self.NEW).info.length, 3.7, 1)
 
     def test_keys(self):
-        self.failUnlessEqual(list(self.flac.keys()), self.flac.tags.keys())
+        self.failUnlessEqual(list(self.flac.keys()), list(self.flac.tags.keys()))
 
     def test_values(self):
-        self.failUnlessEqual(list(self.flac.values()), self.flac.tags.values())
+        self.failUnlessEqual(list(self.flac.values()), list(self.flac.tags.values()))
 
     def test_items(self):
-        self.failUnlessEqual(list(self.flac.items()), self.flac.tags.items())
+        self.failUnlessEqual(list(self.flac.items()), list(self.flac.tags.items()))
 
     def test_vc(self):
         self.failUnlessEqual(self.flac['title'][0], 'Silence')
@@ -325,14 +325,14 @@ class TFLAC(TestCase):
         f = FLAC(os.path.join("tests", "data", "no-tags.flac"))
         self.failIf(f.tags)
         f.add_tags()
-        self.failUnless(f.tags == [])
+        self.failUnlessEqual(f.tags, [])
         self.failUnlessRaises(ValueError, f.add_tags)
 
     def test_add_vc_implicit(self):
         f = FLAC(os.path.join("tests", "data", "no-tags.flac"))
         self.failIf(f.tags)
         f["foo"] = "bar"
-        self.failUnless(f.tags == [("foo", "bar")])
+        self.failUnlessEqual(f.tags,[("foo", "bar")])
         self.failUnlessRaises(ValueError, f.add_tags)
 
     def test_ooming_vc_header(self):

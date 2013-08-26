@@ -59,7 +59,7 @@ class APEUnsupportedVersionError(error, ValueError): pass
 class APEBadItemError(error, ValueError): pass
 
 from mutagen import Metadata, FileType
-from mutagen._util import DictMixin, cdata, utf8, delete_bytes
+from mutagen._util import cdata, utf8, delete_bytes
 
 
 class _APEv2Data(object):
@@ -259,22 +259,22 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                 key = key[:-1]
             value = fileobj.read(size)
             key = key.decode('ascii')
-            
+
             if kind != BINARY:
                 value = value.decode('utf-8')
-                
+
             self[key] = APEValue(value, kind)
 
     def __getitem__(self, key):
         if not is_valid_apev2_key(key):
             raise KeyError("{!r} is not a valid APEv2 key".format(key))
-        
+
         return self.__dict[key.lower()]
 
     def __delitem__(self, key):
         if not is_valid_apev2_key(key):
             raise KeyError("{!r} is not a valid APEv2 key".format(key))
-        
+
         del(self.__casemap[key.lower()])
         del(self.__dict[key.lower()])
 
@@ -315,7 +315,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                 else:
                     # valid UTF8, probably text
                     value = APEValue(dummy, TEXT)
-                    
+
         self.__casemap[key.lower()] = key
         self.__dict[key.lower()] = value
 

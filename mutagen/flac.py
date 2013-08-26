@@ -14,7 +14,7 @@ from mutagen import FileType
 from functools import reduce
 import io
 import struct
-from mutagen._vorbis import VCommentDict
+from mutagen._vorbis import VComment
 from mutagen._util import insert_bytes
 from mutagen.id3 import BitPaddedInt
 
@@ -264,11 +264,11 @@ class SeekTable(MetadataBlock):
     def __repr__(self):
         return "<{} seekpoints={}>".format(type(self).__name__, repr(self.seekpoints))
 
-class VCFLACDict(VCommentDict):
+class VCFLACDict(VComment):
     """Read and write FLAC Vorbis comments.
 
     FLACs don't use the framing bit at the end of the comment block.
-    So this extends VCommentDict to not use the framing bit.
+    So this extends VComment to not use the framing bit.
     """
 
     code = 4

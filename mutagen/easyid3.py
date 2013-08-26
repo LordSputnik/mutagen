@@ -24,7 +24,7 @@ import mutagen
 import mutagen.id3
 import collections
 
-from mutagen._util import dict_match, DictMixin
+from mutagen._util import dict_match
 from mutagen.id3 import ID3, error, delete, ID3FileType
 
 __all__ = ['EasyID3', 'Open', 'delete']

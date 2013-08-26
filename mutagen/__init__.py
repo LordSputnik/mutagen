@@ -98,7 +98,7 @@ class FileType(collections.abc.MutableMapping):
             return iter(list(self.tags.keys()))
 
     def __len__(self):
-        if self.tags in None:
+        if self.tags is None:
             return 0
         else:
             return len(list(self.tags.keys()))
