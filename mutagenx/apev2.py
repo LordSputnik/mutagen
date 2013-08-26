@@ -58,8 +58,8 @@ class APENoHeaderError(error, ValueError): pass
 class APEUnsupportedVersionError(error, ValueError): pass
 class APEBadItemError(error, ValueError): pass
 
-from mutagen import Metadata, FileType
-from mutagen._util import cdata, utf8, delete_bytes
+from mutagenx import Metadata, FileType
+from mutagenx._util import cdata, utf8, delete_bytes
 
 
 class _APEv2Data(object):
@@ -291,7 +291,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         data that also happens to be valid UTF-8, or an external
         reference), use the APEValue factory and set the value to the
         result of that:
-            from mutagen.apev2 import APEValue, EXTERNAL
+            from mutagenx.apev2 import APEValue, EXTERNAL
             tag['Website'] = APEValue('http://example.org', EXTERNAL)
         """
         if not is_valid_apev2_key(key):

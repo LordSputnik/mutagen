@@ -17,8 +17,8 @@ import re
 import zlib
 import functools
 
-import mutagen
-from mutagen._util import insert_bytes, delete_bytes, DictProxy
+import mutagenx
+from mutagenx._util import insert_bytes, delete_bytes, DictProxy
 from warnings import warn
 
 class error(Exception): pass
@@ -34,7 +34,7 @@ class ID3Warning(error, UserWarning): pass
 def is_valid_frame_id(frame_id):
     return frame_id.isalnum() and frame_id.isupper()
 
-class ID3(DictProxy, mutagen.Metadata):
+class ID3(DictProxy, mutagenx.Metadata):
 
     filename = None
     PEDANTIC = True
@@ -1482,7 +1482,7 @@ class TCON(TextFrame):
     use the 'genres' property rather than the 'text' attribute.
     """
 
-    from mutagen._constants import GENRES
+    from mutagenx._constants import GENRES
 
     def __get_genres(self):
         genres = []
@@ -2421,7 +2421,7 @@ def MakeID3v1(id3):
             v1['comment'] + v1['track'] + v1['genre'])
 
 
-class ID3FileType(mutagen.FileType):
+class ID3FileType(mutagenx.FileType):
     """An unknown type of file with ID3 tags."""
 
     ID3 = ID3
@@ -2442,7 +2442,7 @@ class ID3FileType(mutagen.FileType):
         """Add an empty ID3 tag to the file.
 
         A custom tag reader may be used in instead of the default
-        mutagen.id3.ID3 object, e.g. an EasyID3 reader.
+        mutagenx.id3.ID3 object, e.g. an EasyID3 reader.
         """
         if ID3 is None:
             ID3 = self.ID3
@@ -2456,7 +2456,7 @@ class ID3FileType(mutagen.FileType):
         """Load stream and tag information from a file.
 
         A custom tag reader may be used in instead of the default
-        mutagen.id3.ID3 object, e.g. an EasyID3 reader.
+        mutagenx.id3.ID3 object, e.g. an EasyID3 reader.
         """
         if ID3 is None:
             ID3 = self.ID3

@@ -1,10 +1,10 @@
-import mutagen.mp4
+import mutagenx.mp4
 
 import collections.abc
 
-from mutagen import Metadata
-from mutagen._util import dict_match, utf8
-from mutagen.mp4 import MP4, MP4Tags, error, delete
+from mutagenx import Metadata
+from mutagenx._util import dict_match, utf8
+from mutagenx.mp4 import MP4, MP4Tags, error, delete
 
 __all__ = ["EasyMP4Tags", "EasyMP4", "delete", "error"]
 

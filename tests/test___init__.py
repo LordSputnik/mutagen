@@ -7,17 +7,17 @@ import tempfile
 import io
 
 from tests import TestCase, add
-from mutagen import File, Metadata, FileType
-from mutagen.mp3 import MP3, EasyMP3
-from mutagen.flac import FLAC
-from mutagen.oggvorbis import OggVorbis
-from mutagen.oggflac import OggFLAC
-from mutagen.oggspeex import OggSpeex
-from mutagen.oggtheora import OggTheora
-from mutagen.oggopus import OggOpus
-from mutagen.apev2 import APEv2File
-from mutagen.mp4 import MP4
-from mutagen.asf import ASF
+from mutagenx import File, Metadata, FileType
+from mutagenx.mp3 import MP3, EasyMP3
+from mutagenx.flac import FLAC
+from mutagenx.oggvorbis import OggVorbis
+from mutagenx.oggflac import OggFLAC
+from mutagenx.oggspeex import OggSpeex
+from mutagenx.oggtheora import OggTheora
+from mutagenx.oggopus import OggOpus
+from mutagenx.apev2 import APEv2File
+from mutagenx.mp4 import MP4
+from mutagenx.asf import ASF
 
 from os import devnull
 

@@ -5,8 +5,8 @@ import shutil
 import tempfile
 
 from tests import TestCase, add
-from mutagen.ogg import OggPage
-from mutagen.oggvorbis import OggVorbis, OggVorbisInfo, delete
+from mutagenx.ogg import OggPage
+from mutagenx.oggvorbis import OggVorbis, OggVorbisInfo, delete
 from tests.test_ogg import TOggFileType
 
 class TOggVorbis(TOggFileType):

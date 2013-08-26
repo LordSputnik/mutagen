@@ -2,8 +2,8 @@ import os
 import tempfile
 import shutil
 from tests import add, TestCase
-from mutagen.id3 import ID3FileType
-from mutagen.easyid3 import EasyID3, error as ID3Error, delete
+from mutagenx.id3 import ID3FileType
+from mutagenx.easyid3 import EasyID3, error as ID3Error, delete
 
 class TEasyID3(TestCase):
     def setUp(self):

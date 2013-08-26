@@ -17,8 +17,8 @@ The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
 import sys
 import io
 
-import mutagen
-from mutagen._util import cdata
+import mutagenx
+from mutagenx._util import cdata
 
 import collections.abc
 
@@ -46,7 +46,7 @@ class VorbisUnsetFrameError(error): pass
 class VorbisEncodingError(error): pass
 
 
-class VComment(collections.abc.MutableMapping, mutagen.Metadata):
+class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
     """A VComment that looks like a dictionary.
 
     This object differs from a dictionary in two ways. First,
@@ -61,7 +61,7 @@ class VComment(collections.abc.MutableMapping, mutagen.Metadata):
     """
 
 
-    vendor = "Mutagen " + mutagen.version_string
+    vendor = "Mutagen " + mutagenx.version_string
 
     def __init__(self, data=None, *args, **kwargs):
         self._internal = []

@@ -43,8 +43,8 @@ class clean(distutils_clean):
 
 class sdist(distutils_sdist):
     def run(self):
-        import mutagen
-        if mutagen.version[-1] < 0:
+        import mutagenx
+        if mutagenx.version[-1] < 0:
             raise SystemExit(
                 "Refusing to create a source distribution for a prerelease.")
         else:
@@ -131,10 +131,10 @@ class coverage_cmd(Command):
             count=True, trace=False,
             ignoredirs=[sys.prefix, sys.exec_prefix])
         def run_tests():
-            import mutagen
-            import mutagen._util
-            reload(mutagen._util)
-            reload(mutagen)
+            import mutagenx
+            import mutagenx._util
+            reload(mutagenx._util)
+            reload(mutagenx)
             self.run_command("test")
         tracer.runfunc(run_tests)
         results = tracer.results()
@@ -173,16 +173,16 @@ else:
     data_files = []
 
 if __name__ == "__main__":
-    from mutagen import version_string
+    from mutagenx import version_string
     setup(cmdclass={'clean': clean, 'test': test_cmd, 'coverage': coverage_cmd,
                     "sdist": sdist},
-          name="mutagen", version=version_string,
+          name="mutagenx", version=version_string,
           url="http://code.google.com/p/mutagen/",
           description="read and write audio tags for many formats",
-          author="Michael Urman",
-          author_email="quod-libet-development@groups.google.com",
+          author="Ben Ockmore",
+          author_email="ben.sput@gmail.com",
           license="GNU GPL v2",
-          packages=["mutagen"],
+          packages=["mutagenx"],
           data_files=data_files,
           scripts=glob.glob("tools/m*[!~]"),
           long_description="""\

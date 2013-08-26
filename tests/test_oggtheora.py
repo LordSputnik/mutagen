@@ -7,8 +7,8 @@ import tempfile
 from tests import add
 from tests.test_ogg import TOggFileType
 
-from mutagen.oggtheora import OggTheora, OggTheoraInfo, delete
-from mutagen.ogg import OggPage
+from mutagenx.oggtheora import OggTheora, OggTheoraInfo, delete
+from mutagenx.ogg import OggPage
 
 class TOggTheora(TOggFileType):
     Kind = OggTheora

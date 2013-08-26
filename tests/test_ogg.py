@@ -6,8 +6,8 @@ import shutil
 import tempfile
 
 from tests import TestCase, add
-from mutagen.ogg import OggPage, OggFileType, error as OggError
-from mutagen._util import cdata
+from mutagenx.ogg import OggPage, OggFileType, error as OggError
+from mutagenx._util import cdata
 
 class TOggPage(TestCase):
     uses_mmap = False

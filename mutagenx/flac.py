@@ -10,13 +10,13 @@
 
 __all__ = ["FLAC", "Open", "delete"]
 
-from mutagen import FileType
+from mutagenx import FileType
 from functools import reduce
 import io
 import struct
-from mutagen._vorbis import VComment
-from mutagen._util import insert_bytes
-from mutagen.id3 import BitPaddedInt
+from mutagenx._vorbis import VComment
+from mutagenx._util import insert_bytes
+from mutagenx.id3 import BitPaddedInt
 
 class error(IOError): pass
 class FLACNoHeaderError(error): pass

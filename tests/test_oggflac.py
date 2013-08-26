@@ -7,8 +7,8 @@ import io
 from tests import add
 from tests.test_ogg import TOggFileType
 
-from mutagen.oggflac import OggFLAC, OggFLACStreamInfo, delete
-from mutagen.ogg import OggPage
+from mutagenx.oggflac import OggFLAC, OggFLACStreamInfo, delete
+from mutagenx.ogg import OggPage
 
 class TOggFLAC(TOggFileType):
     Kind = OggFLAC

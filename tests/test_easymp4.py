@@ -4,7 +4,7 @@ import shutil
 import tempfile
 
 from tests import add, TestCase
-from mutagen.easymp4 import EasyMP4, error as MP4Error, delete
+from mutagenx.easymp4 import EasyMP4, error as MP4Error, delete
 
 class TEasyMP4(TestCase):
 

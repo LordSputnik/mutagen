@@ -1,5 +1,5 @@
 from tests import add, TestCase
-from mutagen._vorbis import VComment, istag
+from mutagenx._vorbis import VComment, istag
 
 class Tistag(TestCase):
     uses_mmap = False

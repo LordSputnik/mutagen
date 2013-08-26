@@ -3,7 +3,7 @@ import random
 
 from tests import TestCase, add
 
-from mutagen._util import cdata, utf8, insert_bytes, delete_bytes
+from mutagenx._util import cdata, utf8, insert_bytes, delete_bytes
 
 class Tutf8(TestCase):
     uses_mmap = False

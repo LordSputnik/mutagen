@@ -6,8 +6,8 @@ import tempfile
 from tests import TestCase, add
 from tests.test_ogg import TOggFileType
 
-from mutagen.ogg import OggPage
-from mutagen.oggspeex import OggSpeex, OggSpeexInfo, delete
+from mutagenx.ogg import OggPage
+from mutagenx.oggspeex import OggSpeex, OggSpeexInfo, delete
 
 class TOggSpeex(TOggFileType):
     Kind = OggSpeex

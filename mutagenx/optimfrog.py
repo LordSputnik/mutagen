@@ -23,7 +23,7 @@ For more information, see http://www.losslessaudio.org/
 __all__ = ["OptimFROG", "Open", "delete"]
 
 import struct
-from mutagen.apev2 import APEv2File, error, delete
+from mutagenx.apev2 import APEv2File, error, delete
 
 class OptimFROGHeaderError(error): pass
 

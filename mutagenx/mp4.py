@@ -23,9 +23,9 @@ consulted.
 import struct
 import sys
 
-from mutagen import FileType, Metadata
-from mutagen._constants import GENRES
-from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
+from mutagenx import FileType, Metadata
+from mutagenx._constants import GENRES
+from mutagenx._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
 
 class error(IOError): pass
 class MP4MetadataError(error): pass

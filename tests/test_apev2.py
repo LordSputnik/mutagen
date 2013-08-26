@@ -6,9 +6,9 @@ from unittest import TestCase
 
 from tests import add
 
-import mutagen.apev2
+import mutagenx.apev2
 
-from mutagen.apev2 import APEv2File, APEv2, is_valid_apev2_key
+from mutagenx.apev2 import APEv2File, APEv2, is_valid_apev2_key
 
 DIR = os.path.dirname(__file__)
 SAMPLE = os.path.join(DIR, "data", "click.mpc")
@@ -73,7 +73,7 @@ class TAPEWriter(TestCase):
             os.path.getsize(SAMPLE) + os.path.getsize(SAMPLE + ".justtag"))
 
     def test_delete(self):
-        mutagen.apev2.delete(SAMPLE + ".justtag")
+        mutagenx.apev2.delete(SAMPLE + ".justtag")
         tag = APEv2(SAMPLE + ".new")
         tag.delete()
         self.failUnlessEqual(os.path.getsize(SAMPLE + ".justtag"), self.offset)
@@ -110,7 +110,7 @@ class TAPEWriter(TestCase):
             os.path.getsize(filename), len("tag garbage") * 1000)
 
     def test_case_preservation(self):
-        mutagen.apev2.delete(SAMPLE + ".justtag")
+        mutagenx.apev2.delete(SAMPLE + ".justtag")
         tag = APEv2(SAMPLE + ".new")
         tag["FoObaR"] = "Quux"
         tag.save()
@@ -167,45 +167,44 @@ class TAPEv2(TestCase):
             KeyError, self.audio.__setitem__, "\u1234", "foo")
 
     def test_guess_text(self):
-        from mutagen.apev2 import APETextValue
+        from mutagenx.apev2 import APETextValue
         self.audio["test"] = "foobar"
         self.failUnlessEqual(self.audio["test"], "foobar")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_text_list(self):
-        from mutagen.apev2 import APETextValue
+        from mutagenx.apev2 import APETextValue
         self.audio["test"] = ["foobar", "quuxbarz"]
         self.failUnlessEqual(self.audio["test"], "foobar\x00quuxbarz")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_utf8(self):
-        from mutagen.apev2 import APETextValue
+        from mutagenx.apev2 import APETextValue
         self.audio["test"] = "foobar"
         self.failUnlessEqual(self.audio["test"], "foobar")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_not_utf8(self):
-        from mutagen.apev2 import APEBinaryValue
+        from mutagenx.apev2 import APEBinaryValue
         self.audio["test"] = b"\xa4woo"
         self.failUnless(isinstance(self.audio["test"], APEBinaryValue))
         self.failUnlessEqual(4, len(self.audio["test"]))
 
     def test_bad_value_type(self):
-        from mutagen.apev2 import APEValue
+        from mutagenx.apev2 import APEValue
         self.failUnlessRaises(ValueError, APEValue, "foo", 99)
 
     def test_module_delete_empty(self):
-        from mutagen.apev2 import delete
+        from mutagenx.apev2 import delete
         delete(os.path.join("tests", "data", "emptyfile.mp3"))
 
     def test_invalid(self):
-        self.failUnlessRaises(IOError, mutagen.apev2.APEv2, "dne")
+        self.failUnlessRaises(IOError, mutagenx.apev2.APEv2, "dne")
 
     def test_no_tag(self):
-        self.failUnlessRaises(IOError, mutagen.apev2.APEv2,
+        self.failUnlessRaises(IOError, mutagenx.apev2.APEv2,
                               os.path.join("tests", "data", "empty.mp3"))
 
-    # In mutagen for Python 3, APEv2 makes a distinction between cases.
     def test_cases(self):
         self.failUnlessEqual(self.audio["artist"], self.audio["ARTIST"])
         self.failUnless("Artist" in self.audio)
@@ -269,7 +268,7 @@ class TAPEv2WithLyrics2(TestCase):
     uses_mmap = False
 
     def setUp(self):
-        self.tag = mutagen.apev2.APEv2(LYRICS2)
+        self.tag = mutagenx.apev2.APEv2(LYRICS2)
 
     def test_values(self):
         self.failUnlessEqual(self.tag["MP3GAIN_MINMAX"], "000,179")
@@ -281,11 +280,11 @@ add(TAPEv2WithLyrics2)
 class TAPEBinaryValue(TestCase):
     uses_mmap = False
 
-    from mutagen.apev2 import APEBinaryValue as BV
+    from mutagenx.apev2 import APEBinaryValue as BV
 
     def setUp(self):
         self.sample = b"\x12\x45\xde"
-        self.value = mutagen.apev2.APEValue(self.sample,mutagen.apev2.BINARY)
+        self.value = mutagenx.apev2.APEValue(self.sample,mutagenx.apev2.BINARY)
 
     def test_type(self):
         self.failUnless(isinstance(self.value, self.BV))
@@ -301,11 +300,11 @@ add(TAPEBinaryValue)
 class TAPETextValue(TestCase):
     uses_mmap = False
 
-    from mutagen.apev2 import APETextValue as TV
+    from mutagenx.apev2 import APETextValue as TV
     def setUp(self):
         self.sample = ["foo", "bar", "baz"]
-        self.value = mutagen.apev2.APEValue(
-            "\0".join(self.sample), mutagen.apev2.TEXT)
+        self.value = mutagenx.apev2.APEValue(
+            "\0".join(self.sample), mutagenx.apev2.TEXT)
 
     def test_type(self):
         self.failUnless(isinstance(self.value, self.TV))
@@ -331,12 +330,12 @@ add(TAPETextValue)
 class TAPEExtValue(TestCase):
     uses_mmap = False
 
-    from mutagen.apev2 import APEExtValue as EV
+    from mutagenx.apev2 import APEExtValue as EV
 
     def setUp(self):
         self.sample = "http://foo"
-        self.value = mutagen.apev2.APEValue(
-            self.sample, mutagen.apev2.EXTERNAL)
+        self.value = mutagenx.apev2.APEValue(
+            self.sample, mutagenx.apev2.EXTERNAL)
 
     def test_type(self):
         self.failUnless(isinstance(self.value, self.EV))

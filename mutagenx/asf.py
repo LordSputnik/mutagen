@@ -12,8 +12,8 @@
 __all__ = ["ASF", "Open"]
 
 import struct
-from mutagen import FileType, Metadata
-from mutagen._util import insert_bytes, delete_bytes
+from mutagenx import FileType, Metadata
+from mutagenx._util import insert_bytes, delete_bytes
 import collections.abc
 
 from functools import total_ordering

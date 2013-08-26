@@ -6,9 +6,9 @@ import tempfile
 
 from tests import TestCase, add
 
-from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
+from mutagenx.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
      delete, MP4Cover, MP4MetadataError, MP4FreeForm
-from mutagen._util import cdata
+from mutagenx._util import cdata
 
 class TAtom(TestCase):
     uses_mmap = False

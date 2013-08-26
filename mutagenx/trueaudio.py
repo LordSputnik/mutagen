@@ -16,8 +16,8 @@ True Audio files use ID3 tags.
 
 __all__ = ["TrueAudio", "Open", "delete", "EasyTrueAudio"]
 
-from mutagen.id3 import ID3FileType, delete
-from mutagen._util import cdata
+from mutagenx.id3 import ID3FileType, delete
+from mutagenx._util import cdata
 
 class error(RuntimeError): pass
 class TrueAudioHeaderError(error, IOError): pass
@@ -58,4 +58,4 @@ Open = TrueAudio
 
 class EasyTrueAudio(TrueAudio):
     """Like MP3, but uses EasyID3 for tags."""
-    from mutagen.easyid3 import EasyID3 as ID3
+    from mutagenx.easyid3 import EasyID3 as ID3
