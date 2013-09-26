@@ -6,7 +6,7 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 #
-# $Id: apev2.py 4008 2007-04-21 04:02:07Z piman $
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """APEv2 reading and writing.
 
@@ -37,6 +37,9 @@ import io
 import collections
 import functools
 
+from mutagenx import Metadata, FileType
+from mutagenx._util import cdata, utf8, delete_bytes
+
 def is_valid_apev2_key(key):
     return (2 <= len(key) <= 255
             and min(key) >= ' ' and max(key) <= '~' and
@@ -51,15 +54,19 @@ TEXT, BINARY, EXTERNAL = range(3)
 
 HAS_HEADER = 1 << 31
 HAS_NO_FOOTER = 1 << 30
-IS_HEADER  = 1 << 29
+IS_HEADER = 1 << 29
 
-class error(IOError): pass
-class APENoHeaderError(error, ValueError): pass
-class APEUnsupportedVersionError(error, ValueError): pass
-class APEBadItemError(error, ValueError): pass
+class error(IOError):
+    pass
 
-from mutagenx import Metadata, FileType
-from mutagenx._util import cdata, utf8, delete_bytes
+class APENoHeaderError(error, ValueError):
+    pass
+
+class APEUnsupportedVersionError(error, ValueError):
+    pass
+
+class APEBadItemError(error, ValueError):
+    pass
 
 
 class _APEv2Data(object):
@@ -119,7 +126,7 @@ class _APEv2Data(object):
             fileobj.seek(-128, 2)
             if fileobj.read(3) == b"TAG":
 
-                fileobj.seek(-35, 1) # "TAG" + header length
+                fileobj.seek(-35, 1)  # "TAG" + header length
                 if fileobj.read(8) == b"APETAGEX":
                     fileobj.seek(-8, 1)
                     self.footer = fileobj.tell()
@@ -130,7 +137,7 @@ class _APEv2Data(object):
                 # (header length - "APETAGEX") - "LYRICS200"
                 fileobj.seek(15, 1)
                 if fileobj.read(9) == b'LYRICS200':
-                    fileobj.seek(-15, 1) # "LYRICS200" + size tag
+                    fileobj.seek(-15, 1)  # "LYRICS200" + size tag
                     try:
                         offset = int(fileobj.read(6))
                     except ValueError:
@@ -175,6 +182,10 @@ class _APEv2Data(object):
                 self.header = self.data
         else:
             raise APENoHeaderError("No APE tag found")
+
+        # exclude the footer from size
+        if self.footer is not None:
+            self.size -= 32
 
     def __fix_brokenness(self, fileobj):
         # Fix broken tags written with PyMusepack.
@@ -243,7 +254,11 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         fileobj = io.BytesIO(tag)
 
         for i in range(count):
-            size = cdata.uint_le(fileobj.read(4))
+            size_data = fileobj.read(4)
+            # someone writes wrong item counts
+            if not size_data:
+                break
+            size = cdata.uint_le(size_data)
             flags = cdata.uint_le(fileobj.read(4))
 
             # Bits 1 and 2 bits are flags, 0-3
@@ -290,7 +305,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         If you need to force a specific type of value (e.g. binary
         data that also happens to be valid UTF-8, or an external
         reference), use the APEValue factory and set the value to the
-        result of that:
+        result of that::
             from mutagenx.apev2 import APEValue, EXTERNAL
             tag['Website'] = APEValue('http://example.org', EXTERNAL)
         """
@@ -308,7 +323,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                 value = APEValue("\0".join(value), TEXT)
             else:
                 try:
-                    dummy = value.decode("utf-8")
+                    value.decode("utf-8")
                 except UnicodeError:
                     # invalid UTF8 text, probably binary
                     value = APEValue(value, BINARY)
@@ -385,7 +400,9 @@ class APEv2(collections.abc.MutableMapping, Metadata):
             fileobj.close()
         self.clear()
 
+
 Open = APEv2
+
 
 def delete(filename):
     """Remove tags from a file."""
@@ -432,6 +449,7 @@ class _APEValue(object):
     def __repr__(self):
         return "{}({!r}, {})".format(type(self).__name__, self.value, self.kind)
 
+
 @functools.total_ordering
 class APETextValue(_APEValue):
     """An APEv2 text value.
@@ -465,6 +483,7 @@ class APETextValue(_APEValue):
     def pprint(self):
         return " / ".join(x for x in self)
 
+
 class APEBinaryValue(_APEValue):
     """An APEv2 binary value."""
 
@@ -477,6 +496,7 @@ class APEBinaryValue(_APEValue):
     def _internal(self, key):
         return struct.pack("<2I", len(self.value), self.kind << 1) + key.encode("ascii") + b"\0" + self.value
 
+
 class APEExtValue(_APEValue):
     """An APEv2 external value.
 
@@ -484,6 +504,7 @@ class APEExtValue(_APEValue):
     """
     def pprint(self):
         return "[External] {}".format(self.value)
+
 
 class APEv2File(FileType):
     class _Info(object):
@@ -493,7 +514,9 @@ class APEv2File(FileType):
         def __init__(self, fileobj):
             pass
 
-        pprint = staticmethod(lambda: "Unknown format with APEv2 tag.")
+        @staticmethod
+        def pprint():
+            return "Unknown format with APEv2 tag."
 
     def load(self, filename):
         self.filename = filename
