@@ -6,15 +6,17 @@
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
 #
-# $Id: __init__.py 4348 2008-12-02 02:41:15Z piman $
-#
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 import warnings
 import collections.abc
 
-version = (1, 21)
+version = (1, 22)
+"""Version tuple."""
+
 version_string = ".".join(str(v) for v in version)
+"""Version string."""
+
 
 class Metadata(object):
     def __init__(self, *args, **kwargs):
@@ -25,17 +27,20 @@ class Metadata(object):
         raise NotImplementedError
 
     def save(self, filename=None):
+        """Save changes to a file."""
         raise NotImplementedError
 
     def delete(self, filename=None):
+        """Remove tags from a file."""
         raise NotImplementedError
+
 
 class FileType(collections.abc.MutableMapping):
     """An abstract object wrapping tags and audio stream information.
 
     Attributes:
-    info -- stream information (length, bitrate, sample rate)
-    tags -- metadata tags, if any
+    * info -- stream information (length, bitrate, sample rate)
+    * tags -- metadata tags, if any
 
     Each file format has different potential tags and stream
     information.
@@ -86,6 +91,7 @@ class FileType(collections.abc.MutableMapping):
 
         If the file has no tags at all, a KeyError is raised.
         """
+
         if self.tags is None:
             raise KeyError(key)
         else:
@@ -105,6 +111,7 @@ class FileType(collections.abc.MutableMapping):
 
     def delete(self, filename=None):
         """Remove tags from a file."""
+
         if self.tags is not None:
             if filename is None:
                 filename = self.filename
@@ -116,6 +123,7 @@ class FileType(collections.abc.MutableMapping):
 
     def save(self, filename=None, **kwargs):
         """Save metadata tags."""
+
         if filename is None:
             filename = self.filename
         else:
@@ -128,6 +136,7 @@ class FileType(collections.abc.MutableMapping):
 
     def pprint(self):
         """Print stream information and comment key=value pairs."""
+
         stream = "{} ({})".format(self.info.pprint(), self.mime[0])
         try:
             tags = self.tags.pprint()
@@ -137,9 +146,15 @@ class FileType(collections.abc.MutableMapping):
             return stream + ((tags and "\n" + tags) or "")
 
     def add_tags(self):
+        """Adds new tags to the file.
+
+        Raises if tags already exist.
+        """
+
         raise NotImplementedError
 
-    def __get_mime(self):
+    @property
+    def mime(self):
         mimes = []
         for Kind in type(self).__mro__:
             for mime in getattr(Kind, '_mimes', []):
@@ -147,7 +162,9 @@ class FileType(collections.abc.MutableMapping):
                     mimes.append(mime)
         return mimes
 
-    mime = property(__get_mime)
+    @staticmethod
+    def score(filename, fileobj, header):
+        raise NotImplementerError
 
 def File(filename, options=None, easy=False):
     """Guess the type of the file and try to open it.
@@ -157,6 +174,13 @@ def File(filename, options=None, easy=False):
     filename extension, and the presence of existing tags.
 
     If no appropriate type could be found, None is returned.
+
+    :param options: Sequence of :class:`FileType` implementations, defaults to
+                    all included ones.
+
+    :param easy: If the easy wrappers should be returnd if available.
+                 For example :class:`EasyMP3 <mp3.EasyMP3>` instead
+                 of :class:`MP3 <mp3.MP3>`.
     """
 
     if options is None:
