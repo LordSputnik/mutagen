@@ -6,8 +6,6 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 #
-# $Id: _util.py 4218 2007-12-02 06:11:20Z piman $
-#
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Utility classes for Mutagen.
@@ -21,6 +19,7 @@ from functools import total_ordering
 
 import collections
 import struct
+
 
 class DictProxy(collections.abc.MutableMapping):
     def __init__(self, *args, **kwargs):
@@ -43,6 +42,7 @@ class DictProxy(collections.abc.MutableMapping):
     def __len__(self):
         return len(self._dict)
 
+
 def dict_match(d, key, default=None):
     try:
         return d[key]
@@ -51,6 +51,7 @@ def dict_match(d, key, default=None):
             if fnmatchcase(key, pattern):
                 return value
     return default
+
 
 def lock(fileobj):
     """Lock a file object 'safely'.
@@ -78,16 +79,19 @@ def lock(fileobj):
         else:
             return True
 
+
 def unlock(fileobj):
     """Unlock a file object.
 
     Don't call this on a file object unless a call to lock()
     returned true.
     """
+
     # If this fails there's a mismatched lock/unlock pair,
     # so we definitely don't want to ignore errors.
     import fcntl
     fcntl.lockf(fileobj, fcntl.LOCK_UN)
+
 
 def insert_bytes(fobj, size, offset, BUFFER_SIZE=2 ** 16):
     """Insert size bytes of empty space starting at offset.
@@ -96,6 +100,7 @@ def insert_bytes(fobj, size, offset, BUFFER_SIZE=2 ** 16):
     equivalent. Mutagen tries to use mmap to resize the file, but
     falls back to a significantly slower method if mmap fails.
     """
+
     assert 0 < size
     assert 0 <= offset
     locked = False
@@ -149,6 +154,7 @@ def insert_bytes(fobj, size, offset, BUFFER_SIZE=2 ** 16):
         if locked:
             unlock(fobj)
 
+
 def delete_bytes(fobj, size, offset, BUFFER_SIZE=2 ** 16):
     """Delete size bytes of empty space starting at offset.
 
@@ -189,6 +195,7 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2 ** 16):
     finally:
         if locked:
             unlock(fobj)
+
 
 class cdata(object):
     """C character buffer to Python numeric type conversions."""
