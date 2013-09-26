@@ -1,10 +1,10 @@
 Metadata-Version: 1.0
-Name: mutagen
+Name: mutagenx
 Version: 1.21
 Summary: read and write audio tags for many formats
-Home-page: http://code.google.com/p/mutagen/
-Author: Michael Urman
-Author-email: quod-libet-development@groups.google.com
+Home-page: https://github.com/LordSputnik/mutagen/
+Author: Ben Ockmore
+Author-email: ben.sput@gmail.com
 License: GNU GPL v2
 Description: Mutagen is a Python module to handle audio metadata. It supports ASF,
         FLAC, M4A, Monkey's Audio, MP3, Musepack, Ogg FLAC, Ogg Speex, Ogg
