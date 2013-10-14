@@ -5,7 +5,7 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 #
-# $Id: asf.py 4224 2007-12-03 09:01:49Z luks $
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write ASF (Window Media Audio) files."""
 
@@ -19,9 +19,16 @@ import collections.abc
 from functools import total_ordering
 
 
-class error(IOError): pass
-class ASFError(error): pass
-class ASFHeaderError(error): pass
+class error(IOError):
+    pass
+
+
+class ASFError(error):
+    pass
+
+
+class ASFHeaderError(error):
+    pass
 
 
 class ASFInfo(object):
@@ -415,7 +422,6 @@ class BaseObject(object):
 
     def render(self, asf):
         data = self.GUID + struct.pack("<Q", len(self.data) + 24) + self.data
-        size = len(data)
         return data
 
 
@@ -453,7 +459,8 @@ class ContentDescriptionObject(BaseObject):
             Author=author,
             Copyright=copyright,
             Description=desc,
-            Rating=rating).items():
+            Rating=rating
+        ).items():
             if value is not None:
                 asf.tags[key] = value
 
@@ -475,7 +482,8 @@ class ExtendedContentDescriptionObject(BaseObject):
     GUID = b"\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50"
 
     def parse(self, asf, data, fileobj, size):
-        super(ExtendedContentDescriptionObject, self).parse(asf, data, fileobj, size)
+        super(ExtendedContentDescriptionObject, self).parse(asf, data, fileobj,
+                                                            size)
         asf.extended_content_description_obj = self
         num_attributes, = struct.unpack("<H", data[0:2])
         pos = 2
@@ -651,8 +659,8 @@ class ASF(FileType):
                 continue
             library_only = (value.data_size() > 0xFFFF or value.TYPE == GUID)
             if (value.language is None and value.stream is None and
-                name not in self.to_extended_content_description and
-                not library_only):
+                    name not in self.to_extended_content_description and
+                    not library_only):
                 self.to_extended_content_description[name] = value
             elif (value.language is None and value.stream is not None and
                   name not in self.to_metadata and not library_only):
