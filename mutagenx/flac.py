@@ -18,9 +18,18 @@ from mutagenx._vorbis import VComment
 from mutagenx._util import insert_bytes
 from mutagenx.id3 import BitPaddedInt
 
-class error(IOError): pass
-class FLACNoHeaderError(error): pass
-class FLACVorbisError(ValueError, error): pass
+class error(IOError):
+    pass
+
+
+class FLACNoHeaderError(error):
+    pass
+
+
+class FLACVorbisError(ValueError, error):
+    pass
+
+
 
 def to_int_be(data):
     """Convert an arbitrarily-long string to a long using big-endian
@@ -46,6 +55,7 @@ class StrictFileObject(object):
     def tryread(self, *args):
         return self._fileobj.read(*args)
 
+
 class MetadataBlock(object):
     """A generic block of FLAC metadata.
 
@@ -53,7 +63,8 @@ class MetadataBlock(object):
     blocks, and also as a container for data blobs of unknown blocks.
 
     Attributes:
-    data -- raw binary data for this block
+
+    * data -- raw binary data for this block
     """
 
     _distrust_size = False
@@ -119,13 +130,14 @@ class StreamInfo(MetadataBlock):
     attributes of this block.
 
     Attributes:
-    min_blocksize -- minimum audio block size
-    max_blocksize -- maximum audio block size
-    sample_rate -- audio sample rate in Hz
-    channels -- audio channels (1 for mono, 2 for stereo)
-    bits_per_sample -- bits per sample
-    total_samples -- total samples in file
-    length -- audio length in seconds
+
+    * min_blocksize -- minimum audio block size
+    * max_blocksize -- maximum audio block size
+    * sample_rate -- audio sample rate in Hz
+    * channels -- audio channels (1 for mono, 2 for stereo)
+    * bits_per_sample -- bits per sample
+    * total_samples -- total samples in file
+    * length -- audio length in seconds
     """
 
     code = 0
@@ -140,6 +152,7 @@ class StreamInfo(MetadataBlock):
                     self.total_samples == other.total_samples)
         except:
             return False
+
     __hash__ = MetadataBlock.__hash__
 
     def load(self, data):
@@ -197,6 +210,7 @@ class StreamInfo(MetadataBlock):
     def pprint(self):
         return "FLAC, {:.2f} seconds, {} Hz".format(self.length, self.sample_rate)
 
+
 class SeekPoint(tuple):
     """A single seek point in a FLAC file.
 
@@ -208,9 +222,10 @@ class SeekPoint(tuple):
     may be any number of them.
 
     Attributes:
-    first_sample -- sample number of first sample in the target frame
-    byte_offset -- offset from first frame to target frame
-    num_samples -- number of samples in target frame
+
+    * first_sample -- sample number of first sample in the target frame
+    * byte_offset -- offset from first frame to target frame
+    * num_samples -- number of samples in target frame
     """
 
     def __new__(cls, first_sample, byte_offset, num_samples):
@@ -221,11 +236,13 @@ class SeekPoint(tuple):
     byte_offset = property(lambda self: self[1])
     num_samples = property(lambda self: self[2])
 
+
 class SeekTable(MetadataBlock):
     """Read and write FLAC seek tables.
 
     Attributes:
-    seekpoints -- list of SeekPoint objects
+
+    * seekpoints -- list of SeekPoint objects
     """
 
     __SEEKPOINT_FORMAT = '>QQH'
@@ -242,6 +259,7 @@ class SeekTable(MetadataBlock):
             return (self.seekpoints == other.seekpoints)
         except (AttributeError, TypeError):
             return False
+
     __hash__ = MetadataBlock.__hash__
 
     def load(self, data):
@@ -264,6 +282,7 @@ class SeekTable(MetadataBlock):
     def __repr__(self):
         return "<{} seekpoints={}>".format(type(self).__name__, repr(self.seekpoints))
 
+
 class VCFLACDict(VComment):
     """Read and write FLAC Vorbis comments.
 
@@ -280,6 +299,7 @@ class VCFLACDict(VComment):
     def write(self, framing=False):
         return super(VCFLACDict, self).write(framing=framing)
 
+
 class CueSheetTrackIndex(tuple):
     """Index for a track in a cuesheet.
 
@@ -290,8 +310,9 @@ class CueSheetTrackIndex(tuple):
     divisible by 588 samples.
 
     Attributes:
-    index_number -- index point number
-    index_offset -- offset in samples from track start
+
+    * index_number -- index point number
+    * index_offset -- offset in samples from track start
     """
 
     def __new__(cls, index_number, index_offset):
@@ -300,6 +321,7 @@ class CueSheetTrackIndex(tuple):
 
     index_number = property(lambda self: self[0])
     index_offset = property(lambda self: self[1])
+
 
 class CueSheetTrack(object):
     """A track in a cuesheet.
@@ -310,12 +332,13 @@ class CueSheetTrack(object):
     which must have none.
 
     Attributes:
-    track_number -- track number
-    start_offset -- track offset in samples from start of FLAC stream
-    isrc -- ISRC code
-    type -- 0 for audio, 1 for digital data
-    pre_emphasis -- true if the track is recorded with pre-emphasis
-    indexes -- list of CueSheetTrackIndex objects
+
+    * track_number -- track number
+    * start_offset -- track offset in samples from start of FLAC stream
+    * isrc -- ISRC code
+    * type -- 0 for audio, 1 for digital data
+    * pre_emphasis -- true if the track is recorded with pre-emphasis
+    * indexes -- list of CueSheetTrackIndex objects
     """
 
     def __init__(self, track_number, start_offset, isrc='', type_=0,
@@ -337,6 +360,7 @@ class CueSheetTrack(object):
                     self.indexes == other.indexes)
         except (AttributeError, TypeError):
             return False
+
     __hash__ = object.__hash__
 
     def __repr__(self):
@@ -344,6 +368,7 @@ class CueSheetTrack(object):
                 "pre_emphasis={}, indexes={})>").format(
             type(self).__name__, repr(self.track_number), self.start_offset,
             repr(self.isrc), repr(self.type), repr(self.pre_emphasis), repr(self.indexes))
+
 
 class CueSheet(MetadataBlock):
     """Read and write FLAC embedded cue sheets.
@@ -353,11 +378,12 @@ class CueSheet(MetadataBlock):
     in the cue sheet.
 
     Attributes:
-    media_catalog_number -- media catalog number in ASCII
-    lead_in_samples -- number of lead-in samples
-    compact_disc -- true if the cuesheet corresponds to a compact disc
-    tracks -- list of CueSheetTrack objects
-    lead_out -- lead-out as CueSheetTrack or None if lead-out was not found
+
+    * media_catalog_number -- media catalog number in ASCII
+    * lead_in_samples -- number of lead-in samples
+    * compact_disc -- true if the cuesheet corresponds to a compact disc
+    * tracks -- list of CueSheetTrack objects
+    * lead_out -- lead-out as CueSheetTrack or None if lead-out was not found
     """
 
     __CUESHEET_FORMAT = '>128sQB258xB'
@@ -385,6 +411,7 @@ class CueSheet(MetadataBlock):
                     self.tracks == other.tracks)
         except (AttributeError, TypeError):
             return False
+
     __hash__ = MetadataBlock.__hash__
 
     def load(self, data):
@@ -449,15 +476,16 @@ class Picture(MetadataBlock):
     """Read and write FLAC embed pictures.
 
     Attributes:
-    type -- picture type (same as types for ID3 APIC frames)
-    mime -- MIME type of the picture
-    desc -- picture's description
-    width -- width in pixels
-    height -- height in pixels
-    depth -- color depth in bits-per-pixel
-    colors -- number of colors for indexed palettes (like GIF),
-              0 for non-indexed
-    data -- picture data
+
+    * type -- picture type (same as types for ID3 APIC frames)
+    * mime -- MIME type of the picture
+    * desc -- picture's description
+    * width -- width in pixels
+    * height -- height in pixels
+    * depth -- color depth in bits-per-pixel
+    * colors -- number of colors for indexed palettes (like GIF),
+      0 for non-indexed
+    * data -- picture data
     """
 
     code = 6
@@ -465,8 +493,8 @@ class Picture(MetadataBlock):
 
     def __init__(self, data=None):
         self.type = 0
-        self.mime = ''
-        self.desc = ''
+        self.mime = u''
+        self.desc = u''
         self.width = 0
         self.height = 0
         self.depth = 0
@@ -486,6 +514,7 @@ class Picture(MetadataBlock):
                     self.data == other.data)
         except (AttributeError, TypeError):
             return False
+
     __hash__ = MetadataBlock.__hash__
 
     def load(self, data):
@@ -513,6 +542,7 @@ class Picture(MetadataBlock):
     def __repr__(self):
         return "<{} '{}' ({} bytes)>".format(type(self).__name__, self.mime,
                                          len(self.data))
+
 
 class Padding(MetadataBlock):
     """Empty padding space for metadata blocks.
@@ -551,21 +581,23 @@ class Padding(MetadataBlock):
     def __repr__(self):
         return "<{} ({} bytes)>".format(type(self).__name__, self.length)
 
+
 class FLAC(FileType):
     """A FLAC audio file.
 
     Attributes:
-    info -- stream information (length, bitrate, sample rate)
-    tags -- metadata tags, if any
-    cuesheet -- CueSheet object, if any
-    seektable -- SeekTable object, if any
-    pictures -- list of embedded pictures
+
+    * info -- stream information (length, bitrate, sample rate)
+    * tags -- metadata tags, if any
+    * cuesheet -- CueSheet object, if any
+    * seektable -- SeekTable object, if any
+    * pictures -- list of embedded pictures
     """
 
     _mimes = ["audio/x-flac", "application/x-flac"]
 
     METADATA_BLOCKS = [StreamInfo, Padding, None, SeekTable, VCFLACDict,
-        CueSheet, Picture]
+                       CueSheet, Picture]
     """Known metadata block types, indexed by ID."""
 
     @staticmethod
@@ -625,6 +657,7 @@ class FLAC(FileType):
             self.metadata_blocks.append(self.tags)
         else:
             raise FLACVorbisError("a Vorbis comment already exists")
+
     add_vorbiscomment = add_tags
 
     def delete(self, filename=None):
@@ -664,7 +697,9 @@ class FLAC(FileType):
         except (AttributeError, IndexError):
             raise FLACNoHeaderError("Stream info block not found")
 
-    info = property(lambda s: s.metadata_blocks[0])
+    @property
+    def info(self):
+        return self.metadata_blocks[0]
 
     def add_picture(self, picture):
         """Add a new picture to the file."""
@@ -675,10 +710,10 @@ class FLAC(FileType):
         self.metadata_blocks = \
             [b for b in self.metadata_blocks if b.code != Picture.code]
 
-    def __get_pictures(self):
+    @property
+    def pictures(self):
+        """List of embedded pictures"""
         return [b for b in self.metadata_blocks if b.code == Picture.code]
-
-    pictures = property(__get_pictures, doc="List of embedded pictures")
 
     def save(self, filename=None, deleteid3=False):
         """Save metadata blocks to a file.
@@ -697,7 +732,8 @@ class FLAC(FileType):
             MetadataBlock.group_padding(self.metadata_blocks)
 
             header = self.__check_header(f)
-            available = self.__find_audio_offset(f) - header # "fLaC" and maybe ID3
+            # "fLaC" and maybe ID3
+            available = self.__find_audio_offset(f) - header
             data = MetadataBlock.writeblocks(self.metadata_blocks)
 
             # Delete ID3v2
@@ -775,10 +811,10 @@ class FLAC(FileType):
                                     "FLAC file".format(fileobj.name))
         return size
 
+
 Open = FLAC
+
 
 def delete(filename):
     """Remove tags from a file."""
     FLAC(filename).delete()
-
-

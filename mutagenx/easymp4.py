@@ -8,6 +8,7 @@ from mutagenx.mp4 import MP4, MP4Tags, error, delete
 
 __all__ = ["EasyMP4Tags", "EasyMP4", "delete", "error"]
 
+
 class EasyMP4KeyError(error, KeyError, ValueError):
     pass
 
@@ -17,8 +18,10 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
 
     Like Vorbis comments, EasyMP4Tags keys are case-insensitive ASCII
     strings, and values are a list of Unicode strings (and these lists
-    are always of length 0 or 1). If you need access to the full MP4
-    metadata feature set, you should use MP4, not EasyMP4.
+    are always of length 0 or 1).
+
+    If you need access to the full MP4 metadata feature set, you should use
+    MP4, not EasyMP4.
     """
 
     Set = {}
@@ -71,7 +74,8 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
 
         If the key you need to register is a simple one-to-one mapping
         of MP4 atom name to EasyMP4Tags key, then you can use this
-        function:
+        function::
+
             EasyMP4Tags.RegisterTextKey("artist", b"\xa9ART")
         """
         def getter(tags, key):
@@ -138,7 +142,8 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
 
         If the key you need to register is a simple one-to-one mapping
         of MP4 freeform atom (----) and name to EasyMP4Tags key, then
-        you can use this function:
+        you can use this function::
+
             EasyMP4Tags.RegisterFreeformKey(
                 "musicbrainz_artistid", b"MusicBrainz Artist Id")
         """
@@ -250,8 +255,15 @@ for name, key in {
     }.items():
     EasyMP4Tags.RegisterIntPairKey(key, name)
 
+
 class EasyMP4(MP4):
-    """Like MP4, but uses EasyMP4Tags for tags."""
+    """Like :class:`MP4 <mutagenx.mp4.MP4>`,
+    but uses :class:`EasyMP4Tags` for tags.
+
+    :ivar info: :class:`MP4Info <mutagenx.mp4.MP4Info>`
+    :ivar tags: :class:`EasyMP4Tags`
+    """
+
     MP4Tags = EasyMP4Tags
 
     Get = EasyMP4Tags.Get

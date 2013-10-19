@@ -8,8 +8,6 @@
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
 #
-# $Id: id3.py 3086 2006-04-04 02:13:21Z piman $
-#
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Easier access to ID3 tags.
@@ -36,6 +34,7 @@ class EasyID3KeyError(KeyError, ValueError, error):
     catching KeyError is preferred.
     """
 
+
 class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
     """A file with an ID3 tag.
 
@@ -51,17 +50,20 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
     creation.
 
     To use an EasyID3 class with mutagenx.mp3.MP3:
+
         from mutagenx.mp3 import EasyMP3 as MP3
         MP3(filename)
 
     Because many of the attributes are constructed on the fly, things
-    like the following will not work:
+    like the following will not work::
+
         ezid3["performer"].append("Joe")
-    Instead, you must do:
+
+    Instead, you must do::
+
         values = ezid3["performer"]
         values.append("Joe")
         ezid3["performer"] = values
-
 
     """
 
@@ -113,7 +115,8 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
 
         If the key you need to register is a simple one-to-one mapping
         of ID3 frame name to EasyID3 key, then you can use this
-        function:
+        function::
+
             EasyID3.RegisterTextKey("title", "TIT2")
         """
         def getter(id3, key):
@@ -139,7 +142,8 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
 
         Some ID3 tags are stored in TXXX frames, which allow a
         freeform 'description' which acts as a subkey,
-        e.g. TXXX:BARCODE.
+        e.g. TXXX:BARCODE.::
+
             EasyID3.RegisterTXXXKey('barcode', 'BARCODE').
         """
         frameid = "TXXX:" + desc
@@ -187,7 +191,7 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
                         lambda s, fn: setattr(s.__id3, 'filename', fn))
 
     size = property(lambda s: s.__id3.size,
-                    lambda s, fn: setattr(s.__id3, 'size', v))
+                    lambda s, fn: setattr(s.__id3, 'size', s))
 
     def __getitem__(self, key):
         key = key.lower()
@@ -246,10 +250,13 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
                 strings.append("{}={}".format(key, value))
         return "\n".join(strings)
 
+
 Open = EasyID3
+
 
 def genre_get(id3, key):
     return id3["TCON"].genres
+
 
 def genre_set(id3, key, value):
     try:
@@ -260,17 +267,22 @@ def genre_set(id3, key, value):
         frame.encoding = 3
         frame.genres = value
 
+
 def genre_delete(id3, key):
     del(id3["TCON"])
+
 
 def date_get(id3, key):
     return [stamp.text for stamp in id3["TDRC"].text]
 
+
 def date_set(id3, key, value):
     id3.add(mutagenx.id3.TDRC(encoding=3, text=value))
 
+
 def date_delete(id3, key):
     del(id3["TDRC"])
+
 
 def performer_get(id3, key):
     people = []
@@ -287,6 +299,7 @@ def performer_get(id3, key):
     else:
         raise KeyError(key)
 
+
 def performer_set(id3, key, value):
     wanted_role = key.split(":", 1)[1]
     try:
@@ -299,6 +312,7 @@ def performer_set(id3, key, value):
     for v in value:
         people.append((wanted_role, v))
     mcl.people = people
+
 
 def performer_delete(id3, key):
     wanted_role = key.split(":", 1)[1]
@@ -314,6 +328,7 @@ def performer_delete(id3, key):
     else:
         del(id3["TMCL"])
 
+
 def performer_list(id3, key):
     try:
         mcl = id3["TMCL"]
@@ -324,6 +339,7 @@ def performer_list(id3, key):
 
 def musicbrainz_trackid_get(id3, key):
     return [id3["UFID:http://musicbrainz.org"].data.decode('ascii')]
+
 
 def musicbrainz_trackid_set(id3, key, value):
     if len(value) != 1:
@@ -337,8 +353,10 @@ def musicbrainz_trackid_set(id3, key, value):
     else:
         frame.data = value
 
+
 def musicbrainz_trackid_delete(id3, key):
     del(id3["UFID:http://musicbrainz.org"])
+
 
 def website_get(id3, key):
     urls = [frame.url for frame in id3.getall("WOAR")]
@@ -347,10 +365,12 @@ def website_get(id3, key):
     else:
         raise EasyID3KeyError(key)
 
+
 def website_set(id3, key, value):
     id3.delall("WOAR")
     for v in value:
         id3.add(mutagenx.id3.WOAR(url=v))
+
 
 def website_delete(id3, key):
     id3.delall("WOAR")
@@ -362,6 +382,7 @@ def gain_get(id3, key):
         raise EasyID3KeyError(key)
     else:
         return ["{:+f} dB".format(frame.gain)]
+
 
 def gain_set(id3, key, value):
     if len(value) != 1:
@@ -375,6 +396,7 @@ def gain_set(id3, key, value):
         id3.add(frame)
     frame.gain = gain
 
+
 def gain_delete(id3, key):
     try:
         frame = id3["RVA2:" + key[11:-5]]
@@ -386,6 +408,7 @@ def gain_delete(id3, key):
         else:
             del(id3["RVA2:" + key[11:-5]])
 
+
 def peak_get(id3, key):
     try:
         frame = id3["RVA2:" + key[11:-5]]
@@ -393,6 +416,7 @@ def peak_get(id3, key):
         raise EasyID3KeyError(key)
     else:
         return ["{:f}".format(frame.peak)]
+
 
 def peak_set(id3, key, value):
     if len(value) != 1:
@@ -408,6 +432,7 @@ def peak_set(id3, key, value):
         id3.add(frame)
     frame.peak = peak
 
+
 def peak_delete(id3, key):
     try:
         frame = id3["RVA2:" + key[11:-5]]
@@ -418,6 +443,7 @@ def peak_delete(id3, key):
             frame.peak = 0.0
         else:
             del(id3["RVA2:" + key[11:-5]])
+
 
 def peakgain_list(id3, key):
     keys = []
@@ -489,6 +515,7 @@ for desc, key in {
     "BARCODE": "barcode"
 }.items():
     EasyID3.RegisterTXXXKey(key, desc)
+
 
 class EasyID3FileType(ID3FileType):
     """Like ID3FileType, but uses EasyID3 for tags."""
