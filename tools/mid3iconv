@@ -1,47 +1,60 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # ID3iconv is a Java based ID3 encoding convertor, here's the Python version.
 # Copyright 2006 Emfox Zhou <EmfoxZhou@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
 
-import os
 import sys
 import locale
 
+from __future__ import print_function, absolute_import, division
+
+# Deprecated - should be dropped when 2.6 is eventually no longer supported.
 from optparse import OptionParser
+
+import mutagenx
+import mutagenx.id3
+
 
 VERSION = (0, 3)
 
+
 def isascii(string):
+    """
+    Checks whether a unicode string is non-empty and contains only ASCII
+    characters.
+    """
     if not string:
         return False
 
     try:
         string.encode('ascii')
-    except UnicodeError:
+    except UnicodeEncodeError:
         return False
 
     return True
 
+
 class ID3OptionParser(OptionParser):
+
     def __init__(self):
         mutagen_version = mutagenx.version_string
         my_version = ".".join(str(v) for v in VERSION)
         version = "mid3iconv {}\nUses Mutagen {}".format(my_version,
                                                          mutagen_version)
-        return OptionParser.__init__(self, version=version,
-                                     usage="%prog [OPTION] [FILE]...",
-                                     description=(
-                         "Mutagen-based replacement the id3iconv utility, "
+
+        return OptionParser.__init__(
+            self, version=version, usage="%prog [OPTION] [FILE]...",
+            description=("Mutagen-based replacement the id3iconv utility, "
                          "which converts ID3 tags from legacy encodings "
                          "to Unicode and stores them using the ID3v2 format."))
 
     def format_help(self, *args, **kwargs):
         text = OptionParser.format_help(self, *args, **kwargs)
         return text + "\nFiles are updated in-place, so use --dry-run first.\n"
+
 
 def update(options, filenames):
     encoding = options.encoding or locale.getpreferredencoding()
@@ -51,31 +64,29 @@ def update(options, filenames):
     remove_v1 = options.remove_v1
 
     def conv(uni):
-        return uni.encode('latin-1').decode(encoding)
+        return uni.encode('iso-8859-1').decode(encoding)
 
     for filename in filenames:
         if verbose != "quiet":
             print("Updating {}".format(filename))
 
         if has_id3v1(filename) and not noupdate and force_v1:
-            mutagenx.id3.delete(filename, False, True)
+            mutagen.id3.delete(filename, False, True)
 
         try:
-            id3 = mutagenx.id3.ID3(filename)
-        except mutagenx.id3.ID3NoHeaderError:
+            id3 = mutagen.id3.ID3(filename)
+        except mutagen.id3.ID3NoHeaderError:
             if verbose != "quiet":
                 print("No ID3 header found; skipping...")
             continue
-        except Exception(err):
-            print(str(err), end='\n', file=sys.stderr)
+        except Exception as err:
+            sys.stderr.write(str(err))
+            sys.stderr.flush()
             continue
 
-        for tag in id3:
-            if not tag.startswith('T'):
-                continue
-
+        for tag in (t for t in id3 if t.startswith(('T', 'COMM'))):
             frame = id3[tag]
-            if isinstance(frame, mutagenx.id3.TimeStampTextFrame):
+            if isinstance(frame, mutagen.id3.TimeStampTextFrame):
                 # non-unicode fields
                 continue
             try:
@@ -83,12 +94,12 @@ def update(options, filenames):
             except AttributeError:
                 continue
             try:
-                text = [conv(t) for t in frame.text]
+                text = [conv(x) for x in frame.text]
             except (UnicodeError, LookupError):
                 continue
             else:
                 frame.text = text
-                if not text or min(isascii(t) for t in text):
+                if not text or min(isascii(x) for x in text):
                     frame.encoding = 3
                 else:
                     frame.encoding = 1
@@ -103,21 +114,22 @@ def update(options, filenames):
             else:
                 id3.save(filename)
 
+
 def has_id3v1(filename):
     try:
         f = open(filename, 'rb+')
         f.seek(-128, 2)
-        return f.read(3) == b'TAG'
+        return f.read(3) == b"TAG"
     except IOError:
         return False
 
+
 def main(argv):
     parser = ID3OptionParser()
-    parser.add_option(
-        "-e", "--encoding", metavar="ENCODING", action="store",
-        type="string", dest="encoding",
-        help=("Specify original tag encoding (default is {})".format(
-              locale.getpreferredencoding())))
+    parser.add_option("-e", "--encoding", metavar="ENCODING", action="store",
+                      type="string", dest="encoding",
+                      help=("Specify original tag encoding (default is {})".format(
+                        locale.getpreferredencoding())))
     parser.add_option(
         "-p", "--dry-run", action="store_true", dest="noupdate",
         help="Do not actually modify files")
@@ -134,11 +146,8 @@ def main(argv):
         "-d", "--debug", action="store_const", dest="verbose",
         const="debug", help="Output updated tags")
 
-    for i, arg in enumerate(sys.argv):
-        if arg == "-v1":
-            sys.argv[i] = "--force-v1"
-        elif arg == "-removev1":
-            sys.argv[i] = "--remove-v1"
+    translations = {'-v1':'--force-v1', '-removev1':'--remove-v1'}
+    sys.argv = [translations.get(x, x) for x in sys.argv]
 
     (options, args) = parser.parse_args(argv[1:])
 
@@ -148,10 +157,4 @@ def main(argv):
         parser.print_help()
 
 if __name__ == "__main__":
-    try:
-        import mutagen, mutagenx.id3
-    except ImportError:
-        # Run out of tools/
-        sys.path.append(os.path.abspath("../"))
-        import mutagen, mutagenx.id3
     main(sys.argv)

@@ -6,7 +6,6 @@ from tests import TestCase, add
 from mutagenx._util import cdata, utf8, insert_bytes, delete_bytes
 
 class Tutf8(TestCase):
-    uses_mmap = False
 
     def test_str(self):
         value = utf8(b"1234")
@@ -35,7 +34,6 @@ class Tutf8(TestCase):
 add(Tutf8)
 
 class Tcdata(TestCase):
-    uses_mmap = False
 
     ZERO = b"\x00\x00\x00\x00"
     LEONE = b"\x01\x00\x00\x00"

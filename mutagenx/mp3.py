@@ -14,12 +14,22 @@ from mutagenx.id3 import ID3FileType, BitPaddedInt, delete
 
 __all__ = ["MP3", "Open", "delete", "MP3"]
 
-class error(RuntimeError): pass
-class HeaderNotFoundError(error, IOError): pass
-class InvalidMPEGHeader(error, IOError): pass
+
+class error(RuntimeError):
+    pass
+
+
+class HeaderNotFoundError(error, IOError):
+    pass
+
+
+class InvalidMPEGHeader(error, IOError):
+    pass
+
 
 # Mode values.
 STEREO, JOINTSTEREO, DUALCHANNEL, MONO = range(4)
+
 
 class MPEGInfo(object):
     """MPEG audio stream information
@@ -28,20 +38,22 @@ class MPEGInfo(object):
     Xing VBR header format.
 
     This code was implemented based on the format documentation at
-    http://www.dv.co.yu/mpgscript/mpeghdr.htm.
+    http://mpgedit.org/mpgedit/mpeg_format/mpeghdr.htm.
 
     Useful attributes:
-    length -- audio length, in seconds
-    bitrate -- audio bitrate, in bits per second
-    sketchy -- if true, the file may not be valid MPEG audio
+
+    * length -- audio length, in seconds
+    * bitrate -- audio bitrate, in bits per second
+    * sketchy -- if true, the file may not be valid MPEG audio
 
     Useless attributes:
-    version -- MPEG version (1, 2, 2.5)
-    layer -- 1, 2, or 3
-    mode -- One of STEREO, JOINTSTEREO, DUALCHANNEL, or MONO (0-3)
-    protected -- whether or not the file is "protected"
-    padding -- whether or not audio frames are padded
-    sample_rate -- audio sample rate, in Hz
+
+    * version -- MPEG version (1, 2, 2.5)
+    * layer -- 1, 2, or 3
+    * mode -- One of STEREO, JOINTSTEREO, DUALCHANNEL, or MONO (0-3)
+    * protected -- whether or not the file is "protected"
+    * padding -- whether or not audio frames are padded
+    * sample_rate -- audio sample rate, in Hz
     """
 
     # Map (version, layer) tuples to bitrates.
@@ -62,7 +74,7 @@ class MPEGInfo(object):
         1: [44100, 48000, 32000],
         2: [22050, 24000, 16000],
         2.5: [11025, 12000, 8000]
-        }
+    }
 
     sketchy = False
 
@@ -101,7 +113,7 @@ class MPEGInfo(object):
         for i in [offset, 0.3 * size, 0.6 * size, 0.9 * size]:
             try:
                 self.__try(fileobj, int(i), size - offset)
-            except error as e:
+            except error:
                 pass
             else:
                 break
@@ -134,12 +146,12 @@ class MPEGInfo(object):
                 bitrate = (frame_data >> 12) & 0xF
                 sample_rate = (frame_data >> 10) & 0x3
                 padding = (frame_data >> 9) & 0x1
-                private = (frame_data >> 8) & 0x1
+                #private = (frame_data >> 8) & 0x1
                 self.mode = (frame_data >> 6) & 0x3
-                mode_extension = (frame_data >> 4) & 0x3
-                copyright = (frame_data >> 3) & 0x1
-                original = (frame_data >> 2) & 0x1
-                emphasis = (frame_data >> 0) & 0x3
+                #mode_extension = (frame_data >> 4) & 0x3
+                #copyright = (frame_data >> 3) & 0x1
+                #original = (frame_data >> 2) & 0x1
+                #emphasis = (frame_data >> 0) & 0x3
                 if (version == 1 or layer == 0 or sample_rate == 0x3 or
                     bitrate == 0 or bitrate == 0xF):
                     frame_1 = data.find(b"\xff", frame_1 + 2)
@@ -218,13 +230,18 @@ class MPEGInfo(object):
                 self.bitrate = int((br_bytes * 8) // self.length)
 
     def pprint(self):
-        s = "MPEG {} layer {}, {} bps, {} Hz, {:.2f} seconds{}".format(
+        s = "MPEG {} layer {}, {} bps, {} Hz, {:.2f} seconds".format(
             self.version, self.layer, self.bitrate, self.sample_rate,
-            self.length, (" (sketchy)" if self.sketchy else ""))
+            self.length) + (" (sketchy)" if self.sketchy else "")
         return s
 
+
 class MP3(ID3FileType):
-    """An MPEG audio (usually MPEG-1 Layer 3) file."""
+    """An MPEG audio (usually MPEG-1 Layer 3) file.
+
+    :ivar info: :class:`MPEGInfo`
+    :ivar tags: :class:`ID3 <mutagen.id3.ID3>`
+    """
 
     _Info = MPEGInfo
     _mimes = ["audio/mp3", "audio/x-mp3", "audio/mpeg", "audio/mpg",
@@ -237,10 +254,16 @@ class MP3(ID3FileType):
                 filename.endswith(".mp2") + filename.endswith(".mpg") +
                 filename.endswith(".mpeg"))
 
+
 Open = MP3
 
+
 class EasyMP3(MP3):
-    """Like MP3, but uses EasyID3 for tags."""
+    """Like MP3, but uses EasyID3 for tags.
+
+    :ivar info: :class:`MPEGInfo`
+    :ivar tags: :class:`EasyID3 <mutagen.easyid3.EasyID3>`
+    """
+
     from mutagenx.easyid3 import EasyID3 as ID3
-
-
+    ID3 = ID3

@@ -6,8 +6,6 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# $Id: musepack.py 4013 2007-04-23 09:18:22Z luks $
 
 """Musepack audio streams with APEv2 tags.
 
@@ -26,7 +24,8 @@ from mutagenx.id3 import BitPaddedInt
 from mutagenx._util import cdata
 
 
-class MusepackHeaderError(error): pass
+class MusepackHeaderError(error):
+    pass
 
 
 RATES = [44100, 48000, 37800, 32000]
@@ -41,6 +40,7 @@ def _parse_sv8_int(fileobj, limit=9):
 
     Returns (parsed number, number of bytes read)
     """
+
     num = 0
     for i in range(limit):
         c = fileobj.read(1)
@@ -52,6 +52,7 @@ def _parse_sv8_int(fileobj, limit=9):
     if limit > 0:
         raise ValueError
     return 0, 0
+
 
 def _calc_sv8_gain(gain):
     # 64.82 taken from mpcdec
@@ -65,16 +66,18 @@ def _calc_sv8_peak(peak):
 class MusepackInfo(object):
     """Musepack stream information.
 
-    Attributes:
-    channels -- number of audio channels
-    length -- file length in seconds, as a float
-    sample_rate -- audio sampling rate in Hz
-    bitrate -- audio bitrate, in bits per second
-    version -- Musepack stream version
+    Attributes::
+
+    * channels -- number of audio channels
+    * length -- file length in seconds, as a float
+    * sample_rate -- audio sampling rate in Hz
+    * bitrate -- audio bitrate, in bits per second
+    * version -- Musepack stream version
 
     Optional Attributes:
-    title_gain, title_peak -- Replay Gain and peak data for this song
-    album_gain, album_peak -- Replay Gain and peak data for this album
+
+    * title_gain, title_peak -- Replay Gain and peak data for this song
+    * album_gain, album_peak -- Replay Gain and peak data for this album
 
     These attributes are only available in stream version 7/8. The
     gains are a float, +/- some dB. The peaks are a percentage [0..1] of
@@ -215,10 +218,10 @@ class MusepackInfo(object):
         # SV4-SV6
         else:
             header_dword = cdata.uint_le(header[0:4])
-            self.version = (header_dword >> 11) & 0x03FF;
+            self.version = (header_dword >> 11) & 0x03FF
             if self.version < 4 or self.version > 6:
                 raise MusepackHeaderError("not a Musepack file")
-            self.bitrate = (header_dword >> 23) & 0x01FF;
+            self.bitrate = (header_dword >> 23) & 0x01FF
             self.sample_rate = 44100
             if self.version >= 5:
                 frames = cdata.uint_le(header[4:8])
@@ -240,6 +243,7 @@ class MusepackInfo(object):
         return "Musepack SV{}, {:.2} seconds, {} Hz, {} bps{}".format(
             self.version, self.length, self.sample_rate, self.bitrate, rg_data)
 
+
 class Musepack(APEv2File):
     _Info = MusepackInfo
     _mimes = ["audio/x-musepack", "audio/x-mpc"]
@@ -248,5 +252,6 @@ class Musepack(APEv2File):
     def score(filename, fileobj, header):
         return (header.startswith(b"MP+") + header.startswith(b"MPCK") +
                 filename.lower().endswith(".mpc"))
+
 
 Open = Musepack

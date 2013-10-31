@@ -3,8 +3,6 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# $Id: mp4.py 4233 2007-12-28 07:24:59Z luks $
 
 """Read and write MPEG-4 audio files with iTunes metadata.
 
@@ -13,11 +11,14 @@ as found in Apple's MP4 (aka M4A, M4B, M4P) files.
 
 There is no official specification for this format. The source code
 for TagLib, FAAD, and various MPEG specifications at
-http://developer.apple.com/documentation/QuickTime/QTFF/,
-http://www.geocities.com/xhelmboyx/quicktime/formats/mp4-layout.txt,
-http://standards.iso.org/ittf/PubliclyAvailableStandards/c041828_ISO_IEC_14496-12_2005(E).zip,
-and http://wiki.multimedia.cx/index.php?title=Apple_QuickTime were all
-consulted.
+
+* http://developer.apple.com/documentation/QuickTime/QTFF/
+* http://www.geocities.com/xhelmboyx/quicktime/formats/mp4-layout.txt
+* http://standards.iso.org/ittf/PubliclyAvailableStandards/\
+c041828_ISO_IEC_14496-12_2005(E).zip
+* http://wiki.multimedia.cx/index.php?title=Apple_QuickTime
+
+were all consulted.
 """
 
 import struct
@@ -27,10 +28,22 @@ from mutagenx import FileType, Metadata
 from mutagenx._constants import GENRES
 from mutagenx._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
 
-class error(IOError): pass
-class MP4MetadataError(error): pass
-class MP4StreamInfoError(error): pass
-class MP4MetadataValueError(ValueError, MP4MetadataError): pass
+
+class error(IOError):
+    pass
+
+
+class MP4MetadataError(error):
+    pass
+
+
+class MP4StreamInfoError(error):
+    pass
+
+
+class MP4MetadataValueError(ValueError, MP4MetadataError):
+    pass
+
 
 # This is not an exhaustive list of container atoms, but just the
 # ones this module needs to peek inside.
@@ -44,49 +57,51 @@ __all__ = ['MP4', 'Open', 'delete', 'MP4Cover', 'MP4FreeForm']
 class MP4Cover(bytes):
     """A cover artwork.
 
-    Attributes:
-    imageformat -- format of the image (either FORMAT_JPEG or FORMAT_PNG)
+    Attributes::
+
+    * imageformat -- format of the image (either FORMAT_JPEG or FORMAT_PNG)
     """
     FORMAT_JPEG = 0x0D
     FORMAT_PNG = 0x0E
 
     def __new__(cls, data, imageformat=None):
-        self = bytes.__new__(cls, data)
+        return bytes.__new__(cls, data)
 
-        if imageformat is None:
-            imageformat = MP4Cover.FORMAT_JPEG
+    def __init__(self, data, imageformat=FORMAT_JPEG):
         self.imageformat = imageformat
-
         try:
             self.format
         except AttributeError:
             self.format = imageformat
-        return self
+
 
 class MP4FreeForm(bytes):
     """A freeform value.
 
-    Attributes:
-    dataformat -- format of the data (either FORMAT_TEXT or FORMAT_DATA)
+    Attributes::
+
+    * dataformat -- format of the data (either FORMAT_TEXT or FORMAT_DATA)
     """
+
     FORMAT_DATA = 0x0
     FORMAT_TEXT = 0x1
 
     def __new__(cls, data, dataformat=None):
-        self = bytes.__new__(cls, data)
-        if dataformat is None:
-            dataformat = MP4FreeForm.FORMAT_TEXT
+        return bytes.__new__(cls, data)
+
+    def __init__(self, data, dataformat=FORMAT_TEXT):
         self.dataformat = dataformat
-        return self
+
 
 class Atom(object):
     """An individual atom.
 
-    Attributes:
-    children -- list child atoms (or None for non-container atoms)
-    length -- length of this atom, including length and name
-    name -- four byte name of the atom, as bytes
-    offset -- location in the constructor-given fileobj of this atom
+    Attributes::
+
+    * children -- list child atoms (or None for non-container atoms)
+    * length -- length of this atom, including length and name
+    * name -- four byte name of the atom, as bytes
+    * offset -- location in the constructor-given fileobj of this atom
 
     This structure should only be used internally by Mutagen.
     """
@@ -99,7 +114,9 @@ class Atom(object):
 
         if self.length == 1:
             self.length = struct.unpack(">Q", fileobj.read(8))[0]
-
+            if self.length < 16:
+                raise MP4MetadataError(
+                    "64 bit atom length can only be 16 and higher")
         elif self.length == 0:
             if level != 0:
                 raise MP4MetadataError(
@@ -171,11 +188,13 @@ class Atom(object):
 class Atoms(object):
     """Root atoms in a given file.
 
-    Attributes:
-    atoms -- a list of top-level atoms as Atom objects
+    Attributes::
+
+    * atoms -- a list of top-level atoms as Atom objects
 
     This structure should only be used internally by Mutagen.
     """
+
     def __init__(self, fileobj):
         self.atoms = []
         fileobj.seek(0, 2)
@@ -191,9 +210,10 @@ class Atoms(object):
         list of three atoms, corresponding to the moov, udta, and meta
         atoms.
         """
+
         path = [self]
         for name in names:
-            path.append(path[-1][name,])
+            path.append(path[-1][name, ])
         return path[1:]
 
     def __getitem__(self, names):
@@ -215,53 +235,57 @@ class Atoms(object):
 
 
 class MP4Tags(DictProxy, Metadata):
-    """Dictionary containing Apple iTunes metadata list key/values.
+    r"""Dictionary containing Apple iTunes metadata list key/values.
 
     Keys are four byte identifiers, except for freeform ('----')
     keys. Values are usually unicode strings, but some atoms have a
     special structure:
 
     Text values (multiple values per key are supported):
-        '\xa9nam' -- track title
-        '\xa9alb' -- album
-        '\xa9ART' -- artist
-        'aART' -- album artist
-        '\xa9wrt' -- composer
-        '\xa9day' -- year
-        '\xa9cmt' -- comment
-        'desc' -- description (usually used in podcasts)
-        'purd' -- purchase date
-        '\xa9grp' -- grouping
-        '\xa9gen' -- genre
-        '\xa9lyr' -- lyrics
-        'purl' -- podcast URL
-        'egid' -- podcast episode GUID
-        'catg' -- podcast category
-        'keyw' -- podcast keywords
-        '\xa9too' -- encoded by
-        'cprt' -- copyright
-        'soal' -- album sort order
-        'soaa' -- album artist sort order
-        'soar' -- artist sort order
-        'sonm' -- title sort order
-        'soco' -- composer sort order
-        'sosn' -- show sort order
-        'tvsh' -- show name
+
+    * '\\xa9nam' -- track title
+    * '\\xa9alb' -- album
+    * '\\xa9ART' -- artist
+    * 'aART' -- album artist
+    * '\\xa9wrt' -- composer
+    * '\\xa9day' -- year
+    * '\\xa9cmt' -- comment
+    * 'desc' -- description (usually used in podcasts)
+    * 'purd' -- purchase date
+    * '\\xa9grp' -- grouping
+    * '\\xa9gen' -- genre
+    * '\\xa9lyr' -- lyrics
+    * 'purl' -- podcast URL
+    * 'egid' -- podcast episode GUID
+    * 'catg' -- podcast category
+    * 'keyw' -- podcast keywords
+    * '\\xa9too' -- encoded by
+    * 'cprt' -- copyright
+    * 'soal' -- album sort order
+    * 'soaa' -- album artist sort order
+    * 'soar' -- artist sort order
+    * 'sonm' -- title sort order
+    * 'soco' -- composer sort order
+    * 'sosn' -- show sort order
+    * 'tvsh' -- show name
 
     Boolean values:
-        'cpil' -- part of a compilation
-        'pgap' -- part of a gapless album
-        'pcst' -- podcast (iTunes reads this only on import)
+
+    * 'cpil' -- part of a compilation
+    * 'pgap' -- part of a gapless album
+    * 'pcst' -- podcast (iTunes reads this only on import)
 
     Tuples of ints (multiple values per key are supported):
-        'trkn' -- track number, total tracks
-        'disk' -- disc number, total discs
+
+    * 'trkn' -- track number, total tracks
+    * 'disk' -- disc number, total discs
 
     Others:
-        'tmpo' -- tempo/BPM, 16 bit int
-        'covr' -- cover artwork, list of MP4Cover objects (which are
-                  tagged strs)
-        'gnre' -- ID3v1 genre. Not supported, use '\xa9gen' instead.
+
+    * 'tmpo' -- tempo/BPM, 16 bit int
+    * 'covr' -- cover artwork, list of MP4Cover objects (which are
+      tagged strs)
+    * 'gnre' -- ID3v1 genre. Not supported, use '\\xa9gen' instead.
 
     The freeform '----' frames use a key in the format '----:mean:name'
     where 'mean' is usually 'com.apple.iTunes' and 'name' is a unique
@@ -283,8 +307,23 @@ class MP4Tags(DictProxy, Metadata):
         for atom in ilst.children:
             fileobj.seek(atom.offset + 8)
             data = fileobj.read(atom.length - 8)
-            info = self.__atoms.get(atom.name, (type(self).__parse_text, None))
-            info[0](self, atom, data, *info[2:])
+            if len(data) != (atom.length - 8):
+                raise MP4MetadataError("Not enough data")
+
+            if atom.name in self.__atoms:
+                info = self__atomes[atom.name]
+                info[0](self, atom, data, *info[2:])
+            else:
+                # unknown atom, try as text and skip if it fails
+                # FIXME: keep them somehow
+                try:
+                    self.__parse_text(atom, data)
+                except MP4MetadataError:
+                    continue
+
+    @classmethod
+    def _can_load(cls, atoms):
+        return "moov.udta.meta.ilst" in atoms
 
     @staticmethod
     def __get_sort_stats(item):
@@ -488,7 +527,7 @@ class MP4Tags(DictProxy, Metadata):
             self[atom.name + b":" + mean + b":" + name] = value
 
     def __render_freeform(self, key, value):
-        dummy, mean, name = key.split(b":", 2)
+        mean, name = key.split(b":", 2)[1:]
         mean = struct.pack(">I4sI", len(mean) + 12, b"mean", 0) + mean
         name = struct.pack(">I4sI", len(name) + 12, b"name", 0) + name
         if isinstance(value, bytes):
@@ -503,8 +542,9 @@ class MP4Tags(DictProxy, Metadata):
         return Atom.render(b"----", mean + name + data)
 
     def __parse_pair(self, atom, data):
-        self[atom.name] = [struct.unpack(">2H", data[2:6]) for
-                           flags, data in self.__parse_data(atom, data)]
+        self[atom.name] = [struct.unpack(">2H", d[2:6]) for
+                           flags, d in self.__parse_data(atom, data)]
+
     def __render_pair(self, key, value):
         data = []
         for (track, total) in value:
@@ -512,7 +552,7 @@ class MP4Tags(DictProxy, Metadata):
                 data.append(struct.pack(">4H", 0, track, total, 0))
             else:
                 raise MP4MetadataValueError(
-                    "invalid numeric pair {!r}".format((track, total),))
+                    "invalid numeric pair {!r}".format((track, total)))
         return self.__render_data(key, 0, data)
 
     def __render_pair_no_trailing(self, key, value):
@@ -522,7 +562,7 @@ class MP4Tags(DictProxy, Metadata):
                 data.append(struct.pack(">3H", 0, track, total))
             else:
                 raise MP4MetadataValueError(
-                    "invalid numeric pair {!r}".format((track, total),))
+                    "invalid numeric pair {!r}".format((track, total)))
         return self.__render_data(key, 0, data)
 
     def __parse_genre(self, atom, data):
@@ -579,8 +619,7 @@ class MP4Tags(DictProxy, Metadata):
             if imageformat not in (MP4Cover.FORMAT_JPEG, MP4Cover.FORMAT_PNG):
                 imageformat = MP4Cover.FORMAT_JPEG
             cover = MP4Cover(data[pos+16:pos+length], imageformat)
-            self[atom.name].append(
-                MP4Cover(data[pos+16:pos+length], imageformat))
+            self[atom.name].append(cover)
             pos += length
 
     def __render_cover(self, key, value):
@@ -602,12 +641,14 @@ class MP4Tags(DictProxy, Metadata):
             self[atom.name] = value
 
     def __render_text(self, key, value, flags=1):
-        if isinstance(value, str) or isinstance(value, bytes):
+        if isinstance(value, (str, bytes)):
             value = [value]
         return self.__render_data(
             key, flags, [utf8(v) for v in value])
 
     def delete(self, filename):
+        """Remove the metadata from the given filename."""
+
         self.clear()
         self.save(filename)
 
@@ -623,7 +664,7 @@ class MP4Tags(DictProxy, Metadata):
         b"covr": (__parse_cover, __render_cover),
         b"purl": (__parse_text, __render_text, 0),
         b"egid": (__parse_text, __render_text, 0),
-        }
+    }
 
     def pprint(self):
         values = []
@@ -641,12 +682,13 @@ class MP4Tags(DictProxy, Metadata):
 class MP4Info(object):
     """MPEG-4 stream information.
 
-    Attributes:
-    bitrate -- bitrate in bits per second, as an int
-    length -- file length in seconds, as a float
-    channels -- number of audio channels
-    sample_rate -- audio sampling rate in Hz
-    bits_per_sample -- bits per sample
+    Attributes::
+
+    * bitrate -- bitrate in bits per second, as an int
+    * length -- file length in seconds, as a float
+    * channels -- number of audio channels
+    * sample_rate -- audio sampling rate in Hz
+    * bits_per_sample -- bits per sample
     """
 
     bitrate = 0
@@ -694,7 +736,7 @@ class MP4Info(object):
                         pos += 3
                     pos += 4
                     # decoder config descriptor type
-                    if data[pos] == 0x04:
+                    if data[pos] == b'\x04'[0]:
                         pos += 1
                         # skip extended descriptor type tag, length,
                         # object type ID, stream type, buffer size
@@ -712,11 +754,15 @@ class MP4Info(object):
         return "MPEG-4 audio, {:.2f} seconds, {} bps".format(
             self.length, self.bitrate)
 
+
 class MP4(FileType):
     """An MPEG-4 audio file, probably containing AAC.
 
     If more than one track is present in the file, the first is used.
     Only audio ('soun') tracks will be read.
+
+    :ivar info: :class:`MP4Info`
+    :ivar tags: :class:`MP4Tags`
     """
 
     MP4Tags = MP4Tags
@@ -728,6 +774,11 @@ class MP4(FileType):
         fileobj = open(filename, "rb")
         try:
             atoms = Atoms(fileobj)
+
+            # ftyp is always the first atom in a valid MP4 file
+            if not atoms.atoms or atoms.atoms[0].name != b"ftyp":
+                raise error("Not a MP4 file")
+
             try:
                 self.info = MP4Info(atoms, fileobj)
             except Exception as err:
@@ -742,7 +793,10 @@ class MP4(FileType):
             fileobj.close()
 
     def add_tags(self):
-        self.tags = self.MP4Tags()
+        if self.tags is None:
+            self.tags = self.MP4Tags()
+        else:
+            raise error("an MP4 tag already exists")
 
     @staticmethod
     def score(filename, fileobj, header_data):
@@ -750,6 +804,8 @@ class MP4(FileType):
 
 Open = MP4
 
+
 def delete(filename):
     """Remove tags from a file."""
+
     MP4(filename).delete()

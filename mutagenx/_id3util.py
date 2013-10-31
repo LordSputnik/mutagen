@@ -85,94 +85,52 @@ class unsynch(object):
             append(0x00)
         return bytes(output)
 
-
-class _BitPaddedMixin(object):
-
-    def as_str(self, width=4, minwidth=4):
-        return self.to_str(self, self.bits, self.bigendian, width, minwidth)
-
-    @staticmethod
-    def to_str(value, bits=7, bigendian=True, width=4, minwidth=4):
-        mask = (1 << bits) - 1
-
-        if width != -1:
-            index = 0
-            bytes_ = bytearray(width)
-            try:
-                while value:
-                    bytes_[index] = value & mask
-                    value >>= bits
-                    index += 1
-            except IndexError:
-                raise ValueError('Value too wide (>%d bytes)' % width)
-        else:
-            # PCNT and POPM use growing integers
-            # of at least 4 bytes (=minwidth) as counters.
-            bytes_ = bytearray()
-            append = bytes_.append
-            while value:
-                append(value & mask)
-                value >>= bits
-            bytes_ = bytes_.ljust(minwidth, "\x00")
-
-        if bigendian:
-            bytes_.reverse()
-        return str(bytes_)
-
-    @staticmethod
-    def has_valid_padding(value, bits=7):
-        """Whether the padding bits are all zero"""
-
-        assert bits <= 8
-
-        mask = (((1 << (8 - bits)) - 1) << bits)
-
-        if isinstance(value, (int, long)):
-            while value:
-                if value & mask:
-                    return False
-                value >>= 8
-        elif isinstance(value, str):
-            for byte in value:
-                if ord(byte) & mask:
-                    return False
-        else:
-            raise TypeError
-
-        return True
-
-
-class BitPaddedInt(int, _BitPaddedMixin):
-
+class BitPaddedInt(int):
     def __new__(cls, value, bits=7, bigendian=True):
-
+        "Strips 8-bits bits out of every byte"
         mask = (1 << (bits)) - 1
-        numeric_value = 0
-        shift = 0
-
-        if isinstance(value, (int, long)):
+        if isinstance(value, int):
+            reformed_bytes = []
             while value:
-                numeric_value += (value & mask) << shift
-                value >>= 8
-                shift += bits
-        elif isinstance(value, str):
+                reformed_bytes.append(value & ((1 << bits) - 1))
+                value = value >> 8
+        if isinstance(value, bytes):
+            reformed_bytes = [b & mask for b in value]
             if bigendian:
-                value = reversed(value)
-            for byte in value:
-                numeric_value += (ord(byte) & mask) << shift
-                shift += bits
-        else:
-            raise TypeError
+                reformed_bytes.reverse()
+        numeric_value = 0
+        for shift, byte in zip(range(0, len(reformed_bytes) * bits, bits),
+                               reformed_bytes):
+            numeric_value += byte << shift
 
-        if isinstance(numeric_value, long):
-            self = long.__new__(BitPaddedLong, numeric_value)
-        else:
-            self = int.__new__(BitPaddedInt, numeric_value)
-
+        self = int.__new__(BitPaddedInt, numeric_value)
         self.bits = bits
         self.bigendian = bigendian
         return self
 
+    @staticmethod
+    def to_bytes(value, bits=7, bigendian=True, width=4):
+        bits = getattr(value, 'bits', bits)
+        bigendian = getattr(value, 'bigendian', bigendian)
+        value = int(value)
+        mask = (1 << bits) - 1
+        reformed_bytes = []
+        while value:
+            reformed_bytes.append(value & mask)
+            value = value >> bits
+        if width == -1:
+            width = max(4, len(reformed_bytes))
 
-class BitPaddedLong(long, _BitPaddedMixin):
-    pass
+        if len(reformed_bytes) > width:
+            raise ValueError("Value too wide "
+                             "({} bytes)".format(len(reformed_bytes)))
+        else:
+            reformed_bytes.extend([0] * (width - len(reformed_bytes)))
+
+        if bigendian:
+            reformed_bytes.reverse()
+
+        return bytes(reformed_bytes)
+
+    def as_bytes(self, bits=7, bigendian=True, width=4):
+        return BitPaddedInt.to_bytes(self,bits,bigendian,width)

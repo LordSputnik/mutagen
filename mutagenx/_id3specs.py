@@ -7,8 +7,9 @@
 import struct
 from struct import unpack, pack
 from warnings import warn
+import functools
 
-from mutagen._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
+from mutagenx._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
 
 # As far as I can tell, the purpose of validate is to return valid data for
 # write, and if it can't do that, raise an exception. I've rewritten a few
@@ -86,7 +87,7 @@ class EncodingSpec(ByteSpec):
         if 0 <= value <= 3:
             return value
 
-        raise ValueError("Invalid Encoding: {}".format(repr(value)))
+        raise ValueError("Invalid Encoding: {!r}".format(value))
 
     def _validate23(self, frame, value, **kwargs):
         # only 0, 1 are valid in v2.3, default to utf-16
@@ -286,6 +287,10 @@ class ID3TimeStamp(object):
     def __init__(self, text):
         if isinstance(text, ID3TimeStamp):
             text = text.text
+
+        self.year = self.month = self.day = None
+        self.hour = self.minute = self.second = None
+
         self.text = text
 
     def get_text(self):
