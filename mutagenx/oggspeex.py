@@ -5,8 +5,6 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# $Id: oggspeex.py 3976 2007-01-13 22:00:14Z piman $
 
 """Read and write Ogg Speex comments.
 
@@ -25,19 +23,23 @@ from mutagenx._vorbis import VComment
 from mutagenx.ogg import OggPage, OggFileType, error as OggError
 from mutagenx._util import cdata
 
-class Error(OggError):
+
+class error(OggError):
     pass
 
-class OggSpeexHeaderError(Error):
+
+class OggSpeexHeaderError(error):
     pass
+
 
 class OggSpeexInfo(object):
     """Ogg Speex stream information.
 
     Attributes:
-    bitrate - nominal bitrate in bits per second
-    channels - number of channels
-    length - file length in seconds, as a float
+
+    * bitrate - nominal bitrate in bits per second
+    * channels - number of channels
+    * length - file length in seconds, as a float
 
     The reference encoder does not set the bitrate; in this case,
     the bitrate will be 0.
@@ -63,6 +65,7 @@ class OggSpeexInfo(object):
 
     def pprint(self):
         return "Ogg Speex, {:.2f} seconds".format(self.length)
+
 
 class OggSpeexVComment(VComment):
     """Speex comments embedded in an Ogg bitstream."""
@@ -111,6 +114,7 @@ class OggSpeexVComment(VComment):
         new_pages = OggPage.from_packets(packets, old_pages[0].sequence)
         OggPage.replace(fileobj, old_pages, new_pages)
 
+
 class OggSpeex(OggFileType):
     """An Ogg Speex file."""
 
@@ -123,9 +127,11 @@ class OggSpeex(OggFileType):
     def score(filename, fileobj, header):
         return (header.startswith(b"OggS") * (b"Speex   " in header))
 
+
 Open = OggSpeex
+
 
 def delete(filename):
     """Remove tags from a file."""
-    OggSpeex(filename).delete()
 
+    OggSpeex(filename).delete()

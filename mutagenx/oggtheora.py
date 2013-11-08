@@ -5,8 +5,6 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# $Id: oggtheora.py 3976 2007-01-13 22:00:14Z piman $
 
 """Read and write Ogg Theora comments.
 
@@ -24,15 +22,22 @@ from mutagenx._vorbis import VComment
 from mutagenx._util import cdata
 from mutagenx.ogg import OggPage, OggFileType, error as OggError
 
-class Error(OggError): pass
-class OggTheoraHeaderError(Error): pass
+
+class error(OggError):
+    pass
+
+
+class OggTheoraHeaderError(error):
+    pass
+
 
 class OggTheoraInfo(object):
     """Ogg Theora stream information.
 
     Attributes:
-    length - file length in seconds, as a float
-    fps - video frames per second, as a float
+
+    * length - file length in seconds, as a float
+    * fps - video frames per second, as a float
     """
 
     length = 0
@@ -66,6 +71,7 @@ class OggTheoraInfo(object):
 
     def pprint(self):
         return "Ogg Theora, {:.2f} seconds, {} bps".format(self.length, self.bitrate)
+
 
 class OggTheoraCommentDict(VComment):
     """Theora comments embedded in an Ogg bitstream."""
@@ -102,6 +108,7 @@ class OggTheoraCommentDict(VComment):
         new_pages = OggPage.from_packets(packets, old_pages[0].sequence)
         OggPage.replace(fileobj, old_pages, new_pages)
 
+
 class OggTheora(OggFileType):
     """An Ogg Theora file."""
 
@@ -115,8 +122,11 @@ class OggTheora(OggFileType):
         return (header.startswith(b"OggS") *
                 ((b"\x80theora" in header) + (b"\x81theora" in header)))
 
+
 Open = OggTheora
+
 
 def delete(filename):
     """Remove tags from a file."""
+
     OggTheora(filename).delete()

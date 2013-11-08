@@ -6,7 +6,7 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 #
-# $Id: oggflac.py 3976 2007-01-13 22:00:14Z piman $
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg FLAC comments.
 
@@ -25,8 +25,15 @@ import io
 from mutagenx.flac import StreamInfo, VCFLACDict
 from mutagenx.ogg import OggPage, OggFileType, error as OggError
 
-class Error(OggError): pass
-class OggFLACHeaderError(Error): pass
+
+
+class error(OggError):
+    pass
+
+
+class OggFLACHeaderError(error):
+    pass
+
 
 class OggFLACStreamInfo(StreamInfo):
     """Ogg FLAC general header and stream info.
@@ -35,14 +42,19 @@ class OggFLACStreamInfo(StreamInfo):
     block, as well as the Ogg codec setup that precedes it.
 
     Attributes (in addition to StreamInfo's):
-    packets -- number of metadata packets
-    serial -- Ogg logical stream serial number
+
+    * packets -- number of metadata packets
+    * serial -- Ogg logical stream serial number
     """
 
     packets = 0
     serial = 0
 
     def load(self, data):
+        # Ogg expects file objects that don't raise on read
+        if isinstance(data, StrictFileObject):
+            data = data._fileobj
+
         page = OggPage(data)
         while not page.packets[0].startswith(b"\x7FFLAC"):
             page = OggPage(data)
@@ -56,8 +68,8 @@ class OggFLACStreamInfo(StreamInfo):
         self.serial = page.serial
 
         # Skip over the block header.
-        stringobj = io.BytesIO(page.packets[0][17:])
-        super(OggFLACStreamInfo, self).load(io.BytesIO(page.packets[0][17:]))
+        stringobj = StrictFileObject(io.BytesIO(page.packets[0][17:]))
+        super(OggFLACStreamInfo, self).load(stringobj)
 
     def _post_tags(self, fileobj):
         if self.length:
@@ -67,6 +79,7 @@ class OggFLACStreamInfo(StreamInfo):
 
     def pprint(self):
         return "Ogg " + super(OggFLACStreamInfo, self).pprint()
+
 
 class OggFLACVComment(VCFLACDict):
     def load(self, data, info, errors='replace'):
@@ -112,6 +125,7 @@ class OggFLACVComment(VCFLACDict):
         new_pages = OggPage.from_packets(packets, old_pages[0].sequence)
         OggPage.replace(fileobj, old_pages, new_pages)
 
+
 class OggFLAC(OggFileType):
     """An Ogg FLAC file."""
 
@@ -125,8 +139,11 @@ class OggFLAC(OggFileType):
         return (header.startswith(b"OggS") * (
             (b"FLAC" in header) + (b"fLaC" in header)))
 
+
 Open = OggFLAC
+
 
 def delete(filename):
     """Remove tags from a file."""
+
     OggFLAC(filename).delete()

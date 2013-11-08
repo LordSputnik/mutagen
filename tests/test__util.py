@@ -202,7 +202,7 @@ class FileHandling(TestCase):
 
     # Generate a bunch of random insertions, apply them, delete them,
     # and make sure everything is still correct.
-    #
+    # 
     # The num_runs and num_changes values are tuned to take about 10s
     # on my laptop, or about 30 seconds since we we have 3 variations
     # on insert/delete_bytes brokenness. If I ever get a faster

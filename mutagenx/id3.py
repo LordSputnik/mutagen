@@ -62,9 +62,9 @@ class ID3(DictProxy, mutagenx.Metadata):
     filename = None
 
     _V24 = (2, 4, 0)
-    _V23 = (2, 4, 0)
-    _V22 = (2, 4, 0)
-    _V11 = (2, 4, 0)
+    _V23 = (2, 3, 0)
+    _V22 = (2, 2, 0)
+    _V11 = (1, 1)
 
     def __init__(self, *args, **kwargs):
         self.unknown_frames = []

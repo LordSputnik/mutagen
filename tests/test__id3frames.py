@@ -11,7 +11,7 @@ class FrameSanityChecks(TestCase):
 
     def test_TF(self):
         from mutagenx.id3 import TextFrame
-        self.assert_(isinstance(TextFrame(text='text'), TextFrame))
+        self.assert_(isinstance(TextFrame(encoding=0, text='text'), TextFrame))
 
     def test_UF(self):
         from mutagenx.id3 import UrlFrame
@@ -23,61 +23,61 @@ class FrameSanityChecks(TestCase):
 
     def test_NTF(self):
         from mutagenx.id3 import NumericTextFrame
-        self.assert_(isinstance(NumericTextFrame(text='1'), NumericTextFrame))
+        self.assert_(isinstance(NumericTextFrame(encoding=0, text='1'), NumericTextFrame))
 
     def test_NTPF(self):
         from mutagenx.id3 import NumericPartTextFrame
         self.assert_(
-            isinstance(NumericPartTextFrame(text='1/2'), NumericPartTextFrame))
+            isinstance(NumericPartTextFrame(encoding=0, text='1/2'), NumericPartTextFrame))
 
     def test_MTF(self):
         from mutagenx.id3 import TextFrame
-        self.assert_(isinstance(TextFrame(text=['a','b']), TextFrame))
+        self.assert_(isinstance(TextFrame(encoding=0, text=['a','b']), TextFrame))
 
     def test_TXXX(self):
         from mutagenx.id3 import TXXX
-        self.assert_(isinstance(TXXX(desc='d',text='text'), TXXX))
+        self.assert_(isinstance(TXXX(encoding=0, desc='d',text='text'), TXXX))
 
     def test_22_uses_direct_ints(self):
-        data = 'TT1\x00\x00\x83\x00' + ('123456789abcdef' * 16)
+        data = b'TT1\x00\x00\x83\x00' + (b'123456789abcdef' * 16)
         tag = list(_22._ID3__read_frames(data, Frames_2_2))[0]
         self.assertEquals(data[7:7+0x82].decode('latin1'), tag.text[0])
 
     def test_frame_too_small(self):
-        self.assertEquals([], list(_24._ID3__read_frames('012345678', Frames)))
-        self.assertEquals([], list(_23._ID3__read_frames('012345678', Frames)))
-        self.assertEquals([], list(_22._ID3__read_frames('01234', Frames_2_2)))
+        self.assertEquals([], list(_24._ID3__read_frames(b'012345678', Frames)))
+        self.assertEquals([], list(_23._ID3__read_frames(b'012345678', Frames)))
+        self.assertEquals([], list(_22._ID3__read_frames(b'01234', Frames_2_2)))
         self.assertEquals(
-            [], list(_22._ID3__read_frames('TT1'+'\x00'*3, Frames_2_2)))
+            [], list(_22._ID3__read_frames(b'TT1'+b'\x00'*3, Frames_2_2)))
 
     def test_unknown_22_frame(self):
-        data = 'XYZ\x00\x00\x01\x00'
+        data = b'XYZ\x00\x00\x01\x00'
         self.assertEquals([data], list(_22._ID3__read_frames(data, {})))
 
 
     def test_zlib_latin1(self):
         from mutagenx.id3 import TPE1
-        tag = TPE1.fromData(_24, 0x9, '\x00\x00\x00\x0f'
-                'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
+        tag = TPE1.fromData(_24, 0x9, b'\x00\x00\x00\x0f'
+                b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
         self.assertEquals(tag.encoding, 0)
         self.assertEquals(tag, ['this is a/test'])
 
     def test_datalen_but_not_compressed(self):
         from mutagenx.id3 import TPE1
-        tag = TPE1.fromData(_24, 0x01, '\x00\x00\x00\x06\x00A test')
+        tag = TPE1.fromData(_24, 0x01, b'\x00\x00\x00\x06\x00A test')
         self.assertEquals(tag.encoding, 0)
         self.assertEquals(tag, ['A test'])
 
     def test_utf8(self):
         from mutagenx.id3 import TPE1
-        tag = TPE1.fromData(_23, 0x00, '\x03this is a test')
+        tag = TPE1.fromData(_23, 0x00, b'\x03this is a test')
         self.assertEquals(tag.encoding, 3)
         self.assertEquals(tag, 'this is a test')
 
     def test_zlib_utf16(self):
         from mutagenx.id3 import TPE1
-        data = ('\x00\x00\x00\x1fx\x9cc\xfc\xff\xaf\x84!\x83!\x93\xa1\x98A'
-                '\x01J&2\xe83\x940\xa4\x02\xd9%\x0c\x00\x87\xc6\x07#')
+        data = (b'\x00\x00\x00\x1fx\x9cc\xfc\xff\xaf\x84!\x83!\x93\xa1\x98A'
+                b'\x01J&2\xe83\x940\xa4\x02\xd9%\x0c\x00\x87\xc6\x07#')
         tag = TPE1.fromData(_23, 0x80, data)
         self.assertEquals(tag.encoding, 1)
         self.assertEquals(tag, ['this is a/test'])
@@ -89,7 +89,7 @@ class FrameSanityChecks(TestCase):
     def test_load_write(self):
         from mutagenx.id3 import TPE1, Frames
         artists= [s.decode('utf8') for s in
-                  ['\xc2\xb5', '\xe6\x97\xa5\xe6\x9c\xac']]
+                  [b'\xc2\xb5', b'\xe6\x97\xa5\xe6\x9c\xac']]
         artist = TPE1(encoding=3, text=artists)
         id3 = ID3()
         tag = list(id3._ID3__read_frames(
@@ -101,7 +101,7 @@ class FrameSanityChecks(TestCase):
         from mutagenx.id3 import TT1
         id3 = ID3()
         tt1 = TT1(encoding=0, text=u'whatcha staring at?')
-        id3.loaded_frame(tt1)
+        id3.add(tt1)
         tit1 = id3['TIT1']
 
         self.assertEquals(tt1.encoding, tit1.encoding)
@@ -110,22 +110,22 @@ class FrameSanityChecks(TestCase):
 
     def test_single_TXYZ(self):
         from mutagenx.id3 import TIT2
-        self.assertEquals(TIT2(text="a").HashKey, TIT2(text="b").HashKey)
+        self.assertEquals(TIT2(encoding=0, text="a").HashKey, TIT2(encoding=0, text="b").HashKey)
 
     def test_multi_TXXX(self):
         from mutagenx.id3 import TXXX
-        self.assertEquals(TXXX(text="a").HashKey, TXXX(text="b").HashKey)
-        self.assertNotEquals(TXXX(desc="a").HashKey, TXXX(desc="b").HashKey)
+        self.assertEquals(TXXX(encoding=0, text="a").HashKey, TXXX(encoding=0, text="b").HashKey)
+        self.assertNotEquals(TXXX(encoding=0, desc="a").HashKey, TXXX(encoding=0, desc="b").HashKey)
 
     def test_multi_WXXX(self):
         from mutagenx.id3 import WXXX
-        self.assertEquals(WXXX(text="a").HashKey, WXXX(text="b").HashKey)
-        self.assertNotEquals(WXXX(desc="a").HashKey, WXXX(desc="b").HashKey)
+        self.assertEquals(WXXX(encoding=0, text="a").HashKey, WXXX(encoding=0, text="b").HashKey)
+        self.assertNotEquals(WXXX(encoding=0, desc="a").HashKey, WXXX(encoding=0, desc="b").HashKey)
 
     def test_multi_COMM(self):
         from mutagenx.id3 import COMM
-        self.assertEquals(COMM(text="a").HashKey, COMM(text="b").HashKey)
-        self.assertNotEquals(COMM(desc="a").HashKey, COMM(desc="b").HashKey)
+        self.assertEquals(COMM(encoding=0, text="a").HashKey, COMM(encoding=0, text="b").HashKey)
+        self.assertNotEquals(COMM(encoding=0, desc="a").HashKey, COMM(encoding=0, desc="b").HashKey)
         self.assertNotEquals(
             COMM(lang="abc").HashKey, COMM(lang="def").HashKey)
 
@@ -136,8 +136,8 @@ class FrameSanityChecks(TestCase):
 
     def test_multi_APIC(self):
         from mutagenx.id3 import APIC
-        self.assertEquals(APIC(data="1").HashKey, APIC(data="2").HashKey)
-        self.assertNotEquals(APIC(desc="a").HashKey, APIC(desc="b").HashKey)
+        self.assertEquals(APIC(data=b"1").HashKey, APIC(data=b"2").HashKey)
+        self.assertNotEquals(APIC(encoding=0, desc="a").HashKey, APIC(encoding=0, desc="b").HashKey)
 
     def test_multi_POPM(self):
         from mutagenx.id3 import POPM
@@ -146,17 +146,17 @@ class FrameSanityChecks(TestCase):
 
     def test_multi_GEOB(self):
         from mutagenx.id3 import GEOB
-        self.assertEquals(GEOB(data="1").HashKey, GEOB(data="2").HashKey)
-        self.assertNotEquals(GEOB(desc="a").HashKey, GEOB(desc="b").HashKey)
+        self.assertEquals(GEOB(data=b"1").HashKey, GEOB(data=b"2").HashKey)
+        self.assertNotEquals(GEOB(encoding=0, desc="a").HashKey, GEOB(encoding=0, desc="b").HashKey)
 
     def test_multi_UFID(self):
         from mutagenx.id3 import UFID
-        self.assertEquals(UFID(data="1").HashKey, UFID(data="2").HashKey)
+        self.assertEquals(UFID(data=b"1").HashKey, UFID(data=b"2").HashKey)
         self.assertNotEquals(UFID(owner="a").HashKey, UFID(owner="b").HashKey)
 
     def test_multi_USER(self):
         from mutagenx.id3 import USER
-        self.assertEquals(USER(text="a").HashKey, USER(text="b").HashKey)
+        self.assertEquals(USER(encoding=0, text="a").HashKey, USER(encoding=0, text="b").HashKey)
         self.assertNotEquals(
             USER(lang="abc").HashKey, USER(lang="def").HashKey)
 
@@ -170,9 +170,11 @@ class Genres(TestCase):
     from mutagenx._constants import GENRES
     GENRES = GENRES
 
-    def _g(self, s): return self.TCON(text=s).genres
+    def _g(self, s):
+        return self.TCON(encoding=0, text=s).genres
 
-    def test_empty(self): self.assertEquals(self._g(""), [])
+    def test_empty(self):
+        self.assertEquals(self._g(""), [])
 
     def test_num(self):
         for i in range(len(self.GENRES)):
@@ -343,7 +345,7 @@ class TimeStampTextFrame(TestCase):
 
     def test_compare_to_unicode(self):
         frame = self.Frame(encoding=0, text=[u'1987', u'1988'])
-        self.failUnlessEqual(frame, unicode(frame))
+        self.failUnlessEqual(frame, str(frame))
 
 add(TimeStampTextFrame)
 

@@ -5,8 +5,6 @@
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# $Id: optimfrog.py 3923 2006-10-21 15:07:13Z luks $
 
 """OptimFROG audio streams with APEv2 tags.
 
@@ -23,17 +21,22 @@ For more information, see http://www.losslessaudio.org/
 __all__ = ["OptimFROG", "Open", "delete"]
 
 import struct
+
 from mutagenx.apev2 import APEv2File, error, delete
 
-class OptimFROGHeaderError(error): pass
+
+class OptimFROGHeaderError(error):
+    pass
+
 
 class OptimFROGInfo(object):
     """OptimFROG stream information.
 
     Attributes:
-    channels - number of audio channels
-    length - file length in seconds, as a float
-    sample_rate - audio sampling rate in Hz
+
+    * channels - number of audio channels
+    * length - file length in seconds, as a float
+    * sample_rate - audio sampling rate in Hz
     """
 
     def __init__(self, fileobj):

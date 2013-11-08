@@ -6,8 +6,6 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 #
-# $Id: ogg.py 3975 2007-01-13 21:51:17Z piman $
-#
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg bitstreams and pages.
@@ -30,7 +28,9 @@ from mutagenx._util import cdata, insert_bytes, delete_bytes
 
 class error(IOError):
     """Ogg stream parsing errors."""
+
     pass
+
 
 class OggPage(object):
     """A single Ogg page (not necessarily a single encoded packet).
@@ -43,13 +43,14 @@ class OggPage(object):
     to the start of the next page.
 
     Attributes:
-    version -- stream structure version (currently always 0)
-    position -- absolute stream position (default -1)
-    serial -- logical stream serial number (default 0)
-    sequence -- page sequence number within logical stream (default 0)
-    offset -- offset this page was read from (default None)
-    complete -- if the last packet on this page is complete (default True)
-    packets -- list of raw packet data (default [])
+
+    * version -- stream structure version (currently always 0)
+    * position -- absolute stream position (default -1)
+    * serial -- logical stream serial number (default 0)
+    * sequence -- page sequence number within logical stream (default 0)
+    * offset -- offset this page was read from (default None)
+    * complete -- if the last packet on this page is complete (default True)
+    * packets -- list of raw packet data (default [])
 
     Note that if 'complete' is false, the next page's 'continued'
     property must be true (so set both when constructing pages).
@@ -139,7 +140,7 @@ class OggPage(object):
         data = [
             struct.pack("<4sBBqIIi", b"OggS", self.version, self.__type_flags,
                         self.position, self.serial, self.sequence, 0)
-            ]
+        ]
 
         lacing_data = []
         for datum in self.packets:
@@ -162,19 +163,20 @@ class OggPage(object):
         data = data[:22] + crc + data[26:]
         return data
 
-    def __size(self):
-        size = 27 # Initial header size
+    @property
+    def size(self):
+        """Total frame size."""
+
+        header_size = 27 # Initial header size
         for datum in self.packets:
             quot, rem = divmod(len(datum), 255)
-            size += quot + 1
+            header_size += quot + 1
         if not self.complete and rem == 0:
             # Packet contains a multiple of 255 bytes and is not
             # terminated, so we don't have a \x00 at the end.
-            size -= 1
-        size += sum(len(p) for p in self.packets)
-        return size
-
-    size = property(__size, doc="Total frame size.")
+            header_size -= 1
+        header_size += sum(len(p) for p in self.packets)
+        return header_size
 
     def __set_flag(self, bit, val):
         mask = 1 << bit
@@ -184,24 +186,18 @@ class OggPage(object):
             self.__type_flags &= ~mask
 
     continued = property(
-        lambda self:
-            cdata.test_bit(self.__type_flags, 0),
-        lambda self, v:
-            self.__set_flag(0, v),
+        lambda self: cdata.test_bit(self.__type_flags, 0),
+        lambda self, v: self.__set_flag(0, v),
         doc="The first packet is continued from the previous page.")
 
     first = property(
-        lambda self:
-            cdata.test_bit(self.__type_flags, 1),
-        lambda self, v:
-            self.__set_flag(1, v),
+        lambda self: cdata.test_bit(self.__type_flags, 1),
+        lambda self, v: self.__set_flag(1, v),
         doc="This is the first page of a logical bitstream.")
 
     last = property(
-        lambda self:
-            cdata.test_bit(self.__type_flags, 2),
-        lambda self, v:
-            self.__set_flag(2, v),
+        lambda self: cdata.test_bit(self.__type_flags, 2),
+        lambda self, v: self.__set_flag(2, v),
         doc="This is the last page of a logical bitstream.")
 
     @staticmethod
@@ -261,7 +257,7 @@ class OggPage(object):
             if not pages[-1].complete:
                 raise ValueError("last packet does not complete")
         elif pages and pages[0].continued:
-            packets.append(b"")
+            packets.append([b""])
 
         for page in pages:
             if serial != page.serial:
@@ -450,6 +446,7 @@ class OggPage(object):
         except EOFError:
             return best_page
 
+
 class OggFileType(FileType):
     """An generic Ogg file."""
 
@@ -480,6 +477,7 @@ class OggFileType(FileType):
 
         If no filename is given, the one most recently loaded is used.
         """
+
         if filename is None:
             filename = self.filename
 
@@ -500,6 +498,7 @@ class OggFileType(FileType):
 
         If no filename is given, the one most recently loaded is used.
         """
+
         if filename is None:
             filename = self.filename
 

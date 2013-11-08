@@ -2,7 +2,6 @@ from tests import add, TestCase
 from mutagenx._vorbis import VComment, istag
 
 class Tistag(TestCase):
-    uses_mmap = False
 
     def test_empty(self): self.failIf(istag(""))
     def test_tilde(self): self.failIf(istag("ti~tle"))
@@ -17,14 +16,13 @@ add(Tistag)
 
 
 class TVComment(TestCase):
-    uses_mmap = False
-
     Kind = VComment
 
     def setUp(self):
         self.c = self.Kind()
-        self.c["artist"] = ["mu", "piman"]
-        self.c.append(("title", "more fakes"))
+        self.c.append(("artist", u"piman"))
+        self.c.append(("artist", u"mu"))
+        self.c.append(("title", u"more fakes"))
 
     def test_invalid_init(self):
         self.failUnlessRaises(TypeError, self.Kind, [])
@@ -46,7 +44,7 @@ class TVComment(TestCase):
         self.failUnless(self.c.validate())
 
     def test_validate_broken_key(self):
-        self.c.append((1, "valid"))
+        self.c.append((1, u"valid"))
         self.failUnlessRaises(ValueError, self.c.validate)
         self.failUnlessRaises(ValueError, self.c.write)
 
@@ -64,7 +62,7 @@ class TVComment(TestCase):
         self.failUnless(self.c.vendor.startswith("Mutagen"))
 
     def test_vendor_set(self):
-        self.c.vendor = "Not Mutagen"
+        self.c.vendor = b"Not Mutagen"
         self.failUnless(self.c.write()[4:].startswith(b"Not Mutagen"))
 
     def test_vendor_invalid(self):
@@ -152,6 +150,12 @@ class TVComment(TestCase):
         self.c["TITLE"] = "another fake"
         self.failUnlessEqual(self.c["title"], ["another fake"])
 
+    def test_set_preserve_case(self):
+        del(self.c["title"])
+        self.c["TiTlE"] = "blah"
+        self.failUnless(("TiTlE", "blah") in list(self.c))
+        self.failUnless("title" in self.c)
+
     def test_contains_case(self):
         self.failUnless("TITLE" in self.c)
 
@@ -164,6 +168,9 @@ class TVComment(TestCase):
 
     def test_del_failure(self):
         self.failUnlessRaises(KeyError, self.c.__delitem__, "woo")
+
+    def test_roundtrip(self):
+        self.failUnlessEqual(self.c, self.Kind(self.c.write()))
 
     def test_case_items_426(self):
         self.c.append(("WOO", "bar"))

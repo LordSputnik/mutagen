@@ -6,6 +6,7 @@ from mutagenx.id3 import ID3FileType
 from mutagenx.easyid3 import EasyID3, error as ID3Error, delete
 
 class TEasyID3(TestCase):
+
     def setUp(self):
         fd, self.filename = tempfile.mkstemp(suffix='.mp3')
         os.close(fd)
@@ -151,6 +152,10 @@ class TEasyID3(TestCase):
         self.id3["performer:foo"] = "Joe"
         self.failUnlessRaises(KeyError, self.id3.__delitem__, "performer:bar")
 
+    def test_txxx_empty(self):
+        # http://code.google.com/p/mutagen/issues/detail?id=135
+        self.id3["asin"] = ""
+
     def test_txxx_set_get(self):
         self.failIf("asin" in self.id3.keys())
         self.id3["asin"] = "Hello"
@@ -175,8 +180,8 @@ class TEasyID3(TestCase):
         self.failUnlessEqual(id3["asin"], ["Hello"])
 
     def test_txxx_unicode(self):
-        self.id3["asin"] = "He\u1234llo"
-        self.failUnlessEqual(self.id3["asin"], ["He\u1234llo"])
+        self.id3["asin"] = u"He\u1234llo"
+        self.failUnlessEqual(self.id3["asin"], [u"He\u1234llo"])
 
     def test_bad_trackid(self):
         self.failUnlessRaises(ValueError, self.id3.__setitem__,
@@ -250,6 +255,53 @@ class TEasyID3(TestCase):
         del(self.id3["replaygain_bar_peak"])
         self.failIf("replaygain_foo_gain" in self.id3.keys())
         self.failIf("replaygain_bar_gain" in self.id3.keys())
+
+    def test_pickle(self):
+        # http://code.google.com/p/mutagen/issues/detail?id=102
+        pickle.dumps(self.id3)
+
+    def test_get_fallback(self):
+        called = []
+
+        def get_func(id3, key):
+            id3.getall("")
+            self.failUnlessEqual(key, "nope")
+            called.append(1)
+        self.id3.GetFallback = get_func
+        self.id3["nope"]
+        self.failUnless(called)
+
+    def test_set_fallback(self):
+        called = []
+
+        def set_func(id3, key, value):
+            id3.getall("")
+            self.failUnlessEqual(key, "nope")
+            self.failUnlessEqual(value, ["foo"])
+            called.append(1)
+        self.id3.SetFallback = set_func
+        self.id3["nope"] = "foo"
+        self.failUnless(called)
+
+    def test_del_fallback(self):
+        called = []
+
+        def del_func(id3, key):
+            id3.getall("")
+            self.failUnlessEqual(key, "nope")
+            called.append(1)
+        self.id3.DeleteFallback = del_func
+        del self.id3["nope"]
+        self.failUnless(called)
+
+    def test_list_fallback(self):
+        def list_func(id3, key):
+            id3.getall("")
+            self.failIf(key)
+            return ["somekey"]
+
+        self.id3.ListFallback = list_func
+        self.failUnlessEqual(self.id3.keys(), ["somekey"])
 
     def tearDown(self):
         os.unlink(self.filename)

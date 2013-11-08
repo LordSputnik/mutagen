@@ -41,9 +41,18 @@ def is_valid_key(key):
 
 istag = is_valid_key
 
-class error(IOError): pass
-class VorbisUnsetFrameError(error): pass
-class VorbisEncodingError(error): pass
+
+class error(IOError):
+    pass
+
+
+class VorbisUnsetFrameError(error):
+    pass
+
+
+class VorbisEncodingError(error):
+    pass
+
 
 
 class VComment(collections.abc.MutableMapping, mutagenx.Metadata):

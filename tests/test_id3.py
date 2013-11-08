@@ -1,6 +1,6 @@
 import os.path
-from unittest import TestCase
-from tests import add
+
+from tests import add, TestCase
 from mutagenx.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
 import shutil
 import io
@@ -206,7 +206,7 @@ class Issue21(TestCase):
         self.failUnless("TALB" in self.id3)
 
     def test_tit2_value(self):
-        self.failUnlessEqual(self.id3["TIT2"].text, ["Punk To Funk"])
+        self.failUnlessEqual(self.id3["TIT2"].text, [u"Punk To Funk"])
 add(Issue21)
 
 class ID3Tags(TestCase):
@@ -1017,9 +1017,9 @@ class BrokenButParsed(TestCase):
     def test_lengthone_utf16(self):
         from mutagenx.id3 import TPE1
         tpe1 = TPE1.fromData(_24, 0, b'\x01\x00')
-        self.assertEquals('', tpe1)
+        self.assertEquals(u'', tpe1)
         tpe1 = TPE1.fromData(_24, 0, b'\x01\x00\x00\x00\x00')
-        self.assertEquals(['', ''], tpe1)
+        self.assertEquals([u'', u''], tpe1)
 
     def test_fake_zlib_pedantic(self):
         from mutagenx.id3 import TPE1, Frame, ID3BadCompressedData
@@ -1510,8 +1510,7 @@ add(Issue69_BadV1Year)
 add(UpdateTo23)
 add(WriteTo23)
 
-try:
-    import eyeD3
+try: import eyeD3
 except ImportError:
     pass
 else:

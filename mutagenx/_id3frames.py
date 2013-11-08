@@ -6,7 +6,7 @@
 
 import zlib
 from warnings import warn
-from struct import unpack
+import struct
 
 from mutagenx._id3util import (
     ID3Warning, ID3JunkFrameError, ID3BadCompressedData,
