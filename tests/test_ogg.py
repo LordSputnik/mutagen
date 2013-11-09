@@ -390,7 +390,7 @@ class TOggFileType(TestCase):
         try:
             try:
                 while True:
-                    page = OggPage(fileobj)
+                    OggPage(fileobj)
             except EOFError:
                 pass
         finally:

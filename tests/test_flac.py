@@ -14,7 +14,6 @@ except ImportError:
     devnull = "/dev/null"
 
 class Tto_int_be(TestCase):
-    uses_mmap = False
 
     def test_empty(self):
         self.failUnlessEqual(to_int_be(b""), 0)
@@ -33,7 +32,6 @@ class Tto_int_be(TestCase):
 add(Tto_int_be)
 
 class TVCFLACDict(TVComment):
-    uses_mmap = False
 
     Kind = VCFLACDict
 
@@ -42,7 +40,6 @@ class TVCFLACDict(TVComment):
 add(TVCFLACDict)
 
 class TMetadataBlock(TestCase):
-    uses_mmap = False
 
     def test_empty(self):
         self.failUnlessEqual(MetadataBlock(b"").write(), b"")
@@ -75,7 +72,6 @@ add(TMetadataBlock)
 
 
 class TStreamInfo(TestCase):
-    uses_mmap = False
 
     data = (b'\x12\x00\x12\x00\x00\x00\x0e\x005\xea\n\xc4H\xf0\x00\xca0'
             b'\x14(\x90\xf9\xe1)2\x13\x01\xd4\xa7\xa9\x11!8\xab\x91')

@@ -311,7 +311,7 @@ class MP4Tags(DictProxy, Metadata):
                 raise MP4MetadataError("Not enough data")
 
             if atom.name in self.__atoms:
-                info = self__atomes[atom.name]
+                info = self.__atoms[atom.name]
                 info[0](self, atom, data, *info[2:])
             else:
                 # unknown atom, try as text and skip if it fails

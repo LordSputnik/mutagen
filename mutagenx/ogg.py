@@ -83,21 +83,21 @@ class OggPage(object):
              self.sequence, crc, segments) = \
                 struct.unpack("<4sBBqIIiB", header)
         except struct.error:
-            raise error("unable to read full header; got {}".format(header))
+            raise error("unable to read full header; got {!r}".format(header))
 
         if oggs != b"OggS":
-            raise error("read {}, expected {}, at {:#x}".format(
-                repr(oggs), repr(b"OggS"), fileobj.tell() - 27))
+            raise error("read {!r}, expected {!r}, at {:#x}".format(
+                oggs, b"OggS", fileobj.tell() - 27))
 
         if self.version != 0:
-            raise error("version {} unsupported".format(self.version))
+            raise error("version {!r} unsupported".format(self.version))
 
         total = 0
         lacings = []
         lacing_bytes = fileobj.read(segments)
 
         if len(lacing_bytes) != segments:
-            raise error("unable to read {} lacing bytes".format(segments))
+            raise error("unable to read {!r} lacing bytes".format(segments))
 
         for c in lacing_bytes:
             total += c
@@ -124,7 +124,7 @@ class OggPage(object):
     def __repr__(self):
         attrs = ['version', 'position', 'serial', 'sequence', 'offset',
                  'complete', 'continued', 'first', 'last']
-        values = ["{}={}".format(attr, repr(getattr(self, attr)))
+        values = ["{}={!r}".format(attr, getattr(self, attr))
                   for attr in attrs]
         return "<{} {}, {} bytes in {} packets>".format(
             type(self).__name__, " ".join(values),
@@ -251,6 +251,10 @@ class OggPage(object):
         sequence = pages[0].sequence
         packets = []
 
+        pck_debug = False
+        if pages[0].packets == [b'foo']:
+            pck_debug = True
+
         if strict:
             if pages[0].continued:
                 raise ValueError("first packet is continued")
@@ -261,21 +265,19 @@ class OggPage(object):
 
         for page in pages:
             if serial != page.serial:
-                raise ValueError("invalid serial "
-                                 "number in {}".format(repr(page)))
+                raise ValueError("invalid serial number in {!r}".format(page))
             elif sequence != page.sequence:
-                raise ValueError("bad sequence "
-                                 "number in {}".format(repr(page)))
+                raise ValueError("bad sequence number in {!r}".format(page))
             else:
                 sequence += 1
 
             if page.continued:
-                packets[-1] += page.packets[0]
+                packets[-1].append(page.packets[0])
             else:
-                packets.append(page.packets[0])
-            packets.extend(page.packets[1:])
+                packets.append([page.packets[0]])
+            packets.extend([p] for p in page.packets[1:])
 
-        return packets
+        return [b"".join(p) for p in packets]
 
     @staticmethod
     def from_packets(packets, sequence=0, default_size=4096,

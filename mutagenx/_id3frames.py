@@ -389,7 +389,7 @@ class UrlFrameU(UrlFrame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(s.FrameID, s.url)
+        return '{}:{}'.format(self.FrameID, self.url)
 
 
 class TALB(TextFrame):

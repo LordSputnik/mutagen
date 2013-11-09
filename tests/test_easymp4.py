@@ -52,7 +52,6 @@ class TEasyMP4(TestCase):
 
             del(self.mp4[key])
 
-
     def test_write_double(self):
         for key in EasyMP4.Get:
             if key in ["tracknumber", "discnumber", "date", "bpm"]:
