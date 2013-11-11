@@ -258,6 +258,7 @@ class TEasyID3(TestCase):
 
     def test_pickle(self):
         # http://code.google.com/p/mutagen/issues/detail?id=102
+        import pickle
         pickle.dumps(self.id3)
 
     def test_get_fallback(self):
@@ -301,7 +302,7 @@ class TEasyID3(TestCase):
             return ["somekey"]
 
         self.id3.ListFallback = list_func
-        self.failUnlessEqual(self.id3.keys(), ["somekey"])
+        self.failUnlessEqual(list(self.id3.keys()), ["somekey"])
 
     def tearDown(self):
         os.unlink(self.filename)

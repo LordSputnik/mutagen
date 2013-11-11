@@ -1102,7 +1102,7 @@ class OddWrites(TestCase):
         f.close()
         ID3(self.silence).save(self.newsilence)
         self.assert_(os.path.getsize(self.newsilence) > 1)
-        self.assertEquals(open(self.newsilence, "rb").read()[-1], '!'[0])
+        self.assertEquals(open(self.newsilence, "rb").read()[-1], b'!'[0])
 
     def tearDown(self):
         try:

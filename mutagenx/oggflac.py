@@ -22,7 +22,7 @@ __all__ = ["OggFLAC", "Open", "delete"]
 import struct
 import io
 
-from mutagenx.flac import StreamInfo, VCFLACDict
+from mutagenx.flac import StreamInfo, VCFLACDict, StrictFileObject
 from mutagenx.ogg import OggPage, OggFileType, error as OggError
 
 
