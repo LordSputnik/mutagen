@@ -102,7 +102,7 @@ class BinaryDataSpec(Spec):
             return None
 
         if isinstance(value, int):
-            return bytes((value,))
+            return str(value).encode('ascii')
 
         return bytes(value)
 

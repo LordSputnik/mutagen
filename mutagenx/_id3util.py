@@ -94,10 +94,13 @@ class BitPaddedInt(int):
             while value:
                 reformed_bytes.append(value & ((1 << bits) - 1))
                 value = value >> 8
-        if isinstance(value, bytes):
+        elif isinstance(value, bytes):
             reformed_bytes = [b & mask for b in value]
             if bigendian:
                 reformed_bytes.reverse()
+        else:
+            raise TypeError
+
         numeric_value = 0
         for shift, byte in zip(range(0, len(reformed_bytes) * bits, bits),
                                reformed_bytes):
@@ -109,28 +112,57 @@ class BitPaddedInt(int):
         return self
 
     @staticmethod
-    def to_bytes(value, bits=7, bigendian=True, width=4):
+    def to_bytes(value, bits=7, bigendian=True, width=4, minwidth=4):
         bits = getattr(value, 'bits', bits)
         bigendian = getattr(value, 'bigendian', bigendian)
         value = int(value)
         mask = (1 << bits) - 1
-        reformed_bytes = []
-        while value:
-            reformed_bytes.append(value & mask)
-            value = value >> bits
-        if width == -1:
-            width = max(4, len(reformed_bytes))
 
-        if len(reformed_bytes) > width:
-            raise ValueError("Value too wide "
-                             "({} bytes)".format(len(reformed_bytes)))
+        if width != -1:
+            index = 0
+            bytes_ = bytearray(width)
+            try:
+                while value:
+                    bytes_[index] = value & mask
+                    value >>= bits
+                    index += 1
+            except IndexError:
+                raise ValueError('Value too wide (>{:d} bytes)'.format(width))
         else:
-            reformed_bytes.extend([0] * (width - len(reformed_bytes)))
+            # PCNT and POPM use growing integers
+            # of at least 4 bytes (=minwidth) as counters.
+            bytes_ = bytearray()
+            append = bytes_.append
+            while value:
+                append(value & mask)
+                value >>= bits
+            bytes_ = bytes_.ljust(minwidth, b"\x00")
 
         if bigendian:
-            reformed_bytes.reverse()
-
-        return bytes(reformed_bytes)
+            bytes_.reverse()
+        return bytes(bytes_)
 
     def as_bytes(self, bits=7, bigendian=True, width=4):
         return BitPaddedInt.to_bytes(self,bits,bigendian,width)
+
+    @staticmethod
+    def has_valid_padding(value, bits=7):
+        """Whether the padding bits are all zero"""
+
+        assert bits <= 8
+
+        mask = (((1 << (8 - bits)) - 1) << bits)
+
+        if isinstance(value, int):
+            while value:
+                if value & mask:
+                    return False
+                value >>= 8
+        elif isinstance(value, bytes):
+            for byte in value:
+                if byte & mask:
+                    return False
+        else:
+            raise TypeError
+
+        return True
