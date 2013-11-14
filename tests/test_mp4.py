@@ -20,8 +20,8 @@ class TAtom(TestCase):
 
     def test_length_1(self):
         fileobj = io.BytesIO(b"\x00\x00\x00\x01atom"
-                           b"\x00\x00\x00\x00\x00\x00\x00\x08" + b"\x00" * 8)
-        self.failUnlessEqual(Atom(fileobj).length, 8)
+                           b"\x00\x00\x00\x00\x00\x00\x00\x10" + b"\x00" * 16)
+        self.failUnlessEqual(Atom(fileobj).length, 16)
 
     def test_length_less_than_8(self):
         fileobj = io.BytesIO(b"\x00\x00\x00\x02atom")
@@ -64,16 +64,20 @@ add(TAtom)
 
 
 class TAtoms(TestCase):
-    uses_mmap = False
     filename = os.path.join("tests", "data", "has-tags.m4a")
 
     def setUp(self):
         self.atoms = Atoms(open(self.filename, "rb"))
 
-    def test___contains__(self):
+    def test_getitem(self):
         self.failUnless(self.atoms[b"moov"])
         self.failUnless(self.atoms[b"moov.udta"])
         self.failUnlessRaises(KeyError, self.atoms.__getitem__, b"whee")
+
+    def test_contains(self):
+        self.failUnless(b"moov" in self.atoms)
+        self.failUnless(b"moov.udta" in self.atoms)
+        self.failUnless(b"whee" not in self.atoms)
 
     def test_name(self):
         self.failUnlessEqual(self.atoms.atoms[0].name, b"ftyp")

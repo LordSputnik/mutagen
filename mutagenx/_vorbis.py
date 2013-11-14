@@ -226,7 +226,7 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
         string.
 
         """
-        key = key.lower().encode('ascii').decode('ascii')
+        key = key.encode('ascii').decode('ascii')
 
         if not isinstance(values, list):
             values = [values]

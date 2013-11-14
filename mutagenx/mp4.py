@@ -216,6 +216,13 @@ class Atoms(object):
             path.append(path[-1][name, ])
         return path[1:]
 
+    def __contains__(self, names):
+        try:
+            self[names]
+        except KeyError:
+            return False
+        return True
+
     def __getitem__(self, names):
         """Look up a child atom.
 
@@ -665,6 +672,14 @@ class MP4Tags(DictProxy, Metadata):
         b"purl": (__parse_text, __render_text, 0),
         b"egid": (__parse_text, __render_text, 0),
     }
+
+    # the text atoms we know about which should make loading fail if parsing
+    # any of them fails
+    for name in [b"\xa9nam", b"\xa9alb", b"\xa9ART", b"aART", b"\xa9wrt", b"\xa9day",
+                 b"\xa9cmt", b"desc", b"purd", b"\xa9grp", b"\xa9gen", b"\xa9lyr",
+                 b"catg", b"keyw", b"\xa9too", b"cprt", b"soal", b"soaa", b"soar",
+                 b"sonm", b"soco", b"sosn", b"tvsh"]:
+        __atoms[name] = (__parse_text, __render_text)
 
     def pprint(self):
         values = []

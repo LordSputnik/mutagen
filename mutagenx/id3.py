@@ -246,6 +246,9 @@ class ID3(DictProxy, mutagenx.Metadata):
                                              "not supported".format(fn, vmaj))
 
         if self.PEDANTIC:
+            if not BitPaddedInt.has_valid_padding(size):
+                raise ValueError("Header size not synchsafe")
+
             if (self._V24 <= self.version) and (flags & 0x0f):
                 raise ValueError("'{}' has invalid "
                                  "flags {:#02x}".format(fn, flags))

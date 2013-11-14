@@ -1371,48 +1371,55 @@ class Issue69_BadV1Year(TestCase):
 class UpdateTo23(TestCase):
 
     def test_tdrc(self):
+        from mutagenx.id3 import TDRC
         tags = ID3()
-        tags.add(id3.TDRC(encoding=1, text="2003-04-05 12:03"))
+        tags.add(TDRC(encoding=1, text="2003-04-05 12:03"))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TYER"].text, ["2003"])
         self.failUnlessEqual(tags["TDAT"].text, ["0504"])
         self.failUnlessEqual(tags["TIME"].text, ["1203"])
 
     def test_tdor(self):
+        from mutagenx.id3 import TDOR
         tags = ID3()
-        tags.add(id3.TDOR(encoding=1, text="2003-04-05 12:03"))
+        tags.add(TDOR(encoding=1, text="2003-04-05 12:03"))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TORY"].text, ["2003"])
 
     def test_genre_from_v24_1(self):
+        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(id3.TCON(encoding=1, text=["4","Rock"]))
+        tags.add(TCON(encoding=1, text=["4","Rock"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Disco", "Rock"])
 
     def test_genre_from_v24_2(self):
+        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(id3.TCON(encoding=1, text=["RX", "3", "CR"]))
+        tags.add(TCON(encoding=1, text=["RX", "3", "CR"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Remix", "Dance", "Cover"])
 
     def test_genre_from_v23_1(self):
+        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(id3.TCON(encoding=1, text=["(4)Rock"]))
+        tags.add(TCON(encoding=1, text=["(4)Rock"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Disco", "Rock"])
 
     def test_genre_from_v23_2(self):
+        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(id3.TCON(encoding=1, text=["(RX)(3)(CR)"]))
+        tags.add(TCON(encoding=1, text=["(RX)(3)(CR)"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Remix", "Dance", "Cover"])
 
     def test_ipls(self):
+        from mutagenx.id3 import TIPL, TMCL
         tags = ID3()
         tags.version = (2, 3)
-        tags.add(id3.TIPL(encoding=0, people=[["a", "b"], ["c", "d"]]))
-        tags.add(id3.TMCL(encoding=0, people=[["e", "f"], ["g", "h"]]))
+        tags.add(TIPL(encoding=0, people=[["a", "b"], ["c", "d"]]))
+        tags.add(TMCL(encoding=0, people=[["e", "f"], ["g", "h"]]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["IPLS"], [["a", "b"], ["c", "d"],
                                             ["e", "f"], ["g", "h"]])
@@ -1432,7 +1439,7 @@ class WriteTo23(TestCase):
         os.unlink(self.filename)
 
     def test_update_to_v23_on_load(self):
-        from mutagen.id3 import TSOT
+        from mutagenx.id3 import TSOT
         self.audio.add(TSOT(text=["Ha"], encoding=3))
         self.audio.save()
 
@@ -1450,7 +1457,7 @@ class WriteTo23(TestCase):
 
     def test_save(self):
         strings = ["one", "two", "three"]
-        from mutagen.id3 import TPE1
+        from mutagenx.id3 import TPE1
         self.audio.add(TPE1(text=strings, encoding=3))
         self.audio.save(v2_version=3)
 
@@ -1478,7 +1485,7 @@ class WriteTo23(TestCase):
         # Still make sure reading them again works and the encoding
         # is at least changed
 
-        from mutagen.id3 import TDEN, TIPL
+        from mutagenx.id3 import TDEN, TIPL
         dates = ["2013", "2014"]
         frame = TDEN(text=dates, encoding=3)
         self.audio.add(frame)

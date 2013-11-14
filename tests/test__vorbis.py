@@ -20,8 +20,8 @@ class TVComment(TestCase):
 
     def setUp(self):
         self.c = self.Kind()
-        self.c.append(("artist", u"piman"))
         self.c.append(("artist", u"mu"))
+        self.c.append(("artist", u"piman"))
         self.c.append(("title", u"more fakes"))
 
     def test_invalid_init(self):
@@ -62,7 +62,7 @@ class TVComment(TestCase):
         self.failUnless(self.c.vendor.startswith("Mutagen"))
 
     def test_vendor_set(self):
-        self.c.vendor = b"Not Mutagen"
+        self.c.vendor = "Not Mutagen"
         self.failUnless(self.c.write()[4:].startswith(b"Not Mutagen"))
 
     def test_vendor_invalid(self):
@@ -153,7 +153,7 @@ class TVComment(TestCase):
     def test_set_preserve_case(self):
         del(self.c["title"])
         self.c["TiTlE"] = "blah"
-        self.failUnless(("TiTlE", "blah") in list(self.c))
+        self.failUnless(("TiTlE", "blah") in self.c._internal)
         self.failUnless("title" in self.c)
 
     def test_contains_case(self):

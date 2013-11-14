@@ -57,8 +57,7 @@ class Frame(object):
                 try:
                     val = checker.validate(self, getattr(other, checker.name))
                 except ValueError as e:
-                    e.message = "{}: {}".format(checker.name, e.message)
-                    raise
+                    raise ValueError("{}: {}".format(checker.name, str(e)))
                 setattr(self, checker.name, val)
         else:
             for checker, val in zip(self._framespec, args):
@@ -68,8 +67,7 @@ class Frame(object):
                     validated = checker.validate(
                         self, kwargs.get(checker.name, None))
                 except ValueError as e:
-                    e.message = "{}: {}".format(checker.name, e.message)
-                    raise
+                    raise ValueError("{}: {}".format(checker.name, str(e)))
                 setattr(self, checker.name, validated)
 
     def _get_v23_frame(self, **kwargs):
