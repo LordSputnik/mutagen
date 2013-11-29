@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright 2006-2007 Lukas Lalinsky
 # Copyright 2005-2006 Joe Wreschnig
 #
@@ -12,11 +14,12 @@
 __all__ = ["ASF", "Open"]
 
 import struct
-from mutagenx import FileType, Metadata
-from mutagenx._util import insert_bytes, delete_bytes
 import collections.abc
 
 from functools import total_ordering
+
+from mutagenx import FileType, Metadata
+from mutagenx._util import insert_bytes, delete_bytes
 
 
 class error(IOError):
@@ -41,9 +44,8 @@ class ASFInfo(object):
         self.channels = 0
 
     def pprint(self):
-        s = "Windows Media Audio {} bps, {} Hz, {} channels, {:.2f} \
-             seconds".format(self.bitrate, self.sample_rate, self.channels,
-                             self.length)
+        s = "Windows Media Audio %d bps, %s Hz, %d channels, %.2f seconds" % (
+            self.bitrate, self.sample_rate, self.channels, self.length)
         return s
 
 
@@ -57,7 +59,7 @@ class ASFTags(collections.abc.MutableMapping, Metadata):
         self._internal.append(x)
 
     def pprint(self):
-        return "\n".join("{}={}".format(k, v) for k, v in self.items())
+        return "\n".join(("%s=%s" % (k, v)) for k, v in self.items())
 
     def __getitem__(self, key):
         """A list of values for the key.
@@ -91,12 +93,10 @@ class ASFTags(collections.abc.MutableMapping, Metadata):
         """
         if not isinstance(values, list):
             values = [values]
-
         try:
             del(self[key])
         except KeyError:
             pass
-
         for value in values:
             if key in _standard_attribute_names:
                 value = str(value)
@@ -110,7 +110,6 @@ class ASFTags(collections.abc.MutableMapping, Metadata):
                 elif isinstance(value, long):
                     value = ASFQWordAttribute(value)
             self.append((key, value))
-
 
     def __iter__(self):
         return iter({k for k,v in self._internal})
@@ -143,11 +142,11 @@ class ASFBaseAttribute(object):
         raise NotImplementedError
 
     def __repr__(self):
-        name = "{}({!r}".format(type(self).__name__, self.value)
+        name = "%s(%r" % (type(self).__name__, self.value)
         if self.language:
-            name += ", language={}".format(self.language)
+            name += ", language=%d" % self.language
         if self.stream:
-            name += ", stream={}".format(self.stream)
+            name += ", stream=%d" % self.stream
         name += ")"
         return name
 
@@ -220,7 +219,7 @@ class ASFByteArrayAttribute(ASFBaseAttribute):
         return self.value
 
     def __str__(self):
-        return "[binary data ({} bytes)]".format(len(self.value))
+        return "[binary data (%s bytes)]" % len(self.value)
 
     def __eq__(self, other):
         return bytes(self) == other
@@ -264,6 +263,7 @@ class ASFBoolAttribute(ASFBaseAttribute):
         return bool(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
+
 
 @total_ordering
 class ASFDWordAttribute(ASFBaseAttribute):
@@ -369,7 +369,7 @@ class ASFGUIDAttribute(ASFBaseAttribute):
         return self.value
 
     def __str__(self):
-        return "".join("{:02X}".format(i) for i in self.value)
+        return "".join("%02X" % i for i in self.value)
 
     def __eq__(self, other):
         return bytes(self) == other
@@ -482,8 +482,8 @@ class ExtendedContentDescriptionObject(BaseObject):
     GUID = b"\x40\xA4\xD0\xD2\x07\xE3\xD2\x11\x97\xF0\x00\xA0\xC9\x5E\xA8\x50"
 
     def parse(self, asf, data, fileobj, size):
-        super(ExtendedContentDescriptionObject, self).parse(asf, data, fileobj,
-                                                            size)
+        super(ExtendedContentDescriptionObject, self).parse(
+            asf, data, fileobj, size)
         asf.extended_content_description_obj = self
         num_attributes, = struct.unpack("<H", data[0:2])
         pos = 2
@@ -549,7 +549,7 @@ class HeaderExtensionObject(BaseObject):
             datapos += size
 
     def render(self, asf):
-        data = b"".join([obj.render(asf) for obj in self.objects])
+        data = b"".join(obj.render(asf) for obj in self.objects)
         return (self.GUID + struct.pack("<Q", 24 + 16 + 6 + len(data)) +
                 b"\x11\xD2\xD3\xAB\xBA\xA9\xcf\x11" +
                 b"\x8E\xE6\x00\xC0\x0C\x20\x53\x65" +

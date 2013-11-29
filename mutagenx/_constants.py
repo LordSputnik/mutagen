@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Constants used by Mutagen."""
 
 GENRES = [
@@ -193,5 +195,5 @@ GENRES = [
     u"Dubstep",
     u"Garage Rock",
     u"Psybient",
-    ]
+]
 """The ID3v1 genre list."""

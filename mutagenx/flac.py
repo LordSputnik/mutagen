@@ -8,15 +8,31 @@
 #
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
+"""Read and write FLAC Vorbis comments and stream information.
+
+Read more about FLAC at http://flac.sourceforge.net.
+
+FLAC supports arbitrary metadata blocks. The two most interesting ones
+are the FLAC stream information block, and the Vorbis comment block;
+these are also the only ones Mutagen can currently read.
+
+This module does not handle Ogg FLAC files.
+
+Based off documentation available at
+http://flac.sourceforge.net/format.html
+"""
+
 __all__ = ["FLAC", "Open", "delete"]
 
-from mutagenx import FileType
-from functools import reduce
-import io
 import struct
+from io import BytesIO
 from mutagenx._vorbis import VComment
+from mutagenx import FileType
 from mutagenx._util import insert_bytes
 from mutagenx.id3 import BitPaddedInt
+
+from functools import reduce
+
 
 class error(IOError):
     pass
@@ -28,7 +44,6 @@ class FLACNoHeaderError(error):
 
 class FLACVorbisError(ValueError, error):
     pass
-
 
 
 def to_int_be(data):
@@ -49,7 +64,8 @@ class StrictFileObject(object):
     def read(self, size=-1):
         data = self._fileobj.read(size)
         if size >= 0 and len(data) != size:
-            raise error("file said {} bytes, read {} bytes".format(size, len(data)))
+            raise error("file said %d bytes, read %d bytes" % (
+                        size, len(data)))
         return data
 
     def tryread(self, *args):
@@ -75,7 +91,7 @@ class MetadataBlock(object):
         if data is not None:
             if not isinstance(data, StrictFileObject):
                 if isinstance(data, bytes):
-                    data = io.BytesIO(data)
+                    data = BytesIO(data)
                 elif not hasattr(data, 'read'):
                     raise TypeError(
                         "StreamInfo requires string data or a file-like")
@@ -112,10 +128,10 @@ class MetadataBlock(object):
         for padding in paddings:
             blocks.remove(padding)
 
-        padding = Padding()
         # total padding size is the sum of padding sizes plus 4 bytes
         # per removed header.
         size = sum(padding.length for padding in paddings)
+        padding = Padding()
         padding.length = size + 4 * (len(paddings) - 1)
         blocks.append(padding)
 
@@ -181,7 +197,7 @@ class StreamInfo(MetadataBlock):
         self.md5_signature = to_int_be(data.read(16))
 
     def write(self):
-        f = io.BytesIO()
+        f = BytesIO()
         f.write(struct.pack(">I", self.min_blocksize)[-2:])
         f.write(struct.pack(">I", self.max_blocksize)[-2:])
         f.write(struct.pack(">I", self.min_framesize)[-3:])
@@ -208,7 +224,7 @@ class StreamInfo(MetadataBlock):
         return f.getvalue()
 
     def pprint(self):
-        return "FLAC, {:.2f} seconds, {} Hz".format(self.length, self.sample_rate)
+        return "FLAC, %.2f seconds, %d Hz" % (self.length, self.sample_rate)
 
 
 class SeekPoint(tuple):
@@ -229,8 +245,8 @@ class SeekPoint(tuple):
     """
 
     def __new__(cls, first_sample, byte_offset, num_samples):
-        return super(cls, SeekPoint).__new__(cls, (first_sample,
-            byte_offset, num_samples))
+        return super(cls, SeekPoint).__new__(
+            cls, (first_sample, byte_offset, num_samples))
 
     first_sample = property(lambda self: self[0])
     byte_offset = property(lambda self: self[1])
@@ -271,16 +287,17 @@ class SeekTable(MetadataBlock):
             sp = data.tryread(self.__SEEKPOINT_SIZE)
 
     def write(self):
-        f = io.BytesIO()
+        f = BytesIO()
         for seekpoint in self.seekpoints:
-            packed = struct.pack(self.__SEEKPOINT_FORMAT,
+            packed = struct.pack(
+                self.__SEEKPOINT_FORMAT,
                 seekpoint.first_sample, seekpoint.byte_offset,
                 seekpoint.num_samples)
             f.write(packed)
         return f.getvalue()
 
     def __repr__(self):
-        return "<{} seekpoints={}>".format(type(self).__name__, repr(self.seekpoints))
+        return "<%s seekpoints=%r>" % (type(self).__name__, self.seekpoints)
 
 
 class VCFLACDict(VComment):
@@ -316,8 +333,8 @@ class CueSheetTrackIndex(tuple):
     """
 
     def __new__(cls, index_number, index_offset):
-        return super(cls, CueSheetTrackIndex).__new__(cls,
-            (index_number, index_offset))
+        return super(cls, CueSheetTrackIndex).__new__(
+            cls, (index_number, index_offset))
 
     index_number = property(lambda self: self[0])
     index_offset = property(lambda self: self[1])
@@ -364,10 +381,10 @@ class CueSheetTrack(object):
     __hash__ = object.__hash__
 
     def __repr__(self):
-        return ("<{} number={}, offset={}, isrc={}, type={}, "
-                "pre_emphasis={}, indexes={})>").format(
-            type(self).__name__, repr(self.track_number), self.start_offset,
-            repr(self.isrc), repr(self.type), repr(self.pre_emphasis), repr(self.indexes))
+        return ("<%s number=%r, offset=%d, isrc=%r, type=%r, "
+                "pre_emphasis=%r, indexes=%r)>") % (
+                    type(self).__name__, self.track_number, self.start_offset,
+                    self.isrc, self.type, self.pre_emphasis, self.indexes)
 
 
 class CueSheet(MetadataBlock):
@@ -440,13 +457,13 @@ class CueSheet(MetadataBlock):
             self.tracks.append(val)
 
     def write(self):
-        f = io.BytesIO()
+        f = BytesIO()
         flags = 0
         if self.compact_disc:
             flags |= 0x80
-
-        packed = struct.pack(self.__CUESHEET_FORMAT, self.media_catalog_number.encode('ascii'),
-                             self.lead_in_samples, flags, len(self.tracks))
+        packed = struct.pack(
+            self.__CUESHEET_FORMAT, self.media_catalog_number.encode('ascii'),
+            self.lead_in_samples, flags, len(self.tracks))
         f.write(packed)
         for track in self.tracks:
             track_flags = 0
@@ -466,10 +483,10 @@ class CueSheet(MetadataBlock):
         return f.getvalue()
 
     def __repr__(self):
-        return ("<{} media_catalog_number={}, lead_in={}, compact_disc={}, "
-                "tracks={}>").format(
-            type(self).__name__, repr(self.media_catalog_number),
-            repr(self.lead_in_samples), repr(self.compact_disc), repr(self.tracks))
+        return ("<%s media_catalog_number=%r, lead_in=%r, compact_disc=%r, "
+                "tracks=%r>") % (
+                    type(self).__name__, self.media_catalog_number,
+                    self.lead_in_samples, self.compact_disc, self.tracks)
 
 
 class Picture(MetadataBlock):
@@ -527,7 +544,7 @@ class Picture(MetadataBlock):
         self.data = data.read(length)
 
     def write(self):
-        f = io.BytesIO()
+        f = BytesIO()
         mime = self.mime.encode('UTF-8')
         f.write(struct.pack('>2I', self.type, len(mime)))
         f.write(mime)
@@ -540,7 +557,7 @@ class Picture(MetadataBlock):
         return f.getvalue()
 
     def __repr__(self):
-        return "<{} '{}' ({} bytes)>".format(type(self).__name__, self.mime,
+        return "<%s '%s' (%d bytes)>" % (type(self).__name__, self.mime,
                                          len(self.data))
 
 
@@ -571,7 +588,7 @@ class Padding(MetadataBlock):
         # Those should never happen in the real world, and if they
         # do, writeblocks will catch it.
         except (OverflowError, ValueError, MemoryError):
-            raise error("cannot write {} bytes".format(self.length))
+            raise error("cannot write %d bytes" % self.length)
 
     def __eq__(self, other):
         return isinstance(other, Padding) and self.length == other.length
@@ -579,7 +596,7 @@ class Padding(MetadataBlock):
     __hash__ = MetadataBlock.__hash__
 
     def __repr__(self):
-        return "<{} ({} bytes)>".format(type(self).__name__, self.length)
+        return "<%s (%d bytes)>" % (type(self).__name__, self.length)
 
 
 class FLAC(FileType):
@@ -793,7 +810,6 @@ class FLAC(FileType):
                 block_type(fileobj)
             else:
                 fileobj.read(size)
-
         return fileobj.tell()
 
     def __check_header(self, fileobj):
@@ -807,8 +823,8 @@ class FLAC(FileType):
                 if fileobj.read(4) != b"fLaC":
                     size = None
         if size is None:
-            raise FLACNoHeaderError("{} is not a valid "
-                                    "FLAC file".format(fileobj.name))
+            raise FLACNoHeaderError(
+                "%r is not a valid FLAC file" % fileobj.name)
         return size
 
 

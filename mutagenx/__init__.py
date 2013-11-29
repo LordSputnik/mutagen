@@ -8,17 +8,38 @@
 #
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
-import warnings
-import collections.abc
+
+"""Mutagen aims to be an all purpose tagging library.
+
+::
+
+    import mutagen.[format]
+    metadata = mutagen.[format].Open(filename)
+
+`metadata` acts like a dictionary of tags in the file. Tags are generally a
+list of string-like values, but may have additional methods available
+depending on tag or format. They may also be entirely different objects
+for certain keys, again depending on format.
+"""
 
 version = (1, 22)
 """Version tuple."""
 
-version_string = ".".join(str(v) for v in version)
+version_string = '.'.join(str(v) for v in version)
 """Version string."""
 
 
+import warnings
+
+import collections.abc
+
+
 class Metadata(object):
+    """An abstract dict-like object.
+
+    Metadata is the base class for many of the tag objects in Mutagen.
+    """
+
     def __init__(self, *args, **kwargs):
         if args or kwargs:
             self.load(*args, **kwargs)
@@ -28,10 +49,12 @@ class Metadata(object):
 
     def save(self, filename=None):
         """Save changes to a file."""
+
         raise NotImplementedError
 
     def delete(self, filename=None):
         """Remove tags from a file."""
+
         raise NotImplementedError
 
 
@@ -39,6 +62,7 @@ class FileType(collections.abc.MutableMapping):
     """An abstract object wrapping tags and audio stream information.
 
     Attributes:
+
     * info -- stream information (length, bitrate, sample rate)
     * tags -- metadata tags, if any
 
@@ -70,6 +94,7 @@ class FileType(collections.abc.MutableMapping):
 
         If the file has no tags at all, a KeyError is raised.
         """
+
         if self.tags is None:
             raise KeyError(key)
         else:
@@ -81,9 +106,9 @@ class FileType(collections.abc.MutableMapping):
         If the file has no tags, an appropriate format is added (but
         not written until save is called).
         """
+
         if self.tags is None:
             self.add_tags()
-
         self.tags[key] = value
 
     def __delitem__(self, key):
@@ -132,12 +157,13 @@ class FileType(collections.abc.MutableMapping):
                 DeprecationWarning)
         if self.tags is not None:
             return self.tags.save(filename, **kwargs)
-        else: raise ValueError("no tags in file")
+        else:
+            raise ValueError("no tags in file")
 
     def pprint(self):
         """Print stream information and comment key=value pairs."""
 
-        stream = "{} ({})".format(self.info.pprint(), self.mime[0])
+        stream = "%s (%s)" % (self.info.pprint(), self.mime[0])
         try:
             tags = self.tags.pprint()
         except AttributeError:
@@ -155,6 +181,8 @@ class FileType(collections.abc.MutableMapping):
 
     @property
     def mime(self):
+        """A list of mime types"""
+
         mimes = []
         for Kind in type(self).__mro__:
             for mime in getattr(Kind, '_mimes', []):
@@ -164,7 +192,8 @@ class FileType(collections.abc.MutableMapping):
 
     @staticmethod
     def score(filename, fileobj, header):
-        raise NotImplementerError
+        raise NotImplementedError
+
 
 def File(filename, options=None, easy=False):
     """Guess the type of the file and try to open it.

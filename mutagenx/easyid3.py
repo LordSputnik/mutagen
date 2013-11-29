@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Simpler (but far more limited) API for ID3 editing
-
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,16 +14,19 @@ EasyID3 is a wrapper around mutagenx.id3.ID3 to make ID3 tags appear
 more like Vorbis or APEv2 tags.
 """
 
-from fnmatch import fnmatchcase
-
-import mutagenx
-import mutagenx.id3
 import collections
 
+from fnmatch import fnmatchcase
+
+import mutagenx.id3
+
+from mutagenx import Metadata
 from mutagenx._util import dict_match
 from mutagenx.id3 import ID3, error, delete, ID3FileType
 
+
 __all__ = ['EasyID3', 'Open', 'delete']
+
 
 class EasyID3KeyError(KeyError, ValueError, error):
     """Raised when trying to get/set an invalid key.
@@ -81,8 +82,8 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
     ListFallback = None
 
     @classmethod
-    def RegisterKey(cls, key, getter=None, setter=None, deleter=None,
-                    lister=None):
+    def RegisterKey(cls, key,
+                    getter=None, setter=None, deleter=None, lister=None):
         """Register a new key mapping.
 
         A key mapping is four functions, a getter, setter, deleter,
@@ -174,7 +175,6 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
 
     def __init__(self, filename=None):
         self.__id3 = ID3()
-
         if filename is not None:
             self.load(filename)
 
@@ -199,7 +199,7 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
         if func is not None:
             return func(self.__id3, key)
         else:
-            raise EasyID3KeyError("{} is not a valid key".format(key))
+            raise EasyID3KeyError("%r is not a valid key" % key)
 
     def __setitem__(self, key, value):
         key = key.lower()
@@ -247,7 +247,7 @@ class EasyID3(collections.abc.MutableMapping, mutagenx.Metadata):
         for key in sorted(self.keys()):
             values = self[key]
             for value in values:
-                strings.append("{}={}".format(key, value))
+                strings.append("%s=%s" % (key, value))
         return "\n".join(strings)
 
 
@@ -375,19 +375,20 @@ def website_set(id3, key, value):
 def website_delete(id3, key):
     id3.delall("WOAR")
 
+
 def gain_get(id3, key):
     try:
         frame = id3["RVA2:" + key[11:-5]]
     except KeyError:
         raise EasyID3KeyError(key)
     else:
-        return ["{:+f} dB".format(frame.gain)]
+        return [u"%+f dB" % frame.gain]
 
 
 def gain_set(id3, key, value):
     if len(value) != 1:
-        raise ValueError("there must be exactly one gain "
-                         "value, not {}.".format(repr(value)))
+        raise ValueError(
+            "there must be exactly one gain value, not %r.", value)
     gain = float(value[0].split()[0])
     try:
         frame = id3["RVA2:" + key[11:-5]]
@@ -415,13 +416,13 @@ def peak_get(id3, key):
     except KeyError:
         raise EasyID3KeyError(key)
     else:
-        return ["{:f}".format(frame.peak)]
+        return [u"%f" % frame.peak]
 
 
 def peak_set(id3, key, value):
     if len(value) != 1:
-        raise ValueError("there must be exactly one peak "
-                         "value, not {}.".format(repr(value)))
+        raise ValueError(
+            "there must be exactly one peak value, not %r.", value)
     peak = float(value[0])
     if peak >= 2 or peak < 0:
         raise ValueError("peak must be => 0 and < 2.")
@@ -448,8 +449,8 @@ def peak_delete(id3, key):
 def peakgain_list(id3, key):
     keys = []
     for frame in id3.getall("RVA2"):
-        keys.append("replaygain_{}_gain".format(frame.desc))
-        keys.append("replaygain_{}_peak".format(frame.desc))
+        keys.append("replaygain_%s_gain" % frame.desc)
+        keys.append("replaygain_%s_peak" % frame.desc)
     return keys
 
 for frameid, key in {
@@ -501,18 +502,18 @@ EasyID3.RegisterKey("replaygain_*_peak", peak_get, peak_set, peak_delete)
 # http://musicbrainz.org/doc/MusicBrainzTag
 # Had to remove ALBUMARTISTSORT, because it conflicts with iTunes' TSO2.
 for desc, key in {
-    "MusicBrainz Artist Id": "musicbrainz_artistid",
-    "MusicBrainz Album Id": "musicbrainz_albumid",
-    "MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
-    "MusicBrainz TRM Id": "musicbrainz_trmid",
-    "MusicIP PUID": "musicip_puid",
-    "MusicMagic Fingerprint": "musicip_fingerprint",
-    "MusicBrainz Album Status": "musicbrainz_albumstatus",
-    "MusicBrainz Album Type": "musicbrainz_albumtype",
-    "MusicBrainz Album Release Country": "releasecountry",
-    "MusicBrainz Disc Id": "musicbrainz_discid",
-    "ASIN": "asin",
-    "BARCODE": "barcode"
+    u"MusicBrainz Artist Id": "musicbrainz_artistid",
+    u"MusicBrainz Album Id": "musicbrainz_albumid",
+    u"MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
+    u"MusicBrainz TRM Id": "musicbrainz_trmid",
+    u"MusicIP PUID": "musicip_puid",
+    u"MusicMagic Fingerprint": "musicip_fingerprint",
+    u"MusicBrainz Album Status": "musicbrainz_albumstatus",
+    u"MusicBrainz Album Type": "musicbrainz_albumtype",
+    u"MusicBrainz Album Release Country": "releasecountry",
+    u"MusicBrainz Disc Id": "musicbrainz_discid",
+    u"ASIN": "asin",
+    u"BARCODE": "barcode"
 }.items():
     EasyID3.RegisterTXXXKey(key, desc)
 

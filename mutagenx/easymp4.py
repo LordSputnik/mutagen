@@ -1,4 +1,10 @@
-import mutagenx.mp4
+# -*- coding: utf-8 -*-
+
+# Copyright 2009 Joe Wreschnig
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
 
 import collections.abc
 
@@ -34,7 +40,6 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         self.load = self.__mp4.load
         self.save = self.__mp4.save
         self.delete = self.__mp4.delete
-
 
     filename = property(lambda s: s.__mp4.filename,
                         lambda s, fn: setattr(s.__mp4, 'filename', fn))
@@ -95,11 +100,11 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         """
 
         def getter(tags, key):
-            return [str(t) for t in tags[atomid]]
+            return map(str, tags[atomid])
 
         def setter(tags, key, value):
             clamp = lambda x: min(max(min_value, x), max_value)
-            tags[atomid] = [clamp(int(v)) for v in value]
+            tags[atomid] = [clamp(v) for v in map(int, value)]
 
         def deleter(tags, key):
             del(tags[atomid])
@@ -112,7 +117,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
             ret = []
             for (track, total) in tags[atomid]:
                 if total:
-                    ret.append("{}/{}".format(track, total))
+                    ret.append(u"%d/%d" % (track, total))
                 else:
                     ret.append(str(track))
             return ret
@@ -166,7 +171,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         if func is not None:
             return func(self.__mp4, key)
         else:
-            raise EasyMP4KeyError("{} is not a valid key".format(key))
+            raise EasyMP4KeyError("%r is not a valid key" % key)
 
     def __setitem__(self, key, value):
         key = key.lower()
@@ -176,7 +181,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         if func is not None:
             return func(self.__mp4, key, value)
         else:
-            raise EasyMP4KeyError("{} is not a valid key".format(key))
+            raise EasyMP4KeyError("%r is not a valid key" % key)
 
     def __delitem__(self, key):
         key = key.lower()
@@ -184,7 +189,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         if func is not None:
             return func(self.__mp4, key)
         else:
-            raise EasyMP4KeyError("{} is not a valid key".format(key))
+            raise EasyMP4KeyError("%r is not a valid key" % key)
 
     def __iter__(self):
         keys = []
@@ -210,7 +215,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         for key in sorted(self.keys()):
             values = self[key]
             for value in values:
-                strings.append("{}={}".format(key, value))
+                strings.append("%s=%s" % (key, value))
         return "\n".join(strings)
 
 for atomid, key in {
@@ -229,7 +234,7 @@ for atomid, key in {
     b'soar': 'artistsort',
     b'sonm': 'titlesort',
     b'soco': 'composersort',
-    }.items():
+}.items():
     EasyMP4Tags.RegisterTextKey(key, atomid)
 
 for name, key in {
@@ -241,18 +246,18 @@ for name, key in {
     b'MusicBrainz Album Status': 'musicbrainz_albumstatus',
     b'MusicBrainz Album Type': 'musicbrainz_albumtype',
     b'MusicBrainz Release Country': 'releasecountry',
-    }.items():
+}.items():
     EasyMP4Tags.RegisterFreeformKey(key, name)
 
 for name, key in {
     b"tmpo": "bpm",
-    }.items():
+}.items():
     EasyMP4Tags.RegisterIntKey(key, name)
 
 for name, key in {
     b"trkn": "tracknumber",
     b"disk": "discnumber",
-    }.items():
+}.items():
     EasyMP4Tags.RegisterIntPairKey(key, name)
 
 

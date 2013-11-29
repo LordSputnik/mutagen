@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (C) 2005  Michael Urman
 #
 # This program is free software; you can redistribute it and/or modify
@@ -6,7 +8,7 @@
 
 import zlib
 from warnings import warn
-import struct
+from struct import unpack
 
 from mutagenx._id3util import (
     ID3Warning, ID3JunkFrameError, ID3BadCompressedData,
@@ -51,13 +53,12 @@ class Frame(object):
     def __init__(self, *args, **kwargs):
         if (len(args) == 1 and len(kwargs) == 0 and
             isinstance(args[0], type(self))):
-
             other = args[0]
             for checker in self._framespec:
                 try:
                     val = checker.validate(self, getattr(other, checker.name))
                 except ValueError as e:
-                    raise ValueError("{}: {}".format(checker.name, str(e)))
+                    raise ValueError("%s: %s" % (checker.name, str(e)))
                 setattr(self, checker.name, val)
         else:
             for checker, val in zip(self._framespec, args):
@@ -67,7 +68,7 @@ class Frame(object):
                     validated = checker.validate(
                         self, kwargs.get(checker.name, None))
                 except ValueError as e:
-                    raise ValueError("{}: {}".format(checker.name, str(e)))
+                    raise ValueError("%s: %s" % (checker.name, str(e)))
                 setattr(self, checker.name, validated)
 
     def _get_v23_frame(self, **kwargs):
@@ -101,10 +102,10 @@ class Frame(object):
         The string returned is a valid Python expression to construct
         a copy of this frame.
         """
-        kw = ["{}={!r}".format(a.name, getattr(self, a.name))
+        kw = ['%s=%r' % (a.name, getattr(self, a.name))
               for a in self._framespec]
 
-        return "{}({})".format(type(self).__name__, ', '.join(kw))
+        return '%s(%s)' % (type(self).__name__, ', '.join(kw))
 
     def _readData(self, data):
         odata = data
@@ -118,8 +119,9 @@ class Frame(object):
                 raise ID3JunkFrameError
             setattr(self, reader.name, value)
         if data.strip(b'\x00'):
-            warn("Leftover data: {}: {!r} (from {!r})".format(type(self).__name__,
-                 data, odata), ID3Warning)
+            warn('Leftover data: %s: %r (from %r)' % (
+                 type(self).__name__, data, odata),
+                 ID3Warning)
 
     def _writeData(self):
         data = [w.write(self, getattr(self, w.name)) for w in self._framespec]
@@ -128,7 +130,7 @@ class Frame(object):
 
     def pprint(self):
         """Return a human-readable representation of the frame."""
-        return "{}={}".format(type(self).__name__, self._pprint())
+        return "%s=%s" % (type(self).__name__, self._pprint())
 
     def _pprint(self):
         return "[unrepresentable data]"
@@ -150,8 +152,7 @@ class Frame(object):
                     data = unsynch.decode(data)
                 except ValueError as err:
                     if id3.PEDANTIC:
-                        raise ID3BadUnsynchData('{}: {!r}'.format(err,
-                                                data))
+                        raise ID3BadUnsynchData('%s: %r' % (err, data))
             if tflags & Frame.FLAG24_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
             if tflags & Frame.FLAG24_COMPRESS:
@@ -165,12 +166,11 @@ class Frame(object):
                         data = zlib.decompress(data)
                     except zlib.error as err:
                         if id3.PEDANTIC:
-                            raise ID3BadCompressedData('{}: {!r}'.format(err,
-                                                       data))
+                            raise ID3BadCompressedData('%s: %r' % (err, data))
 
         elif id3._V23 <= id3.version:
             if tflags & Frame.FLAG23_COMPRESS:
-                usize = struct.unpack('>L', data[:4])[0]
+                usize, = unpack('>L', data[:4])
                 data = data[4:]
             if tflags & Frame.FLAG23_ENCRYPT:
                 raise ID3EncryptionUnsupportedError
@@ -179,8 +179,7 @@ class Frame(object):
                     data = zlib.decompress(data)
                 except zlib.error as err:
                     if id3.PEDANTIC:
-                        raise ID3BadCompressedData('{}: {!r}'.format(err,
-                                                   data))
+                        raise ID3BadCompressedData('%s: %r' % (err, data))
 
         frame = cls()
         frame._rawdata = data
@@ -225,9 +224,10 @@ class FrameOpt(Frame):
                 else:
                     break
                 setattr(self, reader.name, value)
-        if data.strip(b'\x00'):
-            warn("Leftover data: {}: {!r} (from {!r})".format(type(self).__name__,
-                 data, odata), ID3Warning)
+        if data.strip('\x00'):
+            warn('Leftover data: %s: %r (from %r)' % (
+                 type(self).__name__, data, odata),
+                 ID3Warning)
 
     def _writeData(self):
         data = [w.write(self, getattr(self, w.name)) for w in self._framespec]
@@ -240,15 +240,14 @@ class FrameOpt(Frame):
         return b''.join(data)
 
     def __repr__(self):
-        kw = ["{}={!r}".format(a.name, getattr(self, a.name))
+        kw = ['%s=%r' % (a.name, getattr(self, a.name))
               for a in self._framespec]
 
         for attr in self._optionalspec:
             if hasattr(self, attr.name):
-                kw.append('{}={!r}'.format(attr.name,
-                                           getattr(self, attr.name)))
+                kw.append('%s=%r' % (attr.name, getattr(self, attr.name)))
+        return '%s(%s)' % (type(self).__name__, ', '.join(kw))
 
-        return '{}({})'.format(type(self).__name__, ', '.join(kw))
 
 class TextFrame(Frame):
     """Text strings.
@@ -387,7 +386,7 @@ class UrlFrameU(UrlFrame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.url)
+        return '%s:%s' % (self.FrameID, self.url)
 
 
 class TALB(TextFrame):
@@ -409,7 +408,8 @@ class TCON(TextFrame):
     use the 'genres' property rather than the 'text' attribute.
     """
 
-    from mutagenx._constants import GENRES
+    from mutagen._constants import GENRES
+    GENRES = GENRES
 
     def __get_genres(self):
         genres = []
@@ -689,10 +689,11 @@ class TXXX(TextFrame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.desc)
+        return '%s:%s' % (self.FrameID, self.desc)
 
     def _pprint(self):
-        return "{}={}".format(self.desc, " / ".join(self.text))
+        return "%s=%s" % (self.desc, " / ".join(self.text))
+
 
 class WCOM(UrlFrameU):
     "Commercial Information"
@@ -744,7 +745,7 @@ class WXXX(UrlFrame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.desc)
+        return '%s:%s' % (self.FrameID, self.desc)
 
 
 class PairedTextFrame(Frame):
@@ -790,7 +791,7 @@ class BinaryFrame(Frame):
     The 'data' attribute contains the raw byte string.
     """
 
-    _framespec = [BinaryDataSpec('data'),]
+    _framespec = [BinaryDataSpec('data')]
 
     def __eq__(self, other):
         return self.data == other
@@ -872,7 +873,7 @@ class USLT(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}:{!r}'.format(self.FrameID, self.desc, self.lang)
+        return '%s:%s:%r' % (self.FrameID, self.desc, self.lang)
 
     def __str__(self):
         return self.text
@@ -897,7 +898,7 @@ class SYLT(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}:{!r}'.format(self.FrameID, self.desc, self.lang)
+        return '%s:%s:%r' % (self.FrameID, self.desc, self.lang)
 
     def __eq__(self, other):
         return str(self) == other
@@ -923,11 +924,11 @@ class COMM(TextFrame):
 
     @property
     def HashKey(self):
-        return '{}:{}:{!r}'.format(self.FrameID, self.desc, self.lang)
+        return '%s:%s:%r' % (self.FrameID, self.desc, self.lang)
 
     def _pprint(self):
-        return "{}={!r}={}".format(self.desc, self.lang,
-                                   " / ".join(self.text))
+        return "%s=%r=%s" % (self.desc, self.lang, " / ".join(self.text))
+
 
 class RVA2(Frame):
     """Relative volume adjustment (2).
@@ -935,7 +936,7 @@ class RVA2(Frame):
     This frame is used to implemented volume scaling, and in
     particular, normalization using ReplayGain.
 
-    Attributes::
+    Attributes:
 
     * desc -- description or context of this adjustment
     * channel -- audio channel to adjust (master is 1)
@@ -959,7 +960,7 @@ class RVA2(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.desc)
+        return '%s:%s' % (self.FrameID, self.desc)
 
     def __eq__(self, other):
         try:
@@ -974,14 +975,15 @@ class RVA2(Frame):
     __hash__ = Frame.__hash__
 
     def __str__(self):
-        return "{}: {:+0.4f} dB/{:0.4f}".format(self._channels[self.channel],
-                                                self.gain, self.peak)
+        return "%s: %+0.4f dB/%0.4f" % (
+            self._channels[self.channel], self.gain, self.peak)
+
 
 class EQU2(Frame):
     """Equalisation (2).
 
-    Attributes::
-
+    Attributes:
+    
     * method -- interpolation method (0 = band, 1 = linear)
     * desc -- identifying description
     * adjustments -- list of (frequency, vol_adjustment) pairs
@@ -1000,7 +1002,8 @@ class EQU2(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.desc)
+        return '%s:%s' % (self.FrameID, self.desc)
+
 
 # class RVAD: unsupported
 # class EQUA: unsupported
@@ -1012,10 +1015,14 @@ class RVRB(Frame):
     _framespec = [
         SizedIntegerSpec('left', 2),
         SizedIntegerSpec('right', 2),
-        ByteSpec('bounce_left'), ByteSpec('bounce_right'),
-        ByteSpec('feedback_ltl'), ByteSpec('feedback_ltr'),
-        ByteSpec('feedback_rtr'), ByteSpec('feedback_rtl'),
-        ByteSpec('premix_ltr'), ByteSpec('premix_rtl')
+        ByteSpec('bounce_left'),
+        ByteSpec('bounce_right'),
+        ByteSpec('feedback_ltl'),
+        ByteSpec('feedback_ltr'),
+        ByteSpec('feedback_rtr'),
+        ByteSpec('feedback_rtl'),
+        ByteSpec('premix_ltr'),
+        ByteSpec('premix_rtl'),
     ]
 
     def __eq__(self, other):
@@ -1027,7 +1034,7 @@ class RVRB(Frame):
 class APIC(Frame):
     """Attached (or linked) Picture.
 
-    Attributes::
+    Attributes:
 
     * encoding -- text encoding for the description
     * mime -- a MIME type (e.g. image/jpeg) or '-->' if the data is a URI
@@ -1053,10 +1060,11 @@ class APIC(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.desc)
+        return '%s:%s' % (self.FrameID, self.desc)
 
     def _pprint(self):
-        return "{} ({}, {} bytes)".format(self.desc, self.mime, len(self.data))
+        return "%s (%s, %d bytes)" % (
+            self.desc, self.mime, len(self.data))
 
 
 class PCNT(Frame):
@@ -1087,7 +1095,7 @@ class POPM(FrameOpt):
     This frame keys a rating (out of 255) and a play count to an email
     address.
 
-    Attributes::
+    Attributes:
 
     * email -- email this POPM frame is for
     * rating -- rating from 0 to 255
@@ -1103,7 +1111,7 @@ class POPM(FrameOpt):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.email)
+        return '%s:%s' % (self.FrameID, self.email)
 
     def __eq__(self, other):
         return self.rating == other
@@ -1114,7 +1122,9 @@ class POPM(FrameOpt):
         return self.rating
 
     def _pprint(self):
-        return "{}={!r} {!r}/255".format(self.email, getattr(self, 'count', None), self.rating)
+        return "%s=%r %r/255" % (
+            self.email, getattr(self, 'count', None), self.rating)
+
 
 class GEOB(Frame):
     """General Encapsulated Object.
@@ -1140,7 +1150,7 @@ class GEOB(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.desc)
+        return '%s:%s' % (self.FrameID, self.desc)
 
     def __eq__(self, other):
         return self.data == other
@@ -1199,7 +1209,7 @@ class AENC(FrameOpt):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.owner)
+        return '%s:%s' % (self.FrameID, self.owner)
 
     def __str__(self):
         return self.owner
@@ -1213,7 +1223,7 @@ class AENC(FrameOpt):
 class LINK(FrameOpt):
     """Linked information.
 
-    Attributes::
+    Attributes:
 
     * frameid -- the ID of the linked frame
     * url -- the location of the linked frame
@@ -1225,15 +1235,15 @@ class LINK(FrameOpt):
         Latin1TextSpec('url')
     ]
 
-    _optionalspec = [BinaryDataSpec('data'),]
+    _optionalspec = [BinaryDataSpec('data')]
 
     @property
     def HashKey(self):
         try:
-            return "{}:{}:{}:{!r}".format(
+            return "%s:%s:%s:%r" % (
                 self.FrameID, self.frameid, self.url, self.data)
         except AttributeError:
-            return "{}:{}:{}".format(self.FrameID, self.frameid, self.url)
+            return "%s:%s:%s" % (self.FrameID, self.frameid, self.url)
 
     def __eq__(self, other):
         try:
@@ -1270,7 +1280,7 @@ class POSS(Frame):
 class UFID(Frame):
     """Unique file identifier.
 
-    Attributes::
+    Attributes:
 
     * owner -- format/type of identifier
     * data -- identifier
@@ -1283,7 +1293,7 @@ class UFID(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.owner)
+        return '%s:%s' % (self.FrameID, self.owner)
 
     def __eq__(s, o):
         if isinstance(o, UFI):
@@ -1296,14 +1306,15 @@ class UFID(Frame):
     def _pprint(self):
         isascii = max(self.data) < 128
         if isascii:
-            return "{}={}".format(self.owner, self.data)
+            return "%s=%s" % (self.owner, self.data)
         else:
-            return "{} ({} bytes)".format(self.owner, len(self.data))
+            return "%s (%d bytes)" % (self.owner, len(self.data))
+
 
 class USER(Frame):
     """Terms of use.
 
-    Attributes::
+    Attributes:
 
     * encoding -- text encoding
     * lang -- ISO three letter language code
@@ -1318,7 +1329,7 @@ class USER(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{!r}'.format(self.FrameID, self.lang)
+        return '%s:%r' % (self.FrameID, self.lang)
 
     def __str__(self):
         return self.text
@@ -1329,7 +1340,8 @@ class USER(Frame):
     __hash__ = Frame.__hash__
 
     def _pprint(self):
-        return "{!r}={}".format(self.lang, self.text)
+        return "%r=%s" % (self.lang, self.text)
+
 
 class OWNE(Frame):
     """Ownership frame."""
@@ -1348,6 +1360,7 @@ class OWNE(Frame):
         return self.seller == other
 
     __hash__ = Frame.__hash__
+
 
 class COMR(FrameOpt):
     """Commercial frame."""
@@ -1369,7 +1382,7 @@ class COMR(FrameOpt):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self._writeData())
+        return '%s:%s' % (self.FrameID, self._writeData())
 
     def __eq__(self, other):
         return self._writeData() == other._writeData()
@@ -1392,7 +1405,7 @@ class ENCR(Frame):
 
     @property
     def HashKey(self):
-        return "{}:{}".format(self.FrameID, self.owner)
+        return "%s:%s" % (self.FrameID, self.owner)
 
     def __str__(self):
         return self.data
@@ -1415,7 +1428,7 @@ class GRID(FrameOpt):
 
     @property
     def HashKey(self):
-        return '{}:{}'.format(self.FrameID, self.group)
+        return '%s:%s' % (self.FrameID, self.group)
 
     def __pos__(self):
         return self.group
@@ -1439,8 +1452,8 @@ class PRIV(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{}:{}'.format(self.FrameID, self.owner,
-                                 self.data.decode('latin1'))
+        return '%s:%s:%s' % (
+            self.FrameID, self.owner, self.data.decode('latin1'))
 
     def __str__(self):
         return self.data
@@ -1451,9 +1464,9 @@ class PRIV(Frame):
     def _pprint(self):
         isascii = max(self.data) < 128
         if isascii:
-            return "{}={}".format(self.owner, self.data)
+            return "%s=%s" % (self.owner, self.data)
         else:
-            return "{} ({} bytes)".format(self.owner, len(self.data))
+            return "%s (%d bytes)" % (self.owner, len(self.data))
 
     __hash__ = Frame.__hash__
 
@@ -1468,7 +1481,7 @@ class SIGN(Frame):
 
     @property
     def HashKey(self):
-        return '{}:{:c}:{}'.format(self.FrameID, self.group, self.sig)
+        return '%s:%c:%s' % (self.FrameID, self.group, self.sig)
 
     def __str__(self):
         return self.sig
@@ -1502,7 +1515,6 @@ class ASPI(Frame):
     Attributes: S, L, N, b, and Fi. For the meaning of these, see
     the ID3v2.4 specification. Fi is a list of integers.
     """
-
     _framespec = [
         SizedIntegerSpec("S", 4),
         SizedIntegerSpec("L", 4),
@@ -1518,6 +1530,8 @@ class ASPI(Frame):
 
 Frames = {k: v for k, v in globals().items() if
           (len(k) == 4 and isinstance(v, type) and issubclass(v, Frame))}
+"""All supported ID3v2 frames, keyed by frame name."""
+
 
 # ID3v2.2 frames
 class UFI(UFID):
@@ -1781,12 +1795,13 @@ class CRM(Frame):
         return self.data == other
     __hash__ = Frame.__hash__
 
+
 class CRA(AENC):
     "Audio encryption"
 
+
 class LNK(LINK):
     """Linked information"""
-
     _framespec = [
         FixedWidthStringSpec('frameid', 3),
         Latin1TextSpec('url')

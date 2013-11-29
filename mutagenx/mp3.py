@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+
 # MP3 stream header information support for mutagenx.
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """MPEG audio stream information and tags."""
 
@@ -63,7 +67,7 @@ class MPEGInfo(object):
         (1, 3): [0, 32, 40, 48, 56, 64, 80, 96, 112,128,160,192,224,256,320],
         (2, 1): [0, 32, 48, 56, 64, 80, 96, 112,128,144,160,176,192,224,256],
         (2, 2): [0,  8, 16, 24, 32, 40, 48,  56, 64, 80, 96,112,128,144,160],
-        }
+    }
 
     __BITRATE[(2, 3)] = __BITRATE[(2, 2)]
     for i in range(1, 4):
@@ -153,7 +157,7 @@ class MPEGInfo(object):
                 #original = (frame_data >> 2) & 0x1
                 #emphasis = (frame_data >> 0) & 0x3
                 if (version == 1 or layer == 0 or sample_rate == 0x3 or
-                    bitrate == 0 or bitrate == 0xF):
+                        bitrate == 0 or bitrate == 0xF):
                     frame_1 = data.find(b"\xff", frame_1 + 2)
                 else:
                     break
@@ -230,7 +234,7 @@ class MPEGInfo(object):
                 self.bitrate = int((br_bytes * 8) // self.length)
 
     def pprint(self):
-        s = "MPEG {} layer {}, {} bps, {} Hz, {:.2f} seconds".format(
+        s = "MPEG %s layer %d, %d bps, %s Hz, %.2f seconds" % (
             self.version, self.layer, self.bitrate, self.sample_rate,
             self.length) + (" (sketchy)" if self.sketchy else "")
         return s

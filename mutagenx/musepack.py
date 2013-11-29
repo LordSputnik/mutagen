@@ -62,11 +62,10 @@ def _calc_sv8_peak(peak):
     return (10 ** (peak / (256 * 20)) / 65535)
 
 
-
 class MusepackInfo(object):
     """Musepack stream information.
 
-    Attributes::
+    Attributes:
 
     * channels -- number of audio channels
     * length -- file length in seconds, as a float
@@ -143,8 +142,8 @@ class MusepackInfo(object):
             check_frame_key(frame_type)
 
         if mandatory_packets:
-            raise MusepackHeaderError("Missing mandatory packets: {}.".format(
-                                      str(b", ".join(mandatory_packets))))
+            raise MusepackHeaderError("Missing mandatory packets: %s."
+                                      % str(", ".join(mandatory_packets)))
 
         self.length = self.samples / self.sample_rate
         self.bitrate = 0
@@ -235,12 +234,12 @@ class MusepackInfo(object):
     def pprint(self):
         rg_data = []
         if hasattr(self, "title_gain"):
-            rg_data.append("{:+0.2f} (title)".format(self.title_gain))
+            rg_data.append("%+0.2f (title)" % self.title_gain)
         if hasattr(self, "album_gain"):
-            rg_data.append("{:+0.2f} (album)".format(self.album_gain))
+            rg_data.append("%+0.2f (album)" % self.album_gain)
         rg_data = (rg_data and ", Gain: " + ", ".join(rg_data)) or ""
 
-        return "Musepack SV{}, {:.2} seconds, {} Hz, {} bps{}".format(
+        return "Musepack SV%d, %.2f seconds, %d Hz, %d bps%s" % (
             self.version, self.length, self.sample_rate, self.bitrate, rg_data)
 
 

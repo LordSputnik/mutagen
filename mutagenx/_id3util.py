@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (C) 2005  Michael Urman
 #               2013  Christoph Reiter
 #
@@ -55,12 +57,12 @@ class unsynch(object):
                 safe = (val != 0xFF)
             else:
                 if val >= 0xE0:
-                    raise ValueError("invalid sync-safe string")
+                    raise ValueError('invalid sync-safe string')
                 elif val != 0x00:
                     append(val)
                 safe = True
         if not safe:
-            raise ValueError("string ended unsafe")
+            raise ValueError('string ended unsafe')
 
         return bytes(output)
 
@@ -127,7 +129,7 @@ class BitPaddedInt(int):
                     value >>= bits
                     index += 1
             except IndexError:
-                raise ValueError('Value too wide (>{:d} bytes)'.format(width))
+                raise ValueError('Value too wide (>%d bytes)' % width)
         else:
             # PCNT and POPM use growing integers
             # of at least 4 bytes (=minwidth) as counters.

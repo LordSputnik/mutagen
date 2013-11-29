@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # A Monkey's Audio (APE) reader/tagger
 #
 # Copyright 2006 Lukas Lalinsky <lalinsky@gmail.com>
@@ -21,6 +23,7 @@ import struct
 from mutagenx.apev2 import APEv2File, error, delete
 from mutagenx._util import cdata
 
+
 class MonkeysAudioHeaderError(error):
     pass
 
@@ -28,7 +31,7 @@ class MonkeysAudioHeaderError(error):
 class MonkeysAudioInfo(object):
     """Monkey's Audio stream information.
 
-    Attributes::
+    Attributes:
 
     * channels -- number of audio channels
     * length -- file length in seconds, as a float
@@ -39,9 +42,8 @@ class MonkeysAudioInfo(object):
 
     def __init__(self, fileobj):
         header = fileobj.read(76)
-        if len(header) != 76 or not header.startswith(b"MAC "):
+        if len(header) != 76 or not header.startswith(b'MAC '):
             raise MonkeysAudioHeaderError("not a Monkey's Audio file")
-
         self.version = cdata.ushort_le(header[4:6])
         if self.version >= 3980:
             (blocks_per_frame, final_frame_blocks, total_frames,
@@ -60,7 +62,6 @@ class MonkeysAudioInfo(object):
                 blocks_per_frame = 73728
             else:
                 blocks_per_frame = 9216
-
         self.version /= 1000
         self.length = 0.0
         if (self.sample_rate != 0) and (total_frames > 0):
@@ -69,8 +70,8 @@ class MonkeysAudioInfo(object):
             self.length = total_blocks / self.sample_rate
 
     def pprint(self):
-        return "Monkey's Audio {:.2f}, {:.2f} seconds,\
-                {} Hz".format(self.version, self.length, self.sample_rate)
+        return "Monkey's Audio %.2f, %.2f seconds, %d Hz" % (
+            self.version, self.length, self.sample_rate)
 
 
 class MonkeysAudio(APEv2File):
@@ -79,7 +80,7 @@ class MonkeysAudio(APEv2File):
 
     @staticmethod
     def score(filename, fileobj, header):
-        return header.startswith(b"MAC ") + filename.lower().endswith(".ape")
+        return header.startswith(b'MAC ') + filename.lower().endswith('.ape')
 
 
 Open = MonkeysAudio

@@ -21,7 +21,8 @@ http://www.xiph.org/ogg/doc/rfc3533.txt.
 import struct
 import sys
 import zlib
-import io
+
+from io import BytesIO
 
 from mutagenx import FileType
 from mutagenx._util import cdata, insert_bytes, delete_bytes
@@ -59,14 +60,15 @@ class OggPage(object):
     attributes will be filled in based on it.
     """
 
+    version = 0
+    __type_flags = 0
+    position = 0
+    serial = 0
+    sequence = 0
+    offset = None
+    complete = True
+
     def __init__(self, fileobj=None):
-        self.__type_flags = 0
-        self.version = 0
-        self.position = 0
-        self.serial = 0
-        self.sequence = 0
-        self.offset = None
-        self.complete = True
         self.packets = []
 
         if fileobj is None:
@@ -79,26 +81,24 @@ class OggPage(object):
             raise EOFError
 
         try:
-            (oggs, self.version, self.__type_flags, self.position, self.serial,
-             self.sequence, crc, segments) = \
-                struct.unpack("<4sBBqIIiB", header)
+            (oggs, self.version, self.__type_flags, self.position,
+             self.serial, self.sequence, crc, segments) = struct.unpack(
+                 "<4sBBqIIiB", header)
         except struct.error:
-            raise error("unable to read full header; got {!r}".format(header))
+            raise error("unable to read full header; got %r" % header)
 
         if oggs != b"OggS":
-            raise error("read {!r}, expected {!r}, at {:#x}".format(
+            raise error("read %r, expected %r, at 0x%x" % (
                 oggs, b"OggS", fileobj.tell() - 27))
 
         if self.version != 0:
-            raise error("version {!r} unsupported".format(self.version))
+            raise error("version %r unsupported" % self.version)
 
         total = 0
         lacings = []
         lacing_bytes = fileobj.read(segments)
-
         if len(lacing_bytes) != segments:
-            raise error("unable to read {!r} lacing bytes".format(segments))
-
+            raise error("unable to read %r lacing bytes" % segments)
         for c in lacing_bytes:
             total += c
             if c < 255:
@@ -109,7 +109,7 @@ class OggPage(object):
             self.complete = False
 
         self.packets = [fileobj.read(l) for l in lacings]
-        if [len(p) for p in self.packets] != lacings:
+        if map(len, self.packets) != lacings:
             raise error("unable to read full data")
 
     def __eq__(self, other):
@@ -124,11 +124,10 @@ class OggPage(object):
     def __repr__(self):
         attrs = ['version', 'position', 'serial', 'sequence', 'offset',
                  'complete', 'continued', 'first', 'last']
-        values = ["{}={!r}".format(attr, getattr(self, attr))
-                  for attr in attrs]
-        return "<{} {}, {} bytes in {} packets>".format(
-            type(self).__name__, " ".join(values),
-            sum(len(p) for p in self.packets), len(self.packets))
+        values = ["%s=%r" % (attr, getattr(self, attr)) for attr in attrs]
+        return "<%s %s, %d bytes in %d packets>" % (
+            type(self).__name__, " ".join(values), sum(map(len, self.packets)),
+            len(self.packets))
 
     def write(self):
         """Return a string encoding of the page header and data.
@@ -175,7 +174,7 @@ class OggPage(object):
             # Packet contains a multiple of 255 bytes and is not
             # terminated, so we don't have a \x00 at the end.
             header_size -= 1
-        header_size += sum(len(p) for p in self.packets)
+        header_size += sum(map(len, self.packets))
         return header_size
 
     def __set_flag(self, bit, val):
@@ -251,10 +250,6 @@ class OggPage(object):
         sequence = pages[0].sequence
         packets = []
 
-        pck_debug = False
-        if pages[0].packets == [b'foo']:
-            pck_debug = True
-
         if strict:
             if pages[0].continued:
                 raise ValueError("first packet is continued")
@@ -265,9 +260,9 @@ class OggPage(object):
 
         for page in pages:
             if serial != page.serial:
-                raise ValueError("invalid serial number in {!r}".format(page))
+                raise ValueError("invalid serial number in %r" % page)
             elif sequence != page.sequence:
-                raise ValueError("bad sequence number in {!r}".format(page))
+                raise ValueError("bad sequence number in %r" % page)
             else:
                 sequence += 1
 
@@ -281,7 +276,7 @@ class OggPage(object):
 
     @staticmethod
     def from_packets(packets, sequence=0, default_size=4096,
-                         wiggle_room=2048):
+                     wiggle_room=2048):
         """Construct a list of Ogg pages from a list of packet data.
 
         The algorithm will generate pages of approximately
@@ -418,7 +413,7 @@ class OggPage(object):
             index = data.rindex(b"OggS")
         except ValueError:
             raise error("unable to find final Ogg header")
-        bytesobj = io.BytesIO(data[index:])
+        bytesobj = BytesIO(data[index:])
         best_page = None
         try:
             page = OggPage(bytesobj)
@@ -503,7 +498,6 @@ class OggFileType(FileType):
 
         if filename is None:
             filename = self.filename
-
         fileobj = open(filename, "rb+")
         try:
             try:

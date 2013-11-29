@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # An APEv2 tag reader
 #
 # Copyright 2005 Joe Wreschnig
@@ -33,17 +35,19 @@ http://wiki.hydrogenaudio.org/index.php?title=APEv2_specification.
 __all__ = ["APEv2", "APEv2File", "Open", "delete"]
 
 import struct
-import io
+from io import BytesIO
+
 import collections
-import functools
+from functools import total_ordering
 
 from mutagenx import Metadata, FileType
 from mutagenx._util import cdata, utf8, delete_bytes
 
 def is_valid_apev2_key(key):
-    return (2 <= len(key) <= 255
-            and min(key) >= ' ' and max(key) <= '~' and
-            key not in ["OggS", "TAG", "ID3", "MP+"])
+    return ((2 <= len(key) <= 255) and
+            (min(key) >= ' ') and
+            (max(key) <= '~') and
+            (key not in ["OggS", "TAG", "ID3", "MP+"]))
 
 # There are three different kinds of APE tag values.
 # "0: Item contains text information coded in UTF-8
@@ -56,14 +60,18 @@ HAS_HEADER = 1 << 31
 HAS_NO_FOOTER = 1 << 30
 IS_HEADER = 1 << 29
 
+
 class error(IOError):
     pass
+
 
 class APENoHeaderError(error, ValueError):
     pass
 
+
 class APEUnsupportedVersionError(error, ValueError):
     pass
+
 
 class APEBadItemError(error, ValueError):
     pass
@@ -99,10 +107,8 @@ class _APEv2Data(object):
 
         if self.metadata is None:
             return
-
         self.__fill_missing(fileobj)
         self.__fix_brokenness(fileobj)
-
         if self.data is not None:
             fileobj.seek(self.data)
             self.tag = fileobj.read(self.size)
@@ -233,7 +239,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
     def pprint(self):
         """Return tag key=value pairs in a human-readable format."""
         items = sorted(self.items())
-        return "\n".join("{}={}".format(k, v.pprint()) for k, v in items)
+        return "\n".join(("%s=%s" % (k, v.pprint())) for k, v in items)
 
     def load(self, filename):
         """Load tags from a filename."""
@@ -251,7 +257,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
             raise APENoHeaderError("No APE tag found")
 
     def __parse_tag(self, tag, count):
-        fileobj = io.BytesIO(tag)
+        fileobj = BytesIO(tag)
 
         for i in range(count):
             size_data = fileobj.read(4)
@@ -282,13 +288,13 @@ class APEv2(collections.abc.MutableMapping, Metadata):
 
     def __getitem__(self, key):
         if not is_valid_apev2_key(key):
-            raise KeyError("{!r} is not a valid APEv2 key".format(key))
+            raise KeyError("%r is not a valid APEv2 key" % key)
 
         return self.__dict[key.lower()]
 
     def __delitem__(self, key):
         if not is_valid_apev2_key(key):
-            raise KeyError("{!r} is not a valid APEv2 key".format(key))
+            raise KeyError("%r is not a valid APEv2 key" % key)
 
         del(self.__casemap[key.lower()])
         del(self.__dict[key.lower()])
@@ -306,11 +312,13 @@ class APEv2(collections.abc.MutableMapping, Metadata):
         data that also happens to be valid UTF-8, or an external
         reference), use the APEValue factory and set the value to the
         result of that::
+
             from mutagenx.apev2 import APEValue, EXTERNAL
             tag['Website'] = APEValue('http://example.org', EXTERNAL)
         """
+
         if not is_valid_apev2_key(key):
-            raise KeyError("{!r} is not a valid APEv2 key".format(key))
+            raise KeyError("%r is not a valid APEv2 key" % key)
 
         if not isinstance(value, _APEValue):
             # let's guess at the content if we're not already a value...
@@ -319,8 +327,8 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                 value = APEValue(value, TEXT)
             elif isinstance(value, list):
                 # list? text.
-                value = [utf8(v).decode('utf-8') for v in value]
-                value = APEValue("\0".join(value), TEXT)
+                value = APEValue("\0".join(utf8(v).decode('utf-8')
+                                           for v in value), TEXT)
             else:
                 try:
                     value.decode("utf-8")
@@ -329,8 +337,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
                     value = APEValue(value, BINARY)
                 else:
                     # valid UTF8, probably text
-                    value = APEValue(dummy, TEXT)
-
+                    value = APEValue(value.decode("utf-8"), TEXT)
         self.__casemap[key.lower()] = key
         self.__dict[key.lower()] = value
 
@@ -411,6 +418,7 @@ def delete(filename):
     except APENoHeaderError:
         pass
 
+
 def APEValue(value, kind):
     """APEv2 tag value factory.
 
@@ -425,6 +433,7 @@ def APEValue(value, kind):
         return APEExtValue(value, kind)
     else:
         raise ValueError("kind must be TEXT, BINARY, or EXTERNAL")
+
 
 class _APEValue(object):
     def __init__(self, value, kind):
@@ -447,10 +456,10 @@ class _APEValue(object):
         return struct.pack("<2I", len(self.value.encode('utf-8')), self.kind << 1) + key.encode("ascii") + b"\0" + self.value.encode('utf-8')
 
     def __repr__(self):
-        return "{}({!r}, {})".format(type(self).__name__, self.value, self.kind)
+        return "%s(%r, %d)" % (type(self).__name__, self.value, self.kind)
 
 
-@functools.total_ordering
+@total_ordering
 class APETextValue(_APEValue):
     """An APEv2 text value.
 
@@ -491,7 +500,7 @@ class APEBinaryValue(_APEValue):
         return self.pprint()
 
     def pprint(self):
-        return "[{} bytes]".format(len(self))
+        return "[%d bytes]" % len(self)
 
     def _internal(self, key):
         return struct.pack("<2I", len(self.value), self.kind << 1) + key.encode("ascii") + b"\0" + self.value
@@ -503,7 +512,7 @@ class APEExtValue(_APEValue):
     External values are usually URI or IRI strings.
     """
     def pprint(self):
-        return "[External] {}".format(self.value)
+        return "[External] %s" % str(self.value)
 
 
 class APEv2File(FileType):
@@ -530,7 +539,7 @@ class APEv2File(FileType):
         if self.tags is None:
             self.tags = APEv2()
         else:
-            raise ValueError("{!r} already has tags: {!r}".format(self, self.tags))
+            raise ValueError("%r already has tags: %r" % (self, self.tags))
 
     @staticmethod
     def score(filename, fileobj, header):
