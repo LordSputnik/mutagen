@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Ogg FLAC support.
 #
 # Copyright 2006 Joe Wreschnig
@@ -20,11 +22,11 @@ http://flac.sourceforge.net/ogg_mapping.html.
 __all__ = ["OggFLAC", "Open", "delete"]
 
 import struct
-import io
+
+from io import BytesIO
 
 from mutagenx.flac import StreamInfo, VCFLACDict, StrictFileObject
 from mutagenx.ogg import OggPage, OggFileType, error as OggError
-
 
 
 class error(OggError):
@@ -61,14 +63,14 @@ class OggFLACStreamInfo(StreamInfo):
         major, minor, self.packets, flac = struct.unpack(
             ">BBH4s", page.packets[0][5:13])
         if flac != b"fLaC":
-            raise OggFLACHeaderError("invalid FLAC marker ({!r})".format(flac))
+            raise OggFLACHeaderError("invalid FLAC marker (%r)" % flac)
         elif (major, minor) != (1, 0):
             raise OggFLACHeaderError(
-                "unknown mapping version: {}.{}".format(major, minor))
+                "unknown mapping version: %d.%d" % (major, minor))
         self.serial = page.serial
 
         # Skip over the block header.
-        stringobj = StrictFileObject(io.BytesIO(page.packets[0][17:]))
+        stringobj = StrictFileObject(BytesIO(page.packets[0][17:]))
         super(OggFLACStreamInfo, self).load(stringobj)
 
     def _post_tags(self, fileobj):
@@ -92,7 +94,7 @@ class OggFLACVComment(VCFLACDict):
             if page.serial == info.serial:
                 pages.append(page)
                 complete = page.complete or (len(page.packets) > 1)
-        comment = io.BytesIO(OggPage.to_packets(pages)[0][4:])
+        comment = BytesIO(OggPage.to_packets(pages)[0][4:])
         super(OggFLACVComment, self).load(comment, errors=errors)
 
     def _inject(self, fileobj):

@@ -1,10 +1,12 @@
-# OptimFROG reader/tagger
-#
+# -*- coding: utf-8 -*-
+
 # Copyright 2006 Lukas Lalinsky <lalinsky@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """OptimFROG audio streams with APEv2 tags.
 
@@ -43,9 +45,7 @@ class OptimFROGInfo(object):
         header = fileobj.read(76)
         if (len(header) != 76 or not header.startswith(b"OFR ") or
             struct.unpack("<I", header[4:8])[0] not in (12, 15)):
-
             raise OptimFROGHeaderError("not an OptimFROG file")
-
         (total_samples, total_samples_high, sample_type, self.channels,
          self.sample_rate) = struct.unpack("<IHBBI", header[8:20])
         total_samples += total_samples_high << 32
@@ -56,8 +56,9 @@ class OptimFROGInfo(object):
             self.length = 0.0
 
     def pprint(self):
-        return "OptimFROG, {:.2f} seconds, {} Hz".format(self.length,
-                                                         self.sample_rate)
+        return "OptimFROG, %.2f seconds, %d Hz" % (self.length,
+                                                   self.sample_rate)
+
 
 class OptimFROG(APEv2File):
     _Info = OptimFROGInfo

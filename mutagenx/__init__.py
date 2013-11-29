@@ -25,13 +25,13 @@ for certain keys, again depending on format.
 version = (1, 22)
 """Version tuple."""
 
-version_string = '.'.join(str(v) for v in version)
+version_string = u'.'.join(str(v) for v in version)
 """Version string."""
 
 
 import warnings
 
-import collections.abc
+from collections.abc import MutableMapping
 
 
 class Metadata(object):
@@ -58,7 +58,7 @@ class Metadata(object):
         raise NotImplementedError
 
 
-class FileType(collections.abc.MutableMapping):
+class FileType(MutableMapping):
     """An abstract object wrapping tags and audio stream information.
 
     Attributes:
@@ -216,38 +216,31 @@ def File(filename, options=None, easy=False):
         from mutagenx.asf import ASF
         from mutagenx.apev2 import APEv2File
         from mutagenx.flac import FLAC
-
         if easy:
             from mutagenx.easyid3 import EasyID3FileType as ID3FileType
         else:
             from mutagenx.id3 import ID3FileType
-
         if easy:
             from mutagenx.mp3 import EasyMP3 as MP3
         else:
             from mutagenx.mp3 import MP3
-
         from mutagenx.oggflac import OggFLAC
         from mutagenx.oggspeex import OggSpeex
         from mutagenx.oggtheora import OggTheora
         from mutagenx.oggvorbis import OggVorbis
         from mutagenx.oggopus import OggOpus
-
         if easy:
             from mutagenx.trueaudio import EasyTrueAudio as TrueAudio
         else:
             from mutagenx.trueaudio import TrueAudio
-
         from mutagenx.wavpack import WavPack
         if easy:
             from mutagenx.easymp4 import EasyMP4 as MP4
         else:
             from mutagenx.mp4 import MP4
-
         from mutagenx.musepack import Musepack
         from mutagenx.monkeysaudio import MonkeysAudio
         from mutagenx.optimfrog import OptimFROG
-
         options = [MP3, TrueAudio, OggTheora, OggSpeex, OggVorbis, OggFLAC,
                    FLAC, APEv2File, MP4, ID3FileType, WavPack, Musepack,
                    MonkeysAudio, OptimFROG, ASF, OggOpus]

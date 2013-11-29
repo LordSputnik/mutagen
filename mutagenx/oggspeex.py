@@ -1,10 +1,12 @@
-# Ogg Speex support.
-#
+# -*- coding: utf-8 -*-
+
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg Speex comments.
 
@@ -64,7 +66,7 @@ class OggSpeexInfo(object):
         self.length = page.position / self.sample_rate
 
     def pprint(self):
-        return "Ogg Speex, {:.2f} seconds".format(self.length)
+        return "Ogg Speex, %.2f seconds" % self.length
 
 
 class OggSpeexVComment(VComment):

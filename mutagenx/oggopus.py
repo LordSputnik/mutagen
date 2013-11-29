@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Copyright 2012 Christoph Reiter
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,6 +20,7 @@ import struct
 
 from mutagenx._vorbis import VComment
 from mutagenx.ogg import OggPage, OggFileType, error as OggError
+
 
 class error(OggError):
     pass
@@ -57,14 +60,14 @@ class OggOpusInfo(object):
         # only the higher 4 bits change on incombatible changes
         major, minor = version >> 4, version & 0xF
         if major != 0:
-            raise OggOpusHeaderError("version {} unsupported".format(major))
+            raise OggOpusHeaderError("version %r unsupported" % major)
 
     def _post_tags(self, fileobj):
         page = OggPage.find_last(fileobj, self.serial)
         self.length = (page.position - self.__pre_skip) / 48000
 
     def pprint(self):
-        return "Ogg Opus, {:.2f} seconds".format(self.length)
+        return "Ogg Opus, %.2f seconds" % self.length
 
 
 class OggOpusVComment(VComment):

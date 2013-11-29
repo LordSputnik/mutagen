@@ -1,9 +1,12 @@
-# True Audio support for Mutagen
+# -*- coding: utf-8 -*-
+
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """True Audio audio stream information and tags.
 
@@ -47,7 +50,7 @@ class TrueAudioInfo(object):
         self.length = samples / self.sample_rate
 
     def pprint(self):
-        return "True Audio, {:.2f} seconds, {} Hz.".format(
+        return "True Audio, %.2f seconds, %d Hz." % (
             self.length, self.sample_rate)
 
 

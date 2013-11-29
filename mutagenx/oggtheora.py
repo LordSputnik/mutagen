@@ -1,10 +1,12 @@
-# Ogg Theora support.
-#
+# -*- coding: utf-8 -*-
+
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg Theora comments.
 
@@ -44,18 +46,16 @@ class OggTheoraInfo(object):
 
     def __init__(self, fileobj):
         page = OggPage(fileobj)
-
         while not page.packets[0].startswith(b"\x80theora"):
             page = OggPage(fileobj)
         if not page.first:
             raise OggTheoraHeaderError(
                 "page has ID header, but doesn't start a stream")
-
         data = page.packets[0]
         vmaj, vmin = struct.unpack("2B", data[7:9])
         if (vmaj, vmin) != (3, 2):
             raise OggTheoraHeaderError(
-                "found Theora version {}.{} != 3.2".format(vmaj, vmin))
+                "found Theora version %d.%d != 3.2" % (vmaj, vmin))
         fps_num, fps_den = struct.unpack(">2I", data[22:30])
         self.fps = fps_num / fps_den
         self.bitrate = cdata.uint_be(b"\x00" + data[37:40])
@@ -70,7 +70,7 @@ class OggTheoraInfo(object):
         self.length = frames / self.fps
 
     def pprint(self):
-        return "Ogg Theora, {:.2f} seconds, {} bps".format(self.length, self.bitrate)
+        return "Ogg Theora, %.2f seconds, %d bps" % (self.length, self.bitrate)
 
 
 class OggTheoraCommentDict(VComment):

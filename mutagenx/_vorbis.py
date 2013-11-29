@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
+
 # Vorbis comment support for Mutagen
 # Copyright 2005-2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Vorbis comment data.
 
@@ -15,12 +19,13 @@ The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
 """
 
 import sys
-import io
+
+from io import BytesIO
 
 import mutagenx
 from mutagenx._util import cdata
 
-import collections.abc
+from collections.abc import MutableMapping
 
 def is_valid_key(key):
     """Return true if a string is a valid Vorbis comment key.
@@ -35,7 +40,6 @@ def is_valid_key(key):
     for c in key:
         if c < " " or c > "}" or c == "=":
             return False
-
     else:
         return bool(key)
 
@@ -54,9 +58,18 @@ class VorbisEncodingError(error):
     pass
 
 
-
 class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
-    """A VComment that looks like a dictionary.
+    """A Vorbis comment parser, accessor, and renderer.
+
+    All comment ordering is preserved. A VComment is a list of
+    key/value pairs, and so any Python list method can be used on it.
+
+    Vorbis comments are always wrapped in something like an Ogg Vorbis
+    bitstream or a FLAC metadata block, so this loads string data or a
+    file-like object, not a filename.
+
+    Attributes:
+    vendor -- the stream 'vendor' (i.e. writer); default 'Mutagen'
 
     This object differs from a dictionary in two ways. First,
     len(comment) will still return the number of values, not the
@@ -69,8 +82,7 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
     normalized to lowercase ASCII.
     """
 
-
-    vendor = "Mutagen " + mutagenx.version_string
+    vendor = u"Mutagen " + mutagenx.version_string
 
     def __init__(self, data=None, *args, **kwargs):
         self._internal = []
@@ -80,16 +92,13 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
         # constructor.
         if data is not None:
             if isinstance(data, bytes):
-                data = io.BytesIO(data)
+                data = BytesIO(data)
             elif not hasattr(data, 'read'):
                 raise TypeError("VComment requires string data or a file-like")
             self.load(data, *args, **kwargs)
 
     def append(self, x):
         self._internal.append(x)
-
-    def pprint(self):
-        return "\n".join("{}={}".format(k, v) for k, v in self._internal)
 
     def load(self, fileobj, errors='replace', framing=True):
         """Parse a Vorbis comment from a file-like object.
@@ -113,22 +122,21 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
                 try:
                     string = fileobj.read(length).decode('utf-8', errors)
                 except (OverflowError, MemoryError):
-                    raise error("cannot read {} bytes, too large".format(length))
-
+                    raise error("cannot read %d bytes, too large" % length)
                 try:
                     tag, value = string.split('=', 1)
                 except ValueError as err:
                     if errors == "ignore":
                         continue
                     elif errors == "replace":
-                        tag, value = "unknown{}".format(i), string
+                        tag, value = u"unknown%d" % i, string
                     else:
                         raise VorbisEncodingError(str(err)).with_traceback(sys.exc_info()[2])
 
                 try:
                     tag = tag.encode('ascii', errors).decode('ascii')
                 except UnicodeEncodeError:
-                    raise VorbisEncodingError("invalid tag name {}".format(tag))
+                    raise VorbisEncodingError("invalid tag name %r" % tag)
                 else:
                     if is_valid_key(tag):
                         self.append((tag, value))
@@ -157,13 +165,13 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
                 if not is_valid_key(key):
                     raise ValueError
             except:
-                raise ValueError("{} is not a valid key".format(repr(key)))
+                raise ValueError("%r is not a valid key" % key)
 
             if not isinstance(value, str):
                 try:
                     value.encode("utf-8")
                 except:
-                    raise ValueError("{} is not a valid value".format(repr(value)))
+                    raise ValueError("%r is not a valid value" % value)
         else:
             return True
 
@@ -179,7 +187,7 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
 
         self.validate()
 
-        f = io.BytesIO()
+        f = BytesIO()
         f.write(cdata.to_uint_le(len(self.vendor.encode('utf-8'))))
         f.write(self.vendor.encode('utf-8'))
         f.write(cdata.to_uint_le(len(self)))
@@ -190,6 +198,9 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
         if framing:
             f.write(b"\x01")
         return f.getvalue()
+
+    def pprint(self):
+        return "\n".join(("%s=%s" % (k.lower(), v)) for k, v in self._internal)
 
     def __getitem__(self, key):
         """A list of values for the key.
@@ -226,16 +237,14 @@ class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
         string.
 
         """
-        key = key.encode('ascii').decode('ascii')
 
+        key = key.encode('ascii').decode('ascii')
         if not isinstance(values, list):
             values = [values]
-
         try:
             del(self[key])
         except KeyError:
             pass
-
         for value in values:
             self.append((key, value))
 
