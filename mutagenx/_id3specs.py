@@ -111,7 +111,7 @@ class FixedWidthStringSpec(Spec):
     def validate(self, frame, value):
         if value is None:
             return None
-        if len(value) == self.length:
+        if len(value) == self.len:
             return value
         raise ValueError("Invalid StringSpec[%d] data: %r" % (self.len, value))
 
@@ -288,10 +288,11 @@ class ID3TimeStamp(object):
     def __init__(self, text):
         if isinstance(text, ID3TimeStamp):
             text = text.text
-        self.text = text
 
         self.year = self.month = self.day = None
         self.hour = self.minute = self.second = None
+
+        self.text = text
 
     def get_text(self):
         data = [(self.year, '{:04d}-'), (self.month, '{:02d}-'),

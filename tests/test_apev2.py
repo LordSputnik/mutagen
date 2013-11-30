@@ -1,7 +1,7 @@
 import os
 import shutil
-import tempfile
 
+from tempfile import mkstemp
 
 from tests import TestCase, add
 
@@ -44,7 +44,7 @@ class TAPEWriter(TestCase):
     def setUp(self):
         shutil.copy(SAMPLE, SAMPLE + ".new")
         shutil.copy(BROKEN, BROKEN + ".new")
-        tag = APEv2()
+        tag = mutagenx.apev2.APEv2()
         self.values = {"artist": "Joe Wreschnig\0unittest",
                        "album": "Mutagen tests",
                        "title": "Not really a song"}
@@ -56,7 +56,7 @@ class TAPEWriter(TestCase):
         fileobj = open(SAMPLE + ".tag_at_start", "ab")
         fileobj.write(b"tag garbage" * 1000)
         fileobj.close()
-        self.tag = APEv2(SAMPLE + ".new")
+        self.tag = mutagenx.apev2.APEv2(SAMPLE + ".new")
 
     def test_changed(self):
         size = os.path.getsize(SAMPLE + ".new")
@@ -68,7 +68,7 @@ class TAPEWriter(TestCase):
         # Clean up garbage from a bug in pre-Mutagen APEv2.
         # This also tests removing ID3v1 tags on writes.
         self.failIfEqual(os.path.getsize(OLD), os.path.getsize(BROKEN))
-        tag = APEv2(BROKEN)
+        tag = mutagenx.apev2.APEv2(BROKEN)
         tag.save(BROKEN + ".new")
         self.failUnlessEqual(
             os.path.getsize(OLD), os.path.getsize(BROKEN+".new"))
@@ -84,7 +84,7 @@ class TAPEWriter(TestCase):
 
     def test_delete(self):
         mutagenx.apev2.delete(SAMPLE + ".justtag")
-        tag = APEv2(SAMPLE + ".new")
+        tag = mutagenx.apev2.APEv2(SAMPLE + ".new")
         tag.delete()
         self.failUnlessEqual(os.path.getsize(SAMPLE + ".justtag"), self.offset)
         self.failUnlessEqual(os.path.getsize(SAMPLE) + self.offset,
@@ -93,19 +93,19 @@ class TAPEWriter(TestCase):
 
     def test_empty(self):
         self.failUnlessRaises(
-            IOError, APEv2,
+            IOError, mutagenx.apev2.APEv2,
             os.path.join("tests", "data", "emptyfile.mp3"))
 
     def test_tag_at_start(self):
         filename = SAMPLE + ".tag_at_start"
-        tag = APEv2(filename)
+        tag = mutagenx.apev2.APEv2(filename)
         self.failUnlessEqual(tag["album"], "Mutagen tests")
 
     def test_tag_at_start_write(self):
         filename = SAMPLE + ".tag_at_start"
-        tag = APEv2(filename)
+        tag = mutagenx.apev2.APEv2(filename)
         tag.save()
-        tag = APEv2(filename)
+        tag = mutagenx.apev2.APEv2(filename)
         self.failUnlessEqual(tag["album"], "Mutagen tests")
         self.failUnlessEqual(
             os.path.getsize(SAMPLE + ".justtag"),
@@ -113,26 +113,26 @@ class TAPEWriter(TestCase):
 
     def test_tag_at_start_delete(self):
         filename = SAMPLE + ".tag_at_start"
-        tag = APEv2(filename)
+        tag = mutagenx.apev2.APEv2(filename)
         tag.delete()
-        self.failUnlessRaises(IOError, APEv2, filename)
+        self.failUnlessRaises(IOError, mutagenx.apev2.APEv2, filename)
         self.failUnlessEqual(
             os.path.getsize(filename), len("tag garbage") * 1000)
 
     def test_case_preservation(self):
         mutagenx.apev2.delete(SAMPLE + ".justtag")
-        tag = APEv2(SAMPLE + ".new")
+        tag = mutagenx.apev2.APEv2(SAMPLE + ".new")
         tag["FoObaR"] = "Quux"
         tag.save()
-        tag = APEv2(SAMPLE + ".new")
+        tag = mutagenx.apev2.APEv2(SAMPLE + ".new")
         self.failUnless("FoObaR" in list(tag.keys()))
         self.failIf("foobar" in list(tag.keys()))
 
     def test_unicode_key(self):
         # http://code.google.com/p/mutagen/issues/detail?id=123
-        tag = APEv2(SAMPLE + ".new")
-        tag["abc"] = '\xf6\xe4\xfc'
-        tag["cba"] = "abc"
+        tag = mutagenx.apev2.APEv2(SAMPLE + ".new")
+        tag["abc"] = u'\xf6\xe4\xfc'
+        tag["cba"] = u"abc"
         tag.save()
 
     def tearDown(self):
@@ -166,7 +166,7 @@ add(TAPEv2ThenID3v1Writer)
 class TAPEv2(TestCase):
 
     def setUp(self):
-        fd, self.filename = tempfile.mkstemp(".apev2")
+        fd, self.filename = mkstemp(".apev2")
         os.close(fd)
         shutil.copy(OLD, self.filename)
         self.audio = APEv2(self.filename)
@@ -177,19 +177,19 @@ class TAPEv2(TestCase):
 
     def test_guess_text(self):
         from mutagenx.apev2 import APETextValue
-        self.audio["test"] = "foobar"
+        self.audio["test"] = u"foobar"
         self.failUnlessEqual(self.audio["test"], "foobar")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_text_list(self):
         from mutagenx.apev2 import APETextValue
-        self.audio["test"] = ["foobar", "quuxbarz"]
-        self.failUnlessEqual(self.audio["test"], "foobar\x00quuxbarz")
+        self.audio["test"] = [u"foobar", "quuxbarz"]
+        self.failUnlessEqual(self.audio["test"], u"foobar\x00quuxbarz")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_utf8(self):
         from mutagenx.apev2 import APETextValue
-        self.audio["test"] = "foobar"
+        self.audio["test"] = b"foobar"
         self.failUnlessEqual(self.audio["test"], "foobar")
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 

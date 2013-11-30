@@ -50,7 +50,6 @@ class TASFInfo(TestCase):
 
 add(TASFInfo)
 
-
 class TASF(TestCase):
 
     def setUp(self):
@@ -60,7 +59,7 @@ class TASF(TestCase):
         self.audio = ASF(self.filename)
 
     def tearDown(self):
-        os.remove(self.filename)
+        os.unlink(self.filename)
 
     def test_pprint(self):
         self.failUnless(self.audio.pprint())
@@ -105,7 +104,8 @@ class TASF(TestCase):
         self.set_key(u"WM/Track", ASFValue(24, WORD), [ASFValue(24, WORD)])
 
     def test_auto_word(self):
-        self.set_key(u"WM/Track", 12, [ASFValue(12, DWORD)])
+        self.set_key(u"WM/Track", 12,
+                     [ASFValue(12, DWORD)])
 
     def test_auto_word_list(self):
         self.set_key(u"WM/Track", [12, 13],
@@ -223,7 +223,7 @@ class TASFIssue29(TestCase):
         self.audio = ASF(self.filename)
 
     def tearDown(self):
-        os.remove(self.filename)
+        os.unlink(self.filename)
 
     def test_issue_29_description(self):
         self.audio["Description"] = "Hello"
@@ -248,7 +248,7 @@ class TASFLargeValue(TestCase):
         shutil.copy(self.original, self.filename)
 
     def tearDown(self):
-        os.remove(self.filename)
+        os.unlink(self.filename)
 
     def test_save_small_bytearray(self):
         audio = ASF(self.filename)
@@ -285,7 +285,7 @@ class TASFLargeValue(TestCase):
     def test_save_guid(self):
         # http://code.google.com/p/mutagen/issues/detail?id=81
         audio = ASF(self.filename)
-        audio["QL/GuidObject"] = [ASFValue(b" "*16, GUID)]
+        audio["QL/GuidObject"] = [ASFValue(b' '*16, GUID)]
         audio.save()
         self.failIf("QL/GuidObject" in audio.to_extended_content_description)
         self.failIf("QL/GuidObject" in audio.to_metadata)

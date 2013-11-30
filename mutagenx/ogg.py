@@ -109,7 +109,7 @@ class OggPage(object):
             self.complete = False
 
         self.packets = [fileobj.read(l) for l in lacings]
-        if map(len, self.packets) != lacings:
+        if list(map(len, self.packets)) != lacings:
             raise error("unable to read full data")
 
     def __eq__(self, other):

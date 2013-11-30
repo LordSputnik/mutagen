@@ -101,7 +101,7 @@ class FrameSanityChecks(TestCase):
         from mutagenx.id3 import TT1
         id3 = ID3()
         tt1 = TT1(encoding=0, text=u'whatcha staring at?')
-        id3.add(tt1)
+        id3.loaded_frame(tt1)
         tit1 = id3['TIT1']
 
         self.assertEquals(tt1.encoding, tit1.encoding)
@@ -170,11 +170,9 @@ class Genres(TestCase):
     from mutagenx._constants import GENRES
     GENRES = GENRES
 
-    def _g(self, s):
-        return self.TCON(encoding=0, text=s).genres
+    def _g(self, s): return self.TCON(encoding=0, text=s).genres
 
-    def test_empty(self):
-        self.assertEquals(self._g(""), [])
+    def test_empty(self): self.assertEquals(self._g(""), [])
 
     def test_num(self):
         for i in range(len(self.GENRES)):

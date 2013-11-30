@@ -18,6 +18,7 @@ import struct
 
 from fnmatch import fnmatchcase
 
+from collections import OrderedDict
 from collections.abc import MutableMapping
 
 
@@ -25,7 +26,7 @@ from collections.abc import MutableMapping
 class DictProxy(MutableMapping):
     def __init__(self, *args, **kwargs):
         #Needs to be an ordered dict to get around a testing issue in EasyID3
-        self.__dict = collections.OrderedDict()
+        self.__dict = OrderedDict()
         super(DictProxy, self).__init__(*args, **kwargs)
 
     def __getitem__(self, key):

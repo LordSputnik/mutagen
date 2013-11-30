@@ -8,7 +8,6 @@ from io import BytesIO
 from tests import TestCase, add
 
 class TMusepack(TestCase):
-    uses_mmap = False
 
     def setUp(self):
         self.sv8 = Musepack(os.path.join("tests", "data", "sv8_header.mpc"))
@@ -94,7 +93,7 @@ class TMusepackWithID3(TestCase):
         self.failUnlessEqual(open(self.SAMPLE,"rb").read(), open(self.NEW,"rb").read())
 
     def tearDown(self):
-        os.remove(self.NEW)
+        os.unlink(self.NEW)
 
     def test_ignore_id3(self):
         id3 = ID3()

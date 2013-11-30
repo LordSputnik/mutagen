@@ -68,3 +68,5 @@ class OptimFROG(APEv2File):
         filename = filename.lower()
         return (header.startswith(b"OFR") + filename.endswith(".ofr") +
                 filename.endswith(".ofs"))
+
+Open = OptimFROG

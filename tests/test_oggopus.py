@@ -1,7 +1,7 @@
 import os
 import shutil
-import tempfile
-import io
+from tempfile import mkstemp
+from io import BytesIO
 
 from mutagenx.oggopus import OggOpus, OggOpusInfo, delete
 from mutagenx.ogg import OggPage
@@ -13,7 +13,7 @@ class TOggOpus(TOggFileType):
 
     def setUp(self):
         original = os.path.join("tests", "data", "example.opus")
-        fd, self.filename = tempfile.mkstemp(suffix='.opus')
+        fd, self.filename = mkstemp(suffix='.opus')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.audio = self.Kind(self.filename)
@@ -37,7 +37,7 @@ class TOggOpus(TOggFileType):
     def test_invalid_not_first(self):
         page = OggPage(open(self.filename, "rb"))
         page.first = False
-        self.failUnlessRaises(IOError, OggOpusInfo, io.BytesIO(page.write()))
+        self.failUnlessRaises(IOError, OggOpusInfo, BytesIO(page.write()))
 
     def test_unsupported_version(self):
         page = OggPage(open(self.filename, "rb"))
@@ -45,11 +45,10 @@ class TOggOpus(TOggFileType):
 
         data[8] = 0x03
         page.packets[0] = bytes(data)
-        OggOpusInfo(io.BytesIO(page.write()))
+        OggOpusInfo(BytesIO(page.write()))
 
         data[8] = 0x10
         page.packets[0] = bytes(data)
-        self.failUnlessRaises(IOError, OggOpusInfo, io.BytesIO(page.write()))
+        self.failUnlessRaises(IOError, OggOpusInfo, BytesIO(page.write()))
 
 add(TOggOpus)
-

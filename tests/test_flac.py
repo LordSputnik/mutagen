@@ -1,32 +1,18 @@
+
+import shutil, os
 from tests import TestCase, add
 from mutagenx.id3 import ID3, TIT2, ID3NoHeaderError
 from mutagenx.flac import to_int_be, Padding, VCFLACDict, MetadataBlock, error
 from mutagenx.flac import StreamInfo, SeekTable, CueSheet, FLAC, delete, Picture
 from tests.test__vorbis import TVComment, VComment
-
-import os.path
-import io
-import shutil
-
-try:
-    from os.path import devnull
-except ImportError:
-    devnull = "/dev/null"
+from os import devnull
 
 class Tto_int_be(TestCase):
 
-    def test_empty(self):
-        self.failUnlessEqual(to_int_be(b""), 0)
-
-    def test_0(self):
-        self.failUnlessEqual(to_int_be(b"\x00"), 0)
-
-    def test_1(self):
-        self.failUnlessEqual(to_int_be(b"\x01"), 1)
-
-    def test_256(self):
-        self.failUnlessEqual(to_int_be(b"\x01\x00"), 256)
-
+    def test_empty(self): self.failUnlessEqual(to_int_be(b""), 0)
+    def test_0(self): self.failUnlessEqual(to_int_be(b"\x00"), 0)
+    def test_1(self): self.failUnlessEqual(to_int_be(b"\x01"), 1)
+    def test_256(self): self.failUnlessEqual(to_int_be(b"\x01\x00"), 256)
     def test_long(self):
         self.failUnlessEqual(to_int_be(b"\x01\x00\x00\x00\x00"), 2**32)
 add(Tto_int_be)
@@ -43,7 +29,6 @@ class TMetadataBlock(TestCase):
 
     def test_empty(self):
         self.failUnlessEqual(MetadataBlock(b"").write(), b"")
-
     def test_not_empty(self):
         self.failUnlessEqual(MetadataBlock(b"foobar").write(), b"foobar")
 
@@ -70,7 +55,6 @@ class TMetadataBlock(TestCase):
         self.failUnlessEqual(len(blocks), 2)
 add(TMetadataBlock)
 
-
 class TStreamInfo(TestCase):
 
     data = (b'\x12\x00\x12\x00\x00\x00\x0e\x005\xea\n\xc4H\xf0\x00\xca0'
@@ -88,47 +72,30 @@ class TStreamInfo(TestCase):
         self.failUnlessEqual(self.i.max_blocksize, 4608)
         self.failUnlessEqual(self.i.min_blocksize, 4608)
         self.failUnless(self.i.min_blocksize <= self.i.max_blocksize)
-
     def test_framesize(self):
         self.failUnlessEqual(self.i.min_framesize, 14)
         self.failUnlessEqual(self.i.max_framesize, 13802)
         self.failUnless(self.i.min_framesize <= self.i.max_framesize)
-
-    def test_sample_rate(self):
-        self.failUnlessEqual(self.i.sample_rate, 44100)
-
-    def test_channels(self):
-        self.failUnlessEqual(self.i.channels, 5)
-
-    def test_bps(self):
-        self.failUnlessEqual(self.i.bits_per_sample, 16)
-
-    def test_length(self):
-        self.failUnlessAlmostEqual(self.i.length, 300.5, 1)
-
+    def test_sample_rate(self): self.failUnlessEqual(self.i.sample_rate, 44100)
+    def test_channels(self): self.failUnlessEqual(self.i.channels, 5)
+    def test_bps(self): self.failUnlessEqual(self.i.bits_per_sample, 16)
+    def test_length(self): self.failUnlessAlmostEqual(self.i.length, 300.5, 1)
     def test_total_samples(self):
         self.failUnlessEqual(self.i.total_samples, 13250580)
-
     def test_md5_signature(self):
         self.failUnlessEqual(self.i.md5_signature,
                              int("2890f9e129321301d4a7a9112138ab91", 16))
-
-    def test_eq(self):
-        self.failUnlessEqual(self.i, self.i)
-
+    def test_eq(self): self.failUnlessEqual(self.i, self.i)
     def test_roundtrip(self):
         self.failUnlessEqual(StreamInfo(self.i.write()), self.i)
-
 add(TStreamInfo)
 
 class TSeekTable(TestCase):
     SAMPLE = os.path.join("tests", "data", "silence-44-s.flac")
-    uses_mmap = False
 
     def setUp(self):
         self.flac = FLAC(self.SAMPLE)
         self.st = self.flac.seektable
-
     def test_seektable(self):
         self.failUnlessEqual(self.st.seekpoints,
                              [(0, 0, 4608),
@@ -137,35 +104,24 @@ class TSeekTable(TestCase):
                               (87552, 25022, 4608),
                               (105984, 30284, 4608),
                               (0xFFFFFFFFFFFFFFFF, 0, 0)])
-
-    def test_eq(self):
-        self.failUnlessEqual(self.st, self.st)
-
-    def test_neq(self):
-        self.failIfEqual(self.st, 12)
-
-    def test_repr(self):
-        repr(self.st)
-
+    def test_eq(self): self.failUnlessEqual(self.st, self.st)
+    def test_neq(self): self.failIfEqual(self.st, 12)
+    def test_repr(self): repr(self.st)
     def test_roundtrip(self):
         self.failUnlessEqual(SeekTable(self.st.write()), self.st)
-
 add(TSeekTable)
 
 class TCueSheet(TestCase):
     SAMPLE = os.path.join("tests", "data", "silence-44-s.flac")
-    uses_mmap = False
 
     def setUp(self):
         self.flac = FLAC(self.SAMPLE)
         self.cs = self.flac.cuesheet
-
     def test_cuesheet(self):
         self.failUnlessEqual(self.cs.media_catalog_number, "1234567890123")
         self.failUnlessEqual(self.cs.lead_in_samples, 88200)
         self.failUnlessEqual(self.cs.compact_disc, True)
         self.failUnlessEqual(len(self.cs.tracks), 4)
-
     def test_first_track(self):
         self.failUnlessEqual(self.cs.tracks[0].track_number, 1)
         self.failUnlessEqual(self.cs.tracks[0].start_offset, 0)
@@ -173,7 +129,6 @@ class TCueSheet(TestCase):
         self.failUnlessEqual(self.cs.tracks[0].type, 0)
         self.failUnlessEqual(self.cs.tracks[0].pre_emphasis, False)
         self.failUnlessEqual(self.cs.tracks[0].indexes, [(1, 0)])
-
     def test_second_track(self):
         self.failUnlessEqual(self.cs.tracks[1].track_number, 2)
         self.failUnlessEqual(self.cs.tracks[1].start_offset, 44100)
@@ -190,41 +145,39 @@ class TCueSheet(TestCase):
         self.failUnlessEqual(self.cs.tracks[-1].pre_emphasis, False)
         self.failUnlessEqual(self.cs.tracks[-1].indexes, [])
 
+    def test_track_eq(self):
+        track = self.cs.tracks[-1]
+        self.assertReallyEqual(track, track)
+        self.assertReallyNotEqual(track, 42)
+
     def test_eq(self):
-        self.failUnlessEqual(self.cs, self.cs)
+        self.assertReallyEqual(self.cs, self.cs)
 
     def test_neq(self):
-        self.failIfEqual(self.cs, 12)
+        self.assertReallyNotEqual(self.cs, 12)
 
-    def test_repr(self):
-        repr(self.cs)
-
+    def test_repr(self): repr(self.cs)
     def test_roundtrip(self):
         self.failUnlessEqual(CueSheet(self.cs.write()), self.cs)
 add(TCueSheet)
 
-
 class TPicture(TestCase):
     SAMPLE = os.path.join("tests", "data", "silence-44-s.flac")
-    uses_mmap = False
 
     def setUp(self):
         self.flac = FLAC(self.SAMPLE)
         self.p = self.flac.pictures[0]
-
     def test_count(self):
         self.failUnlessEqual(len(self.flac.pictures), 1)
-
     def test_picture(self):
         self.failUnlessEqual(self.p.width, 1)
         self.failUnlessEqual(self.p.height, 1)
         self.failUnlessEqual(self.p.depth, 24)
         self.failUnlessEqual(self.p.colors, 0)
-        self.failUnlessEqual(self.p.mime, 'image/png')
-        self.failUnlessEqual(self.p.desc, 'A pixel.')
+        self.failUnlessEqual(self.p.mime, u'image/png')
+        self.failUnlessEqual(self.p.desc, u'A pixel.')
         self.failUnlessEqual(self.p.type, 3)
         self.failUnlessEqual(len(self.p.data), 150)
-
     def test_eq(self): self.failUnlessEqual(self.p, self.p)
     def test_neq(self): self.failIfEqual(self.p, 12)
     def test_repr(self): repr(self.p)
@@ -233,23 +186,12 @@ class TPicture(TestCase):
 add(TPicture)
 
 class TPadding(TestCase):
-    uses_mmap = False
 
-    def setUp(self):
-        self.b = Padding(b"\x00" * 100)
-
-    def test_padding(self):
-        self.failUnlessEqual(self.b.write(), b"\x00" * 100)
-
-    def test_blank(self):
-        self.failIf(Padding().write())
-
-    def test_empty(self):
-        self.failIf(Padding(b"").write())
-
-    def test_repr(self):
-        repr(Padding())
-
+    def setUp(self): self.b = Padding(b"\x00" * 100)
+    def test_padding(self): self.failUnlessEqual(self.b.write(), b"\x00" * 100)
+    def test_blank(self): self.failIf(Padding().write())
+    def test_empty(self): self.failIf(Padding(b"").write())
+    def test_repr(self): repr(Padding())
     def test_change(self):
         self.b.length = 20
         self.failUnlessEqual(self.b.write(), b"\x00" * 20)
@@ -297,38 +239,59 @@ class TFLAC(TestCase):
 
     def test_write_changetitle(self):
         f = FLAC(self.NEW)
-        f["title"] = "A New Title"
+        f[u"title"] = u"A New Title"
         f.save()
         f = FLAC(self.NEW)
         self.failUnlessEqual(f["title"][0], "A New Title")
 
-    def test_force_grow(self):
+    def test_write_changetitle_unicode_value(self):
         f = FLAC(self.NEW)
-        f["faketag"] = ["a" * 1000] * 1000
+        f[u"title"] = u"A Unicode Title \u2022"
         f.save()
         f = FLAC(self.NEW)
-        self.failUnlessEqual(f["faketag"], ["a" * 1000] * 1000)
+        self.failUnlessEqual(f[u"title"][0], u"A Unicode Title \u2022")
+
+    def test_write_changetitle_unicode_key(self):
+        f = FLAC(self.NEW)
+        f[u"title"] = u"A New Title"
+        f.save()
+        f = FLAC(self.NEW)
+        self.failUnlessEqual(f[u"title"][0], u"A New Title")
+
+    def test_write_changetitle_unicode_key_and_value(self):
+        f = FLAC(self.NEW)
+        f[u"title"] = u"A Unicode Title \u2022"
+        f.save()
+        f = FLAC(self.NEW)
+        self.failUnlessEqual(f[u"title"][0], u"A Unicode Title \u2022")
+
+    def test_force_grow(self):
+        f = FLAC(self.NEW)
+        f[u"faketag"] = [u"a" * 1000] * 1000
+        f.save()
+        f = FLAC(self.NEW)
+        self.failUnlessEqual(f[u"faketag"], [u"a" * 1000] * 1000)
 
     def test_force_shrink(self):
         self.test_force_grow()
         f = FLAC(self.NEW)
-        f["faketag"] = "foo"
+        f[u"faketag"] = u"foo"
         f.save()
         f = FLAC(self.NEW)
-        self.failUnlessEqual(f["faketag"], ["foo"])
+        self.failUnlessEqual(f[u"faketag"], [u"foo"])
 
     def test_add_vc(self):
         f = FLAC(os.path.join("tests", "data", "no-tags.flac"))
         self.failIf(f.tags)
         f.add_tags()
-        self.failUnlessEqual(f.tags, [])
+        self.failUnless(f.tags == [])
         self.failUnlessRaises(ValueError, f.add_tags)
 
     def test_add_vc_implicit(self):
         f = FLAC(os.path.join("tests", "data", "no-tags.flac"))
         self.failIf(f.tags)
         f["foo"] = "bar"
-        self.failUnlessEqual(f.tags,[("foo", "bar")])
+        self.failUnless(f.tags == [(u"foo", u"bar")])
         self.failUnlessRaises(ValueError, f.add_tags)
 
     def test_ooming_vc_header(self):
@@ -338,12 +301,11 @@ class TFLAC(TestCase):
                                                       'ooming-header.flac'))
 
     def test_with_real_flac(self):
-        if not have_flac:
-            return
+        if not have_flac: return
         self.flac["faketag"] = "foobar" * 1000
         self.flac.save()
-        badval = os.system("tools/notarealprogram 2> {}".format(devnull))
-        value = os.system("flac -t {} 2> {}".format(self.flac.filename, devnull))
+        badval = os.system("tools/notarealprogram 2> %s" % devnull)
+        value = os.system("flac -t %s 2> %s" % (self.flac.filename, devnull))
         self.failIf(value and value != badval)
 
     def test_save_unknown_block(self):
@@ -449,7 +411,6 @@ class TFLAC(TestCase):
 add(TFLAC)
 
 class TFLACFile(TestCase):
-    uses_mmap = False
 
     def test_open_nonexistant(self):
         """mutagen 1.2 raises UnboundLocalError, then it tries to open
@@ -460,7 +421,6 @@ class TFLACFile(TestCase):
 add(TFLACFile)
 
 class TFLACBadBlockSize(TestCase):
-    uses_mmap = False
     TOO_SHORT = os.path.join("tests", "data", "52-too-short-block-size.flac")
     TOO_SHORT_2 = os.path.join("tests", "data",
                                "106-short-picture-block-size.flac")
@@ -485,7 +445,6 @@ class TFLACBadBlockSize(TestCase):
 add(TFLACBadBlockSize)
 
 class TFLACBadBlockSizeWrite(TestCase):
-    uses_mmap = False
     TOO_SHORT = os.path.join("tests", "data", "52-too-short-block-size.flac")
     NEW = TOO_SHORT + ".new"
 
@@ -507,7 +466,6 @@ class TFLACBadBlockSizeWrite(TestCase):
 add(TFLACBadBlockSizeWrite)
 
 class CVE20074619(TestCase):
-    uses_mmap = True
 
     # Tests to ensure Mutagen is not vulnerable to a number of security
     # issues found in libFLAC.
@@ -582,10 +540,9 @@ class CVE20074619(TestCase):
 
 add(CVE20074619)
 
-
-NOTFOUND = os.system("tools/notarealprogram 2> {}".format(devnull))
+NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 
 have_flac = True
-if os.system("flac 2> {} > {}".format(devnull, devnull)) == NOTFOUND:
+if os.system("flac 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_flac = False
     print("WARNING: Skipping FLAC reference tests.")

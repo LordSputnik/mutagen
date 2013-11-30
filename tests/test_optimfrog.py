@@ -4,7 +4,6 @@ from mutagenx.optimfrog import OptimFROG, OptimFROGHeaderError
 from tests import TestCase, add
 
 class TOptimFROG(TestCase):
-    uses_mmap = False
 
     def setUp(self):
         self.ofr = OptimFROG(os.path.join("tests", "data", "empty.ofr"))
@@ -35,4 +34,3 @@ class TOptimFROG(TestCase):
         self.failUnless(self.ofs.pprint())
 
 add(TOptimFROG)
-

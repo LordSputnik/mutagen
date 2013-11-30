@@ -1,3 +1,6 @@
+from __future__ import division
+
+import re
 import glob
 import os
 import sys
@@ -68,7 +71,7 @@ class Result(unittest.TestResult):
 
     def printErrors(self):
         succ = self.testsRun - (len(self.errors) + len(self.failures))
-        v = "{:3d}".format(succ)
+        v = "%3d" % succ
         count = 50 - self.testsRun
         sys.stdout.write((" " * count) + v + "\n")
         self.printErrorList('ERROR', self.errors)
@@ -77,14 +80,14 @@ class Result(unittest.TestResult):
     def printErrorList(self, flavour, errors):
         for test, err in errors:
             sys.stdout.write(self.separator1 + "\n")
-            sys.stdout.write("{}: {}\n".format(flavour, test))
+            sys.stdout.write("%s: %s\n" % (flavour, str(test)))
             sys.stdout.write(self.separator2 + "\n")
-            sys.stdout.write("{}\n".format(err))
+            sys.stdout.write("%s\n" % err)
 
 class Runner(object):
     def run(self, test):
         suite = unittest.makeSuite(test)
-        pref = '{} ({}): '.format(test.__name__, len(suite._tests))
+        pref = '%s (%d): ' % (test.__name__, len(suite._tests))
         print(pref + " " * (25 - len(pref)), end='')
         result = Result()
         suite(result)

@@ -1,40 +1,43 @@
 import os
 import shutil
 import struct
-import io
-import tempfile
 
+from io import BytesIO
+from tempfile import mkstemp
 from tests import TestCase, add
-
 from mutagenx.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
-     delete, MP4Cover, MP4MetadataError, MP4FreeForm
+     delete, MP4Cover, MP4MetadataError, MP4FreeForm, error
 from mutagenx._util import cdata
+from os import devnull
+
 
 class TAtom(TestCase):
-    uses_mmap = False
 
     def test_no_children(self):
-        fileobj = io.BytesIO(b"\x00\x00\x00\x08atom")
+        fileobj = BytesIO(b"\x00\x00\x00\x08atom")
         atom = Atom(fileobj)
         self.failUnlessRaises(KeyError, atom.__getitem__, "test")
 
     def test_length_1(self):
-        fileobj = io.BytesIO(b"\x00\x00\x00\x01atom"
-                           b"\x00\x00\x00\x00\x00\x00\x00\x10" + b"\x00" * 16)
+        fileobj = BytesIO(b"\x00\x00\x00\x01atom"
+                          b"\x00\x00\x00\x00\x00\x00\x00\x10" + b"\x00" * 16)
         self.failUnlessEqual(Atom(fileobj).length, 16)
 
+    def test_length_64bit_less_than_16(self):
+        fileobj = BytesIO(b"\x00\x00\x00\x01atom"
+                          b"\x00\x00\x00\x00\x00\x00\x00\x08" + b"\x00" * 8)
+        self.assertRaises(error, Atom, fileobj)
+
     def test_length_less_than_8(self):
-        fileobj = io.BytesIO(b"\x00\x00\x00\x02atom")
+        fileobj = BytesIO(b"\x00\x00\x00\x02atom")
         self.assertRaises(MP4MetadataError, Atom, fileobj)
 
     def test_render_too_big(self):
         class TooBig(bytes):
             def __len__(self):
                 return 1 << 32
-
         data = TooBig(b"test")
-        try:
-            len(data)
+        try: len(data)
         except OverflowError:
             # Py_ssize_t is still only 32 bits on this system.
             self.failUnlessRaises(OverflowError, Atom.render, b"data", data)
@@ -43,25 +46,24 @@ class TAtom(TestCase):
             self.failUnlessEqual(len(data), 4 + 4 + 8 + 4)
 
     def test_non_top_level_length_0_is_invalid(self):
-        data = io.BytesIO(struct.pack(">I4s", 0, b"whee"))
+        data = BytesIO(struct.pack(">I4s", 0, b"whee"))
         self.assertRaises(MP4MetadataError, Atom, data, level=1)
 
     def test_length_0(self):
-        fileobj = io.BytesIO(b"\x00\x00\x00\x00atom" + 40 * b"\x00")
+        fileobj = BytesIO(b"\x00\x00\x00\x00atom" + 40 * b"\x00")
         atom = Atom(fileobj)
         self.failUnlessEqual(fileobj.tell(), 48)
         self.failUnlessEqual(atom.length, 48)
 
     def test_length_0_container(self):
-        data = io.BytesIO(struct.pack(">I4s", 0, b"moov") +
-                        Atom.render(b"data", b"whee"))
+        data = BytesIO(struct.pack(">I4s", 0, b"moov") +
+                       Atom.render(b"data", b"whee"))
         atom = Atom(data)
         self.failUnlessEqual(len(atom.children), 1)
         self.failUnlessEqual(atom.length, 20)
         self.failUnlessEqual(atom.children[-1].length, 12)
 
 add(TAtom)
-
 
 class TAtoms(TestCase):
     filename = os.path.join("tests", "data", "has-tags.m4a")
@@ -89,16 +91,14 @@ class TAtoms(TestCase):
         self.failUnless(self.atoms.atoms[0].children is None)
 
     def test_extra_trailing_data(self):
-        data = io.BytesIO(Atom.render(b"data", b"whee") + b"\x00\x00")
+        data = BytesIO(Atom.render(b"data", b"whee") + b"\x00\x00")
         self.failUnless(Atoms(data))
 
     def test_repr(self):
         repr(self.atoms)
 add(TAtoms)
 
-
 class TMP4Info(TestCase):
-    uses_mmap = False
 
     def test_no_soun(self):
         self.failUnlessRaises(
@@ -112,7 +112,7 @@ class TMP4Info(TestCase):
         mdia = Atom.render(b"mdia", mdhd + hdlr)
         trak = Atom.render(b"trak", mdia)
         moov = Atom.render(b"moov", trak)
-        fileobj = io.BytesIO(moov)
+        fileobj = BytesIO(moov)
         atoms = Atoms(fileobj)
         info = MP4Info(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
@@ -128,20 +128,19 @@ class TMP4Info(TestCase):
         mdia = Atom.render(b"mdia", mdhd + hdlr)
         trak2 = Atom.render(b"trak", mdia)
         moov = Atom.render(b"moov", trak1 + trak2)
-        fileobj = io.BytesIO(moov)
+        fileobj = BytesIO(moov)
         atoms = Atoms(fileobj)
         info = MP4Info(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
 add(TMP4Info)
 
 class TMP4Tags(TestCase):
-    uses_mmap = False
 
     def wrap_ilst(self, data):
         ilst = Atom.render(b"ilst", data)
         meta = Atom.render(b"meta", b"\x00" * 4 + ilst)
         data = Atom.render(b"moov", Atom.render(b"udta", meta))
-        fileobj = io.BytesIO(data)
+        fileobj = BytesIO(data)
         return MP4Tags(Atoms(fileobj), fileobj)
 
     def test_genre(self):
@@ -254,7 +253,6 @@ class TMP4Tags(TestCase):
                 b"\x00\x00\x01brat\x00\x01\xf4\x00cdcv\x00\x01\x05\x04")
 
         tags = self.wrap_ilst(Atom.render(b"----", data))
-
         v = tags[key][0]
         self.failUnlessEqual(v, value)
         self.failUnlessEqual(v.dataformat, MP4FreeForm.FORMAT_DATA)
@@ -269,19 +267,17 @@ class TMP4Tags(TestCase):
 
 add(TMP4Tags)
 
-
 class TMP4(TestCase):
     def setUp(self):
-        fd, self.filename = tempfile.mkstemp(suffix='.m4a')
+        fd, self.filename = mkstemp(suffix='.m4a')
         os.close(fd)
         shutil.copy(self.original, self.filename)
         self.audio = MP4(self.filename)
 
     def faad(self):
-        if not have_faad:
-            return
-        value = os.system("faad {} -o {} > {} 2> {}".format(
-                self.filename, os.devnull, os.devnull, os.devnull))
+        if not have_faad: return
+        value = os.system("faad %s -o %s > %s 2> %s" % (
+                self.filename, devnull, devnull, devnull))
         self.failIf(value and value != NOTFOUND)
 
     def test_score(self):
@@ -308,7 +304,6 @@ class TMP4(TestCase):
         self.audio[b"\xa9nam"] = "wheeee" * 10
         self.audio.save()
         size1 = os.path.getsize(self.audio.filename)
-        audio = MP4(self.audio.filename)
         self.audio[b"\xa9nam"] = "wheeee" * 11
         self.audio.save()
         size2 = os.path.getsize(self.audio.filename)
@@ -363,13 +358,13 @@ class TMP4(TestCase):
 
     def test_unicode(self):
         self.set_key(b'\xa9nam', [b'\xe3\x82\x8a\xe3\x81\x8b'],
-                     result=['\u308a\u304b'])
+                     result=[u'\u308a\u304b'])
 
     def test_save_text(self):
-        self.set_key(b'\xa9nam', ["Some test name"])
+        self.set_key(b'\xa9nam', [u"Some test name"])
 
     def test_save_texts(self):
-        self.set_key(b'\xa9nam', ["Some test name", "One more name"])
+        self.set_key(b'\xa9nam', [u"Some test name", u"One more name"])
 
     def test_freeform(self):
         self.set_key(b'----:net.sacredchao.Mutagen:test key', [b"whee"])
@@ -463,7 +458,7 @@ class TMP4(TestCase):
         self.failUnless(self.audio.pprint())
 
     def test_pprint_binary(self):
-        self.audio[b"covr"] = "\x00\xa9\garbage"
+        self.audio[b"covr"] = [b"\x00\xa9\garbage"]
         self.failUnless(self.audio.pprint())
 
     def test_pprint_pair(self):
@@ -483,7 +478,7 @@ class TMP4(TestCase):
         self.faad()
 
     def test_reads_unknown_text(self):
-        self.set_key(b"foob", ["A test"])
+        self.set_key(b"foob", [u"A test"])
 
     def __read_offsets(self, filename):
         fileobj = open(filename, 'rb')
@@ -493,7 +488,7 @@ class TMP4(TestCase):
         for atom in moov.findall(b'stco', True):
             fileobj.seek(atom.offset + 12)
             data = fileobj.read(atom.length - 12)
-            fmt = ">{}I".format(cdata.uint_be(data[:4]))
+            fmt = ">%dI" % cdata.uint_be(data[:4])
             offsets = struct.unpack(fmt, data[4:])
             for offset in offsets:
                 fileobj.seek(offset)
@@ -501,7 +496,7 @@ class TMP4(TestCase):
         for atom in moov.findall(b'co64', True):
             fileobj.seek(atom.offset + 12)
             data = fileobj.read(atom.length - 12)
-            fmt = ">{}Q".format(cdata.uint_be(data[:4]))
+            fmt = ">%dQ" % cdata.uint_be(data[:4])
             offsets = struct.unpack(fmt, data[4:])
             for offset in offsets:
                 fileobj.seek(offset)
@@ -531,7 +526,8 @@ class TMP4(TestCase):
         self.failUnless("audio/mp4" in self.audio.mime)
 
     def tearDown(self):
-        os.remove(self.filename)
+        os.unlink(self.filename)
+
 
 class TMP4HasTags(TMP4):
     def test_save_simple(self):
@@ -544,14 +540,26 @@ class TMP4HasTags(TMP4):
 
         self.audio.save()
         audio = MP4(self.audio.filename)
-        self.failIf(self.audio.tags)
+        self.failIf(audio.tags)
+
+    def test_too_short(self):
+        fileobj = open(self.audio.filename, "rb")
+        try:
+            atoms = Atoms(fileobj)
+            ilst = atoms[b"moov.udta.meta.ilst"]
+            # fake a too long atom length
+            ilst.children[0].length += 10000000
+            self.failUnlessRaises(MP4MetadataError, MP4Tags, atoms, fileobj)
+        finally:
+            fileobj.close()
 
     def test_has_tags(self):
         self.failUnless(self.audio.tags)
 
     def test_not_my_file(self):
-        self.failUnlessRaises(
-            IOError, MP4, os.path.join("tests", "data", "empty.ogg"))
+        # should raise something like "Not a MP4 file"
+        self.failUnlessRaisesRegexp(
+            error, "MP4", MP4, os.path.join("tests", "data", "empty.ogg"))
 
 
 class TMP4Datatypes(TMP4HasTags):
@@ -571,6 +579,7 @@ class TMP4Datatypes(TMP4HasTags):
         self.failUnlessEqual(covr[1].imageformat, MP4Cover.FORMAT_JPEG)
 
 add(TMP4Datatypes)
+
 
 class TMP4CovrWithName(TMP4):
     # http://bugs.musicbrainz.org/ticket/5894
@@ -609,6 +618,10 @@ class TMP4NoTagsM4A(TMP4):
     def test_no_tags(self):
         self.failUnless(self.audio.tags is None)
 
+    def test_add_tags(self):
+        self.audio.add_tags()
+        self.failUnlessRaises(error, self.audio.add_tags)
+
 add(TMP4NoTagsM4A)
 
 class TMP4NoTags3G2(TMP4):
@@ -632,7 +645,7 @@ class TMP4UpdateParents64Bit(TestCase):
     original = os.path.join("tests", "data", "64bit.mp4")
 
     def setUp(self):
-        fd, self.filename = tempfile.mkstemp(suffix='.mp4')
+        fd, self.filename = mkstemp(suffix='.mp4')
         os.close(fd)
         shutil.copy(self.original, self.filename)
 
@@ -655,9 +668,9 @@ class TMP4UpdateParents64Bit(TestCase):
 
 add(TMP4UpdateParents64Bit)
 
-NOTFOUND = os.system("tools/notarealprogram 2> {}".format(os.devnull))
+NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 
 have_faad = True
-if os.system("faad 2> {} > {}".format(os.devnull, os.devnull)) == NOTFOUND:
+if os.system("faad 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_faad = False
     print("WARNING: Skipping FAAD reference tests.")

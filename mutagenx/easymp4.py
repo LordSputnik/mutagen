@@ -100,7 +100,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         """
 
         def getter(tags, key):
-            return map(str, tags[atomid])
+            return list(map(str, tags[atomid]))
 
         def setter(tags, key, value):
             clamp = lambda x: min(max(min_value, x), max_value)

@@ -1,9 +1,6 @@
-import mmap
-import random
-
-from tests import TestCase, add
-
 from mutagenx._util import cdata, utf8, insert_bytes, delete_bytes
+from tests import TestCase, add
+import random
 
 class Tutf8(TestCase):
 
@@ -19,12 +16,12 @@ class Tutf8(TestCase):
         self.failUnless(isinstance(value, bytes))
 
     def test_low_unicode(self):
-        value = utf8("1234")
+        value = utf8(u"1234")
         self.failUnlessEqual(value, b"1234")
         self.failUnless(isinstance(value, bytes))
 
     def test_high_unicode(self):
-        value = utf8("\u1234")
+        value = utf8(u"\u1234")
         self.failUnlessEqual(value, b'\xe1\x88\xb4')
         self.failUnless(isinstance(value, bytes))
 
@@ -86,10 +83,10 @@ class Tcdata(TestCase):
 add(Tcdata)
 
 class FileHandling(TestCase):
-    def data_to_file(self, data):
+    def file(self, contents):
         import tempfile
         temp = tempfile.TemporaryFile()
-        temp.write(data)
+        temp.write(contents)
         temp.flush()
         temp.seek(0)
         return temp
@@ -99,87 +96,87 @@ class FileHandling(TestCase):
         return fobj.read()
 
     def test_insert_into_empty(self):
-        o = self.data_to_file(b'')
+        o = self.file(b'')
         insert_bytes(o, 8, 0)
         self.assertEquals(b'\x00' * 8, self.read(o))
 
     def test_insert_before_one(self):
-        o = self.data_to_file(b'a')
+        o = self.file(b'a')
         insert_bytes(o, 8, 0)
         self.assertEquals(b'a' + b'\x00' * 7 + b'a', self.read(o))
 
     def test_insert_after_one(self):
-        o = self.data_to_file(b'a')
+        o = self.file(b'a')
         insert_bytes(o, 8, 1)
         self.assertEquals(b'a' + b'\x00' * 8, self.read(o))
 
     def test_smaller_than_file_middle(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         insert_bytes(o, 4, 4)
         self.assertEquals(b'abcdefghefghij', self.read(o))
 
     def test_smaller_than_file_to_end(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         insert_bytes(o, 4, 6)
         self.assertEquals(b'abcdefghijghij', self.read(o))
 
     def test_smaller_than_file_across_end(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         insert_bytes(o, 4, 8)
         self.assertEquals(b'abcdefghij\x00\x00ij', self.read(o))
 
     def test_smaller_than_file_at_end(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         insert_bytes(o, 3, 10)
         self.assertEquals(b'abcdefghij\x00\x00\x00', self.read(o))
 
     def test_smaller_than_file_at_beginning(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         insert_bytes(o, 3, 0)
         self.assertEquals(b'abcabcdefghij', self.read(o))
 
     def test_zero(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         self.assertRaises((AssertionError, ValueError), insert_bytes, o, 0, 1)
 
     def test_negative(self):
-        o = self.data_to_file(b'abcdefghij')
+        o = self.file(b'abcdefghij')
         self.assertRaises((AssertionError, ValueError), insert_bytes, o, 8, -1)
 
     def test_delete_one(self):
-        o = self.data_to_file(b'a')
+        o = self.file(b'a')
         delete_bytes(o, 1, 0)
         self.assertEquals(b'', self.read(o))
 
     def test_delete_first_of_two(self):
-        o = self.data_to_file(b'ab')
+        o = self.file(b'ab')
         delete_bytes(o, 1, 0)
         self.assertEquals(b'b', self.read(o))
 
     def test_delete_second_of_two(self):
-        o = self.data_to_file(b'ab')
+        o = self.file(b'ab')
         delete_bytes(o, 1, 1)
         self.assertEquals(b'a', self.read(o))
 
     def test_delete_third_of_two(self):
-        o = self.data_to_file(b'ab')
+        o = self.file(b'ab')
         self.assertRaises(AssertionError, delete_bytes, o, 1, 2)
 
     def test_delete_middle(self):
-        o = self.data_to_file(b'abcdefg')
+        o = self.file(b'abcdefg')
         delete_bytes(o, 3, 2)
         self.assertEquals(b'abfg', self.read(o))
 
     def test_delete_across_end(self):
-        o = self.data_to_file(b'abcdefg')
+        o = self.file(b'abcdefg')
         self.assertRaises(AssertionError, delete_bytes, o, 4, 8)
 
     def test_delete_zero(self):
-        o = self.data_to_file(b'abcdefg')
+        o = self.file(b'abcdefg')
         self.assertRaises(AssertionError, delete_bytes, o, 0, 3)
 
     def test_delete_negative(self):
-        o = self.data_to_file(b'abcdefg')
+        o = self.file(b'abcdefg')
         self.assertRaises(AssertionError, delete_bytes, o, 4, -8)
 
     def test_insert_6106_79_51760(self):
@@ -187,7 +184,7 @@ class FileHandling(TestCase):
         # files. The problematic behavior only showed up in our mmap fallback
         # code for transfers of this or similar sizes.
         data = b''.join(str(x).encode('ascii') for x in range(12574)) # 51760 bytes
-        o = self.data_to_file(data)
+        o = self.file(data)
         insert_bytes(o, 6106, 79)
         self.failUnless(data[:6106+79] + data[79:] == self.read(o))
 
@@ -196,7 +193,7 @@ class FileHandling(TestCase):
         # files. The problematic behavior only showed up in our mmap fallback
         # code for transfers of this or similar sizes.
         data = b''.join(str(x).encode('ascii') for x in range(12574)) # 51760 bytes
-        o = self.data_to_file(data[:6106+79] + data[79:])
+        o = self.file(data[:6106+79] + data[79:])
         delete_bytes(o, 6106, 79)
         self.failUnless(data == self.read(o))
 
@@ -217,7 +214,7 @@ class FileHandling(TestCase):
                         "Given testing parameters make this test useless")
         for j in range(num_runs):
             data = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" * 1024
-            fobj = self.data_to_file(data)
+            fobj = self.file(data)
             filesize = len(data)
             # Generate the list of changes to apply
             changes = []

@@ -58,7 +58,7 @@ class VorbisEncodingError(error):
     pass
 
 
-class VComment(collections.abc.MutableMapping, mutagenx.Metadata):
+class VComment(MutableMapping, mutagenx.Metadata):
     """A Vorbis comment parser, accessor, and renderer.
 
     All comment ordering is preserved. A VComment is a list of

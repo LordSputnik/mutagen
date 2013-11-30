@@ -1,21 +1,21 @@
 import os
 import shutil
-import sys
-import tempfile
-import io
 
-from tests import add
-from tests.test_ogg import TOggFileType
+from tempfile import mkstemp
+from io import BytesIO
 
 from mutagenx.oggflac import OggFLAC, OggFLACStreamInfo, delete
-from mutagenx.ogg import OggPage
+from mutagenx.ogg import OggPage, error as OggError
+from tests import add
+from tests.test_ogg import TOggFileType
+from os import devnull
 
 class TOggFLAC(TOggFileType):
     Kind = OggFLAC
 
     def setUp(self):
         original = os.path.join("tests", "data", "empty.oggflac")
-        fd, self.filename = tempfile.mkstemp(suffix='.ogg')
+        fd, self.filename = mkstemp(suffix='.ogg')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.audio = OggFLAC(self.filename)
@@ -28,18 +28,18 @@ class TOggFLAC(TOggFileType):
     def test_streaminfo_bad_marker(self):
         page = OggPage(open(self.filename, "rb")).write()
         page = page.replace(b"fLaC", b"!fLa", 1)
-        self.failUnlessRaises(IOError, OggFLACStreamInfo, io.BytesIO(page))
+        self.failUnlessRaises(IOError, OggFLACStreamInfo, BytesIO(page))
 
     def test_streaminfo_bad_version(self):
         page = OggPage(open(self.filename, "rb")).write()
         page = page.replace(b"\x01\x00", b"\x02\x00", 1)
-        self.failUnlessRaises(IOError, OggFLACStreamInfo, io.BytesIO(page))
+        self.failUnlessRaises(IOError, OggFLACStreamInfo, BytesIO(page))
 
     def test_flac_reference_simple_save(self):
         if not have_flac: return
         self.audio.save()
         self.scan_file()
-        value = os.system("flac --ogg -t {} 2> {}".format(self.filename, os.devnull))
+        value = os.system("flac --ogg -t %s 2> %s" % (self.filename, devnull))
         self.failIf(value and value != NOTFOUND)
 
     def test_flac_reference_really_big(self):
@@ -47,7 +47,7 @@ class TOggFLAC(TOggFileType):
         self.test_really_big()
         self.audio.save()
         self.scan_file()
-        value = os.system("flac --ogg -t {} 2> {}".format(self.filename, os.devnull))
+        value = os.system("flac --ogg -t %s 2> %s" % (self.filename, devnull))
         self.failIf(value and value != NOTFOUND)
 
     def test_module_delete(self):
@@ -59,7 +59,7 @@ class TOggFLAC(TOggFileType):
         if not have_flac: return
         self.audio.delete()
         self.scan_file()
-        value = os.system("flac --ogg -t {} 2> {}".format(self.filename, os.devnull))
+        value = os.system("flac --ogg -t %s 2> %s" % (self.filename, devnull))
         self.failIf(value and value != NOTFOUND)
 
     def test_flac_reference_medium_sized(self):
@@ -67,7 +67,7 @@ class TOggFLAC(TOggFileType):
         self.audio["foobar"] = "foobar" * 1000
         self.audio.save()
         self.scan_file()
-        value = os.system("flac --ogg -t {} 2> {}".format(self.filename, os.devnull))
+        value = os.system("flac --ogg -t %s 2> %s" % (self.filename, devnull))
         self.failIf(value and value != NOTFOUND)
 
     def test_flac_reference_delete_readd(self):
@@ -77,7 +77,7 @@ class TOggFLAC(TOggFileType):
         self.audio["foobar"] = "foobar" * 1000
         self.audio.save()
         self.scan_file()
-        value = os.system("flac --ogg -t {} 2> {}".format(self.filename, os.devnull))
+        value = os.system("flac --ogg -t %s 2> %s" % (self.filename, devnull))
         self.failIf(value and value != NOTFOUND)
 
     def test_not_my_ogg(self):
@@ -91,9 +91,9 @@ class TOggFLAC(TOggFileType):
 
 add(TOggFLAC)
 
-NOTFOUND = os.system("tools/notarealprogram 2> {}".format(os.devnull))
+NOTFOUND = os.system("tools/notarealprogram 2> %s" % devnull)
 
 have_flac = True
-if os.system("flac 2> {} > {}".format(os.devnull, os.devnull)) == NOTFOUND:
+if os.system("flac 2> %s > %s" % (devnull, devnull)) == NOTFOUND:
     have_flac = False
     print("WARNING: Skipping Ogg FLAC reference tests.")

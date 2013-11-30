@@ -1,15 +1,13 @@
 import os
-import sys
 import shutil
-import tempfile
-
 from tests import add, TestCase
 from mutagenx.easymp4 import EasyMP4, error as MP4Error, delete
+from tempfile import mkstemp
 
 class TEasyMP4(TestCase):
 
     def setUp(self):
-        fd, self.filename = tempfile.mkstemp('.mp4')
+        fd, self.filename = mkstemp('.mp4')
         os.close(fd)
         empty = os.path.join('tests', 'data', 'has-tags.m4a')
         shutil.copy(empty, self.filename)
@@ -146,6 +144,6 @@ class TEasyMP4(TestCase):
                 ValueError, self.mp4.__setitem__, tag, "hello")
 
     def tearDown(self):
-        os.remove(self.filename)
+        os.unlink(self.filename)
 
 add(TEasyMP4)

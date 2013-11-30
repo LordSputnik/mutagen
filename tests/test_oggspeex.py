@@ -1,20 +1,19 @@
 import os
 import shutil
-import io
-import tempfile
 
-from tests import TestCase, add
-from tests.test_ogg import TOggFileType
-
+from io import BytesIO
 from mutagenx.ogg import OggPage
 from mutagenx.oggspeex import OggSpeex, OggSpeexInfo, delete
+from tests import add
+from tests.test_ogg import TOggFileType
+from tempfile import mkstemp
 
 class TOggSpeex(TOggFileType):
     Kind = OggSpeex
 
     def setUp(self):
         original = os.path.join("tests", "data", "empty.spx")
-        fd, self.filename = tempfile.mkstemp(suffix='.ogg')
+        fd, self.filename = mkstemp(suffix='.ogg')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.audio = self.Kind(self.filename)
@@ -36,7 +35,7 @@ class TOggSpeex(TOggFileType):
     def test_invalid_not_first(self):
         page = OggPage(open(self.filename, "rb"))
         page.first = False
-        self.failUnlessRaises(IOError, OggSpeexInfo, io.BytesIO(page.write()))
+        self.failUnlessRaises(IOError, OggSpeexInfo, BytesIO(page.write()))
 
     def test_vendor(self):
         self.failUnless(
@@ -62,4 +61,3 @@ class TOggSpeex(TOggFileType):
         self.failUnless("audio/x-speex" in self.audio.mime)
 
 add(TOggSpeex)
-

@@ -24,9 +24,9 @@ class SpecSanityChecks(TestCase):
         self.assertRaises(TypeError, s.write, None, 'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
-    def fixedwidthstringspec(self):
+    def test_fixedwidthstringspec(self):
         from mutagenx.id3 import FixedWidthStringSpec
-        s = StringSpec('name', 3)
+        s = FixedWidthStringSpec('name', 3)
         self.assertEquals(('abc', b'defg'),  s.read(None, b'abcdefg'))
         self.assertEquals(b'abc', s.write(None, 'abcdefg'))
         self.assertEquals(b'\x00\x00\x00', s.write(None, None))

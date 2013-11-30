@@ -14,7 +14,6 @@ class Tistag(TestCase):
     def test_ugly(self): self.failUnless(istag("!{}[]-_()*&"))
 add(Tistag)
 
-
 class TVComment(TestCase):
     Kind = VComment
 
@@ -54,7 +53,7 @@ class TVComment(TestCase):
         self.failUnlessRaises(ValueError, self.c.write)
 
     def test_validate_nonunicode_value(self):
-        self.c.append((b"valid", "wt\xff"))
+        self.c.append((b"valid", b"wt\xff"))
         self.failUnlessRaises(ValueError, self.c.validate)
         self.failUnlessRaises(ValueError, self.c.write)
 
@@ -62,7 +61,7 @@ class TVComment(TestCase):
         self.failUnless(self.c.vendor.startswith("Mutagen"))
 
     def test_vendor_set(self):
-        self.c.vendor = "Not Mutagen"
+        self.c.vendor = u"Not Mutagen"
         self.failUnless(self.c.write()[4:].startswith(b"Not Mutagen"))
 
     def test_vendor_invalid(self):
@@ -79,7 +78,7 @@ class TVComment(TestCase):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
                 b'\x00abc\x01')
         comment = self.Kind(data)
-        self.failUnlessEqual("abc", comment['unknown0'][0])
+        self.failUnlessEqual("abc", comment._internal[0][1])
 
     def test_invalid_format_ignore(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
@@ -190,11 +189,11 @@ class TVComment(TestCase):
         self.failUnlessEqual(d["title"], self.c["title"])
 
     def test_bad_key(self):
-        self.failUnlessRaises(ValueError, self.c.get, "\u1234")
+        self.failUnlessRaises(ValueError, self.c.get, u"\u1234")
         self.failUnlessRaises(
-            ValueError, self.c.__setitem__, "\u1234", "foo")
+            ValueError, self.c.__setitem__, u"\u1234", "foo")
         self.failUnlessRaises(
-            ValueError, self.c.__delitem__, "\u1234")
+            ValueError, self.c.__delitem__, u"\u1234")
 
     def test_duplicate_keys(self):
         self.c = self.Kind()

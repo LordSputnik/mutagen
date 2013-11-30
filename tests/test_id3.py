@@ -1,9 +1,11 @@
 import os.path
-
-from tests import add, TestCase
-from mutagenx.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
+from os.path import join
 import shutil
-import io
+from tests import TestCase
+from tests import add
+from mutagenx import id3
+from mutagenx.id3 import ID3, BitPaddedInt, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
+from io import BytesIO
 import warnings
 warnings.simplefilter('error', ID3Warning)
 
@@ -63,9 +65,9 @@ class ID3GetSetDel(TestCase):
 
 class ID3Loading(TestCase):
 
-    empty = os.path.join('tests', 'data', 'emptyfile.mp3')
-    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
-    unsynch = os.path.join('tests', 'data', 'id3v23_unsynch.id3')
+    empty = join('tests', 'data', 'emptyfile.mp3')
+    silence = join('tests', 'data', 'silence-44-s.mp3')
+    unsynch = join('tests', 'data', 'id3v23_unsynch.id3')
 
     def test_empty_file(self):
         name = self.empty
@@ -77,7 +79,7 @@ class ID3Loading(TestCase):
         #self.assertEquals(from_name, from_obj)
 
     def test_nonexistent_file(self):
-        name = os.path.join('tests', 'data', 'does', 'not', 'exist')
+        name = join('tests', 'data', 'does', 'not', 'exist')
         self.assertRaises(EnvironmentError, ID3, name)
 
     def test_header_empty(self):
@@ -94,45 +96,45 @@ class ID3Loading(TestCase):
 
     def test_header_2_4_invalid_flags(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x04\x00\x1f\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x04\x00\x1f\x00\x00\x00\x00')
         self.assertRaises(ValueError, id3._ID3__load_header)
 
     def test_header_2_4_unsynch_size(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x04\x00\x10\x00\x00\x00\xFF')
+        id3._ID3__fileobj = BytesIO(b'ID3\x04\x00\x10\x00\x00\x00\xFF')
         self.assertRaises(ValueError, id3._ID3__load_header)
 
     def test_header_2_4_allow_footer(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x04\x00\x10\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x04\x00\x10\x00\x00\x00\x00')
         id3._ID3__load_header()
 
     def test_header_2_3_invalid_flags(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x03\x00\x1f\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x03\x00\x1f\x00\x00\x00\x00')
         self.assertRaises(ValueError, id3._ID3__load_header)
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x03\x00\x0f\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x03\x00\x0f\x00\x00\x00\x00')
         self.assertRaises(ValueError, id3._ID3__load_header)
 
     def test_header_2_2(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x02\x00\x00\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x02\x00\x00\x00\x00\x00\x00')
         id3._ID3__load_header()
         self.assertEquals(id3.version, (2,2,0))
 
     def test_header_2_1(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x01\x00\x00\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x01\x00\x00\x00\x00\x00\x00')
         self.assertRaises(NotImplementedError, id3._ID3__load_header)
 
     def test_header_too_small(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(b'ID3\x01\x00\x00\x00\x00\x00')
+        id3._ID3__fileobj = BytesIO(b'ID3\x01\x00\x00\x00\x00\x00')
         self.assertRaises(EOFError, id3._ID3__load_header)
 
     def test_header_2_4_extended(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(
+        id3._ID3__fileobj = BytesIO(
             b'ID3\x04\x00\x40\x00\x00\x00\x00\x00\x00\x00\x05\x5a')
         id3._ID3__load_header()
         self.assertEquals(id3._ID3__extsize, 1)
@@ -140,13 +142,13 @@ class ID3Loading(TestCase):
 
     def test_header_2_4_extended_unsynch_size(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(
+        id3._ID3__fileobj = BytesIO(
             b'ID3\x04\x00\x40\x00\x00\x00\x00\x00\x00\x00\xFF\x5a')
         self.assertRaises(ValueError, id3._ID3__load_header)
 
     def test_header_2_4_extended_but_not(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(
+        id3._ID3__fileobj = BytesIO(
             b'ID3\x04\x00\x40\x00\x00\x00\x00TIT1\x00\x00\x00\x01a')
         id3._ID3__load_header()
         self.assertEquals(id3._ID3__extsize, 0)
@@ -154,13 +156,13 @@ class ID3Loading(TestCase):
 
     def test_header_2_4_extended_but_not_but_not_tag(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(
+        id3._ID3__fileobj = BytesIO(
             b'ID3\x04\x00\x40\x00\x00\x00\x00TIT9')
         self.failUnlessRaises(EOFError, id3._ID3__load_header)
 
     def test_header_2_3_extended(self):
         id3 = ID3()
-        id3._ID3__fileobj = io.BytesIO(
+        id3._ID3__fileobj = BytesIO(
             b'ID3\x03\x00\x40\x00\x00\x00\x00\x00\x00\x00\x06'
             b'\x00\x00\x56\x78\x9a\xbc')
         id3._ID3__load_header()
@@ -172,13 +174,13 @@ class ID3Loading(TestCase):
         id3.version = (2,4,0)
         id3._ID3__flags = 0x80
         badsync = b'\x00\xff\x00ab\x00'
-        self.assertEquals(id3._ID3__load_framedata(Frames["TPE2"], 0, badsync),
-                          ["\xffab"])
+        self.assertEquals(
+            id3._ID3__load_framedata(Frames["TPE2"], 0, badsync), [u"\xffab"])
         id3._ID3__flags = 0x00
-        self.assertEquals(id3._ID3__load_framedata(Frames["TPE2"], 0x02, badsync),
-                          ["\xffab"])
+        self.assertEquals(id3._ID3__load_framedata(
+            Frames["TPE2"], 0x02, badsync), [u"\xffab"])
         tag = id3._ID3__load_framedata(Frames["TPE2"], 0, badsync)
-        self.assertEquals(tag, ["\xff", "ab"])
+        self.assertEquals(tag, [u"\xff", u"ab"])
 
     def test_load_v23_unsynch(self):
         id3 = ID3(self.unsynch)
@@ -196,7 +198,7 @@ class Issue21(TestCase):
     # Ensure the extended header is turned off, and the frames are
     # read.
     def setUp(self):
-        self.id3 = ID3(os.path.join('tests', 'data', 'issue_21.id3'))
+        self.id3 = ID3(join('tests', 'data', 'issue_21.id3'))
 
     def test_no_ext(self):
         self.failIf(self.id3.f_extended)
@@ -212,7 +214,7 @@ add(Issue21)
 class ID3Tags(TestCase):
 
     def setUp(self):
-        self.silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
+        self.silence = join('tests', 'data', 'silence-44-s.mp3')
 
     def test_None(self):
         id3 = ID3(self.silence, known_frames={})
@@ -221,7 +223,7 @@ class ID3Tags(TestCase):
 
     def test_has_docs(self):
         for Kind in (list(Frames.values()) + list(Frames_2_2.values())):
-            self.failUnless(Kind.__doc__, "{} has no docstring".format(Kind))
+            self.failUnless(Kind.__doc__, "%s has no docstring" % Kind)
 
     def test_23(self):
         id3 = ID3(self.silence)
@@ -240,11 +242,9 @@ class ID3Tags(TestCase):
     def test_23_multiframe_hack(self):
         class ID3hack(ID3):
             "Override 'correct' behavior with desired behavior"
-            def add(self, frame):
-                if frame.HashKey in self:
-                    self[frame.HashKey].extend(frame[:])
-                else:
-                    self[frame.HashKey] = frame
+            def loaded_frame(self, tag):
+                if tag.HashKey in self: self[tag.HashKey].extend(tag[:])
+                else: self[tag.HashKey] = tag
 
         id3 = ID3hack(self.silence)
         self.assertEquals(8, len(id3.keys()))
@@ -292,15 +292,15 @@ class ID3Tags(TestCase):
 
     def test_extradata(self):
         from mutagenx.id3 import RVRB, RBUF
-        self.assertRaises(ID3Warning, RVRB()._readData, b'L1R1BBFFFFPP#xyz')
-        self.assertRaises(ID3Warning, RBUF()._readData,
-                          b'\x00\x01\x00\x01\x00\x00\x00\x00#xyz')
-
+        self.assertRaises(ID3Warning,
+                RVRB()._readData, b'L1R1BBFFFFPP#xyz')
+        self.assertRaises(ID3Warning,
+                RBUF()._readData, b'\x00\x01\x00\x01\x00\x00\x00\x00#xyz')
 
 class ID3v1Tags(TestCase):
 
     def setUp(self):
-        self.silence = os.path.join('tests', 'data', 'silence-44-s-v1.mp3')
+        self.silence = join('tests', 'data', 'silence-44-s-v1.mp3')
         self.id3 = ID3(self.silence)
 
     def test_album(self):
@@ -361,7 +361,6 @@ class ID3v1Tags(TestCase):
         frames = {}
         for key in ["TIT2", "TALB", "TPE1", "TDRC"]:
             frames[key] = self.id3[key]
-
         self.assertEquals(ParseID3v1(MakeID3v1(frames)), frames)
 
     def test_make_from_empty(self):
@@ -539,7 +538,7 @@ def TestReadTags():
         dict(desc='T', lang='ENU', encoding=0)],
     # found in a real MP3
     ['COMM', b'\x00\x00\xcc\x01\x00     ', '     ', '',
-        dict(desc='', lang='\x00\xcc\x01', encoding=0)],
+        dict(desc=u'', lang='\x00\xcc\x01', encoding=0)],
 
     ['APIC', b'\x00-->\x00\x03cover\x00cover.jpg', b'cover.jpg', '',
         dict(mime='-->', type=3, desc='cover', encoding=0)],
@@ -779,15 +778,14 @@ def TestReadTags():
                 for value, t in zip(value, iter(t)):
                     if isinstance(value, float):
                         self.failUnlessAlmostEqual(value, getattr(t, attr), 5)
-                    else:
-                        self.assertEquals(value, getattr(t, attr))
+                    else: self.assertEquals(value, getattr(t, attr))
 
                     if isinstance(intval, int):
                         self.assertEquals(intval, pos(t))
                     else:
                         self.assertRaises(TypeError, pos, t)
 
-        load_tests['test_{}_{}'.format(tag, i)] = test_tag
+        load_tests['test_%s_%d' % (tag, i)] = test_tag
 
         def test_tag_repr(self, tag=tag, data=data):
             from mutagenx.id3 import ID3TimeStamp
@@ -800,7 +798,8 @@ def TestReadTags():
             for spec in TAG._framespec:
                 attr = spec.name
                 self.assertEquals(getattr(tag, attr), getattr(tag2, attr))
-        repr_tests['test_repr_{}_{}'.format(tag, i)] = test_tag_repr
+
+        repr_tests['test_repr_%s_%d' % (tag, i)] = test_tag_repr
 
         def test_tag_write(self, tag=tag, data=data):
             id3 = __import__('mutagenx.id3', globals(), locals(), [tag])
@@ -811,7 +810,7 @@ def TestReadTags():
             for spec in TAG._framespec:
                 attr = spec.name
                 self.assertEquals(getattr(tag, attr), getattr(tag2, attr))
-        write_tests['test_write_{}_{}'.format(tag, i)] = test_tag_write
+        write_tests['test_write_%s_%d' % (tag, i)] = test_tag_write
 
     testcase = type('TestReadTags', (TestCase,), load_tests)
     add(testcase)
@@ -1035,14 +1034,14 @@ class BrokenButParsed(TestCase):
         data = id3._ID3__save_frame(tpe1)
         datalen_size = data[4 + 4 + 2:4 + 4 + 2 + 4]
         self.failIf(
-            max(datalen_size) >= 0x80, "data is not syncsafe: {!r}".format(data))
+            max(datalen_size) >= b'\x80'[0], "data is not syncsafe: %r" % data)
 
     def test_fake_zlib_nopedantic(self):
         from mutagenx.id3 import TPE1, Frame
         id3 = ID3()
         id3.PEDANTIC = False
         tpe1 = TPE1.fromData(id3, Frame.FLAG24_COMPRESS, b'\x03abcdefg')
-        self.assertEquals('abcdefg', tpe1)
+        self.assertEquals(u'abcdefg', tpe1)
 
     def test_ql_0_12_missing_uncompressed_size(self):
         from mutagenx.id3 import TPE1
@@ -1081,8 +1080,8 @@ class BrokenButParsed(TestCase):
 
 
 class OddWrites(TestCase):
-    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
-    newsilence = os.path.join('tests', 'data', 'silence-written.mp3')
+    silence = join('tests', 'data', 'silence-44-s.mp3')
+    newsilence = join('tests', 'data', 'silence-written.mp3')
     def setUp(self):
         shutil.copy(self.silence, self.newsilence)
 
@@ -1105,14 +1104,12 @@ class OddWrites(TestCase):
         self.assertEquals(open(self.newsilence, "rb").read()[-1], b'!'[0])
 
     def tearDown(self):
-        try:
-            os.unlink(self.newsilence)
-        except OSError:
-            pass
+        try: os.unlink(self.newsilence)
+        except OSError: pass
 
 class WriteRoundtrip(TestCase):
-    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
-    newsilence = os.path.join('tests', 'data', 'silence-written.mp3')
+    silence = join('tests', 'data', 'silence-44-s.mp3')
+    newsilence = join('tests', 'data', 'silence-written.mp3')
     def setUp(self):
         shutil.copy(self.silence, self.newsilence)
 
@@ -1146,7 +1143,7 @@ class WriteRoundtrip(TestCase):
     def test_changeframe(self):
         f = ID3(self.newsilence)
         self.assertEquals(f["TIT2"], "Silence")
-        f["TIT2"].text = ["The sound of silence."]
+        f["TIT2"].text = [u"The sound of silence."]
         f.save()
         id3 = ID3(self.newsilence)
         self.assertEquals(id3["TIT2"], "The sound of silence.")
@@ -1155,7 +1152,7 @@ class WriteRoundtrip(TestCase):
         from mutagenx.id3 import TPE1
         f = ID3(self.newsilence)
         self.assertEquals(f["TPE1"], "jzig")
-        f["TPE1"] = TPE1(encoding=0, text="jzig\x00piman")
+        f["TPE1"] = TPE1(encoding=0, text=u"jzig\x00piman")
         f.save()
         id3 = ID3(self.newsilence)
         self.assertEquals(id3["TPE1"], ["jzig", "piman"])
@@ -1227,14 +1224,12 @@ class WriteRoundtrip(TestCase):
         self.assert_(data.find(b"TIT2") < data.find(b"TALB"))
 
     def tearDown(self):
-        try:
-            os.unlink(self.newsilence)
-        except EnvironmentError:
-            pass
+        try: os.unlink(self.newsilence)
+        except EnvironmentError: pass
 
 class WriteForEyeD3(TestCase):
-    silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
-    newsilence = os.path.join('tests', 'data', 'silence-written.mp3')
+    silence = join('tests', 'data', 'silence-44-s.mp3')
+    newsilence = join('tests', 'data', 'silence-written.mp3')
     def setUp(self):
         shutil.copy(self.silence, self.newsilence)
         # remove ID3v1 tag
@@ -1280,7 +1275,7 @@ class WriteForEyeD3(TestCase):
 
 class BadTYER(TestCase):
 
-    filename = os.path.join('tests', 'data', 'bad-TYER-frame.mp3')
+    filename = join('tests', 'data', 'bad-TYER-frame.mp3')
 
     def setUp(self):
         self.audio = ID3(self.filename)
@@ -1296,8 +1291,8 @@ class BadTYER(TestCase):
 
 class BadPOPM(TestCase):
 
-    filename = os.path.join('tests', 'data', 'bad-POPM-frame.mp3')
-    newfilename = os.path.join('tests', 'data', 'bad-POPM-frame-written.mp3')
+    filename = join('tests', 'data', 'bad-POPM-frame.mp3')
+    newfilename = join('tests', 'data', 'bad-POPM-frame-written.mp3')
 
     def setUp(self):
         shutil.copy(self.filename, self.newfilename)
@@ -1371,55 +1366,48 @@ class Issue69_BadV1Year(TestCase):
 class UpdateTo23(TestCase):
 
     def test_tdrc(self):
-        from mutagenx.id3 import TDRC
         tags = ID3()
-        tags.add(TDRC(encoding=1, text="2003-04-05 12:03"))
+        tags.add(id3.TDRC(encoding=1, text="2003-04-05 12:03"))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TYER"].text, ["2003"])
         self.failUnlessEqual(tags["TDAT"].text, ["0504"])
         self.failUnlessEqual(tags["TIME"].text, ["1203"])
 
     def test_tdor(self):
-        from mutagenx.id3 import TDOR
         tags = ID3()
-        tags.add(TDOR(encoding=1, text="2003-04-05 12:03"))
+        tags.add(id3.TDOR(encoding=1, text="2003-04-05 12:03"))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TORY"].text, ["2003"])
 
     def test_genre_from_v24_1(self):
-        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(TCON(encoding=1, text=["4","Rock"]))
+        tags.add(id3.TCON(encoding=1, text=["4","Rock"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Disco", "Rock"])
 
     def test_genre_from_v24_2(self):
-        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(TCON(encoding=1, text=["RX", "3", "CR"]))
+        tags.add(id3.TCON(encoding=1, text=["RX", "3", "CR"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Remix", "Dance", "Cover"])
 
     def test_genre_from_v23_1(self):
-        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(TCON(encoding=1, text=["(4)Rock"]))
+        tags.add(id3.TCON(encoding=1, text=["(4)Rock"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Disco", "Rock"])
 
     def test_genre_from_v23_2(self):
-        from mutagenx.id3 import TCON
         tags = ID3()
-        tags.add(TCON(encoding=1, text=["(RX)(3)(CR)"]))
+        tags.add(id3.TCON(encoding=1, text=["(RX)(3)(CR)"]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["TCON"].text, ["Remix", "Dance", "Cover"])
 
     def test_ipls(self):
-        from mutagenx.id3 import TIPL, TMCL
         tags = ID3()
         tags.version = (2, 3)
-        tags.add(TIPL(encoding=0, people=[["a", "b"], ["c", "d"]]))
-        tags.add(TMCL(encoding=0, people=[["e", "f"], ["g", "h"]]))
+        tags.add(id3.TIPL(encoding=0, people=[["a", "b"], ["c", "d"]]))
+        tags.add(id3.TMCL(encoding=0, people=[["e", "f"], ["g", "h"]]))
         tags.update_to_v23()
         self.failUnlessEqual(tags["IPLS"], [["a", "b"], ["c", "d"],
                                             ["e", "f"], ["g", "h"]])
@@ -1518,7 +1506,5 @@ add(UpdateTo23)
 add(WriteTo23)
 
 try: import eyeD3
-except ImportError:
-    pass
-else:
-    add(WriteForEyeD3)
+except ImportError: pass
+else: add(WriteForEyeD3)

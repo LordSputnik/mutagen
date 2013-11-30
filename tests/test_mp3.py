@@ -1,15 +1,12 @@
 import os
 import shutil
-import io
-import tempfile
 
-from unittest import TestCase
-
+from tests import TestCase
+from io import BytesIO
 from tests import add
-
 from mutagenx.mp3 import MP3, error as MP3Error, delete, MPEGInfo, EasyMP3
 from mutagenx.id3 import ID3
-
+from tempfile import mkstemp
 
 class TMP3(TestCase):
     silence = os.path.join('tests', 'data', 'silence-44-s.mp3')
@@ -19,7 +16,7 @@ class TMP3(TestCase):
 
     def setUp(self):
         original = os.path.join("tests", "data", "silence-44-s.mp3")
-        fd, self.filename = tempfile.mkstemp(suffix='.mp3')
+        fd, self.filename = mkstemp(suffix='.mp3')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.mp3 = MP3(self.filename)
@@ -89,7 +86,7 @@ class TMP3(TestCase):
         self.failUnlessEqual(int(round(mp3.info.length)), 222)
 
     def test_empty_xing(self):
-        mp3 = MP3(os.path.join("tests", "data", "bad-xing.mp3"))
+        MP3(os.path.join("tests", "data", "bad-xing.mp3"))
 
     def test_delete(self):
         self.mp3.delete()
@@ -105,11 +102,11 @@ class TMP3(TestCase):
         self.mp3.save()
         self.failUnless(MP3(self.filename)["TIT1"] == "foobar")
 
-    """def test_load_non_id3(self):
+    def test_load_non_id3(self):
         filename = os.path.join("tests", "data", "apev2-lyricsv2.mp3")
         from mutagenx.apev2 import APEv2
         mp3 = MP3(filename, ID3=APEv2)
-        self.failUnless("replaygain_track_peak" in mp3.tags)"""
+        self.failUnless("replaygain_track_peak" in mp3.tags)
 
     def test_add_tags(self):
         mp3 = MP3(os.path.join("tests", "data", "xing.mp3"))
@@ -135,24 +132,22 @@ class TMP3(TestCase):
 add(TMP3)
 
 class TMPEGInfo(TestCase):
-    uses_mmap = False
 
     def test_not_real_file(self):
         filename = os.path.join("tests", "data", "silence-44-s-v1.mp3")
-        fileobj = io.BytesIO(open(filename, "rb").read(20))
+        fileobj = BytesIO(open(filename, "rb").read(20))
         MPEGInfo(fileobj)
 
     def test_empty(self):
-        fileobj = io.BytesIO(b"")
+        fileobj = BytesIO(b"")
         self.failUnlessRaises(IOError, MPEGInfo, fileobj)
 add(TMPEGInfo)
 
 class TEasyMP3(TestCase):
-    uses_mmap = False
 
     def setUp(self):
         original = os.path.join("tests", "data", "silence-44-s.mp3")
-        fd, self.filename = tempfile.mkstemp(suffix='.mp3')
+        fd, self.filename = mkstemp(suffix='.mp3')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.mp3 = EasyMP3(self.filename)
@@ -175,7 +170,7 @@ class TEasyMP3(TestCase):
         self.failUnlessEqual(noneasy.length, nonid3.length)
 
     def tearDown(self):
-        os.remove(self.filename)
+        os.unlink(self.filename)
 add(TEasyMP3)
 
 class Issue72_TooShortFile(TestCase):

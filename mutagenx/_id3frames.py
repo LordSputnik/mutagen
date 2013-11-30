@@ -224,7 +224,7 @@ class FrameOpt(Frame):
                 else:
                     break
                 setattr(self, reader.name, value)
-        if data.strip('\x00'):
+        if data.strip(b'\x00'):
             warn('Leftover data: %s: %r (from %r)' % (
                  type(self).__name__, data, odata),
                  ID3Warning)
@@ -408,7 +408,7 @@ class TCON(TextFrame):
     use the 'genres' property rather than the 'text' attribute.
     """
 
-    from mutagen._constants import GENRES
+    from mutagenx._constants import GENRES
     GENRES = GENRES
 
     def __get_genres(self):
@@ -983,7 +983,7 @@ class EQU2(Frame):
     """Equalisation (2).
 
     Attributes:
-    
+
     * method -- interpolation method (0 = band, 1 = linear)
     * desc -- identifying description
     * adjustments -- list of (frequency, vol_adjustment) pairs

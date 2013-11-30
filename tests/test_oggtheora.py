@@ -1,21 +1,20 @@
 import os
 import shutil
-import sys
-import io
-import tempfile
 
-from tests import add
-from tests.test_ogg import TOggFileType
+from tempfile import mkstemp
+from io import BytesIO
 
 from mutagenx.oggtheora import OggTheora, OggTheoraInfo, delete
 from mutagenx.ogg import OggPage
+from tests import add
+from tests.test_ogg import TOggFileType
 
 class TOggTheora(TOggFileType):
     Kind = OggTheora
 
     def setUp(self):
         original = os.path.join("tests", "data", "sample.oggtheora")
-        fd, self.filename = tempfile.mkstemp(suffix='.ogg')
+        fd, self.filename = mkstemp(suffix='.ogg')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.audio = OggTheora(self.filename)
@@ -29,13 +28,13 @@ class TOggTheora(TOggFileType):
         packet = page.packets[0]
         packet = packet[:7] + b"\x03\x00" + packet[9:]
         page.packets = [packet]
-        fileobj = io.BytesIO(page.write())
+        fileobj = BytesIO(page.write())
         self.failUnlessRaises(IOError, OggTheoraInfo, fileobj)
 
     def test_theora_not_first_page(self):
         page = OggPage(open(self.filename, "rb"))
         page.first = False
-        fileobj = io.BytesIO(page.write())
+        fileobj = BytesIO(page.write())
         self.failUnlessRaises(IOError, OggTheoraInfo, fileobj)
 
     def test_vendor(self):

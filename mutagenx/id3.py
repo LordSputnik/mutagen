@@ -629,13 +629,13 @@ class ID3(DictProxy, mutagenx.Metadata):
 
         # TDAT, TYER, and TIME have been turned into TDRC.
         try:
-            if bytes(self.get("TYER", "")).strip(b"\x00"):
-                date = bytes(self.pop("TYER"))
-                if bytes(self.get("TDAT", "")).strip(b"\x00"):
-                    dat = bytes(self.pop("TDAT"))
-                    date = date + b'-' + dat[2:] + b'-' + dat[:2]
-                    if bytes(self.get("TIME", "")).strip(b"\x00"):
-                        time = bytes(self.pop("TIME"))
+            if str(self.get("TYER", "")).strip("\x00"):
+                date = str(self.pop("TYER"))
+                if str(self.get("TDAT", "")).strip("\x00"):
+                    dat = str(self.pop("TDAT"))
+                    date = date + '-' + dat[2:] + '-' + dat[:2]
+                    if str(self.get("TIME", "")).strip("\x00"):
+                        time = str(self.pop("TIME"))
                         date += 'T' + time[:2] + ':' + time[2:] + ':00'
                 if "TDRC" not in self:
                     self.add(TDRC(encoding=0, text=date))
@@ -783,11 +783,11 @@ def ParseID3v1(data):
     # wrote only the characters available - e.g. "1" or "" - into the
     # year field. To parse those, reduce the size of the year field.
     # Amazingly, "0s" works as a struct format string.
-    unpack_fmt = "3s30s30s30s%ds29sBB" % (len(string) - 124)
+    unpack_fmt = "3s30s30s30s%ds29sBB" % (len(data) - 124)
 
     try:
         tag, title, artist, album, year, comment, track, genre = unpack(
-            unpack_fmt, string)
+            unpack_fmt, data)
     except StructError:
         return None
 

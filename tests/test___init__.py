@@ -1,10 +1,7 @@
 import os
-import os.path
-
+from io import BytesIO
+from tempfile import mkstemp
 import shutil
-import tempfile
-
-import io
 
 from tests import TestCase, add
 from mutagenx import File, Metadata, FileType
@@ -69,19 +66,16 @@ add(TFileType)
 class TFile(TestCase):
 
     def test_bad(self):
-        try:
-            self.failUnless(File(devnull) is None)
+        try: self.failUnless(File(devnull) is None)
         except (OSError, IOError):
-            print("WARNING: Unable to open {}.".format(devnull))
+            print("WARNING: Unable to open %s." % devnull)
         self.failUnless(File(__file__) is None)
 
     def test_empty(self):
         filename = os.path.join("tests", "data", "empty")
         open(filename, "wb").close()
-        try:
-            self.failUnless(File(filename) is None)
-        finally:
-            os.remove(filename)
+        try: self.failUnless(File(filename) is None)
+        finally: os.unlink(filename)
 
     def test_not_file(self):
         self.failUnlessRaises(EnvironmentError, File, "/dev/doesnotexist")
@@ -187,7 +181,7 @@ class TFile(TestCase):
 
     def test_id3_indicates_mp3_not_tta(self):
         header = b"ID3 the rest of this is garbage"
-        fileobj = io.BytesIO(header)
+        fileobj = BytesIO(header)
         filename = "not-identifiable.ext"
         self.failUnless(TrueAudio.score(filename, fileobj, header) <
                         MP3.score(filename, fileobj, header))
@@ -206,7 +200,7 @@ class TFileUpperExt(TestCase):
         checks = []
         for (original, instance) in self.FILES:
             ext = os.path.splitext(original)[1]
-            fd, filename = tempfile.mkstemp(suffix='.'+ext.upper())
+            fd, filename = mkstemp(suffix='.'+ext.upper())
             os.close(fd)
             shutil.copy(original, filename)
             checks.append((filename, instance))
@@ -218,6 +212,22 @@ class TFileUpperExt(TestCase):
 
     def tearDown(self):
         for (path, instance) in self.checks:
-            os.remove(path)
+            os.unlink(path)
 
 add(TFileUpperExt)
+
+
+class TModuleImportAll(TestCase):
+
+    def test_all(self):
+        import mutagenx
+        files = os.listdir(mutagenx.__path__[0])
+        modules = [os.path.splitext(f)[0] for f in files]
+        modules = [f for f in modules if not f.startswith("_")]
+
+        for module in modules:
+            mod = getattr(__import__("mutagenx." + module), module)
+            for attr in getattr(mod, "__all__", []):
+                getattr(mod, attr)
+
+add(TModuleImportAll)

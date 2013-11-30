@@ -1,14 +1,15 @@
 import os
-import tempfile
 import shutil
+import pickle
 from tests import add, TestCase
 from mutagenx.id3 import ID3FileType
-from mutagenx.easyid3 import EasyID3, error as ID3Error, delete
+from mutagenx.easyid3 import EasyID3, error as ID3Error
+from tempfile import mkstemp
 
 class TEasyID3(TestCase):
 
     def setUp(self):
-        fd, self.filename = tempfile.mkstemp(suffix='.mp3')
+        fd, self.filename = mkstemp('.mp3')
         os.close(fd)
         empty = os.path.join('tests', 'data', 'emptyfile.mp3')
         shutil.copy(empty, self.filename)
@@ -123,8 +124,8 @@ class TEasyID3(TestCase):
     def test_write_invalid(self):
         self.failUnlessRaises(ValueError, self.id3.__getitem__, "notvalid")
         self.failUnlessRaises(ValueError, self.id3.__delitem__, "notvalid")
-        self.failUnlessRaises(ValueError, self.id3.__setitem__, "notvalid",
-                              "tests")
+        self.failUnlessRaises(
+            ValueError, self.id3.__setitem__, "notvalid", "tests")
 
     def test_perfomer(self):
         self.id3["performer:coder"] = ["piman", "mu"]
@@ -198,8 +199,7 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["foo"])
         self.failUnlessRaises(
-            ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["1", "2"]
-        )
+            ValueError, self.id3.__setitem__, "replaygain_foo_gain", ["1", "2"])
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
 
     def test_peak_bad_key(self):
@@ -212,8 +212,7 @@ class TEasyID3(TestCase):
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["foo"])
         self.failUnlessRaises(
-            ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["1", "1"]
-        )
+            ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["1", "1"])
         self.failUnlessRaises(
             ValueError, self.id3.__setitem__, "replaygain_foo_peak", ["3"])
         self.failIf(self.id3._EasyID3__id3.getall("RVA2"))
@@ -258,7 +257,6 @@ class TEasyID3(TestCase):
 
     def test_pickle(self):
         # http://code.google.com/p/mutagen/issues/detail?id=102
-        import pickle
         pickle.dumps(self.id3)
 
     def test_get_fallback(self):

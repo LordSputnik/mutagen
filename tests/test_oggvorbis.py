@@ -1,20 +1,19 @@
 import os
-import os.path
-import io
 import shutil
-import tempfile
 
-from tests import TestCase, add
+from io import BytesIO
 from mutagenx.ogg import OggPage
 from mutagenx.oggvorbis import OggVorbis, OggVorbisInfo, delete
+from tests import add
 from tests.test_ogg import TOggFileType
+from tempfile import mkstemp
 
 class TOggVorbis(TOggFileType):
     Kind = OggVorbis
 
     def setUp(self):
         original = os.path.join("tests", "data", "empty.ogg")
-        fd, self.filename = tempfile.mkstemp(suffix='.ogg')
+        fd, self.filename = mkstemp(suffix='.ogg')
         os.close(fd)
         shutil.copy(original, self.filename)
         self.audio = self.Kind(self.filename)
@@ -36,7 +35,7 @@ class TOggVorbis(TOggFileType):
     def test_invalid_not_first(self):
         page = OggPage(open(self.filename, "rb"))
         page.first = False
-        self.failUnlessRaises(IOError, OggVorbisInfo, io.BytesIO(page.write()))
+        self.failUnlessRaises(IOError, OggVorbisInfo, BytesIO(page.write()))
 
     def test_avg_bitrate(self):
         page = OggPage(open(self.filename, "rb"))
@@ -44,7 +43,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\x00\x00\x01\x00" + b"\x00\x00\x00\x00" +
                   b"\x00\x00\x00\x00" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(io.BytesIO(page.write()))
+        info = OggVorbisInfo(BytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 32768)
 
     def test_overestimated_bitrate(self):
@@ -53,7 +52,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\x00\x00\x01\x00" + b"\x00\x00\x00\x01" +
                   b"\x00\x00\x00\x00" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(io.BytesIO(page.write()))
+        info = OggVorbisInfo(BytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 65536)
 
     def test_underestimated_bitrate(self):
@@ -62,7 +61,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\x00\x00\x01\x00" + b"\x01\x00\x00\x00" +
                   b"\x00\x00\x01\x00" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(io.BytesIO(page.write()))
+        info = OggVorbisInfo(BytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 65536)
 
     def test_negative_bitrate(self):
@@ -71,7 +70,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\xff\xff\xff\xff" + b"\xff\xff\xff\xff" +
                   b"\xff\xff\xff\xff" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(io.BytesIO(page.write()))
+        info = OggVorbisInfo(BytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 0)
 
     def test_vendor(self):
@@ -82,24 +81,21 @@ class TOggVorbis(TOggFileType):
     def test_vorbiscomment(self):
         self.audio.save()
         self.scan_file()
-        if ogg is None:
-            return
+        if ogg is None: return
         self.failUnless(ogg.vorbis.VorbisFile(self.filename))
 
     def test_vorbiscomment_big(self):
         self.test_really_big()
         self.audio.save()
         self.scan_file()
-        if ogg is None:
-            return
+        if ogg is None: return
         vfc = ogg.vorbis.VorbisFile(self.filename).comment()
         self.failUnlessEqual(self.audio["foo"], vfc["foo"])
 
     def test_vorbiscomment_delete(self):
         self.audio.delete()
         self.scan_file()
-        if ogg is None:
-            return
+        if ogg is None: return
         vfc = ogg.vorbis.VorbisFile(self.filename).comment()
         self.failUnlessEqual(vfc.keys(), ["VENDOR"])
 
@@ -109,8 +105,7 @@ class TOggVorbis(TOggFileType):
         self.audio["foobar"] = "foobar" * 1000
         self.audio.save()
         self.scan_file()
-        if ogg is None:
-            return
+        if ogg is None: return
         vfc = ogg.vorbis.VorbisFile(self.filename).comment()
         self.failUnlessEqual(self.audio["foobar"], vfc["foobar"])
         self.failUnless("FOOBAR" in vfc.keys())
@@ -142,8 +137,7 @@ class TOggVorbis(TOggFileType):
         self.failUnlessEqual(self.audio.tags, tags)
 
     def test_save_split_setup_packet_reference(self):
-        if ogg is None:
-            return
+        if ogg is None: return
         self.test_save_split_setup_packet()
         vfc = ogg.vorbis.VorbisFile(self.filename).comment()
         for key in self.audio:
@@ -151,8 +145,7 @@ class TOggVorbis(TOggFileType):
         self.ogg_reference(self.filename)
 
     def test_save_grown_split_setup_packet_reference(self):
-        if ogg is None:
-            return
+        if ogg is None: return
         fn = os.path.join("tests", "data", "multipage-setup.ogg")
         shutil.copy(fn, self.filename)
         audio = OggVorbis(self.filename)
