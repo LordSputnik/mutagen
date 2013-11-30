@@ -1,18 +1,34 @@
-Metadata-Version: 1.0
+Metadata-Version: 1.1
 Name: mutagenx
-Version: 1.21
-Summary: read and write audio tags for many formats
+Version: 1.22
+Summary: read and write audio tags for many formats in Python 3
 Home-page: https://github.com/LordSputnik/mutagen/
 Author: Ben Ockmore
 Author-email: ben.sput@gmail.com
 License: GNU GPL v2
-Description: Mutagen is a Python module to handle audio metadata. It supports ASF,
+Description: A fork of the mutagen package, modified to support Python 3.3+. I
+        take no credit for the original mutagen - the copyright for that is
+        owned by the original developers. This package isn't currently
+        compatible with Python 2.x, but I am working with the mutagen
+        developers to make these two projects converge. Once this happens, I'll
+        close this project and start working on improving mutagen itself.
+
+        From the original package description:
+
+        "Mutagen is a Python module to handle audio metadata. It supports ASF,
         FLAC, M4A, Monkey's Audio, MP3, Musepack, Ogg FLAC, Ogg Speex, Ogg
         Theora, Ogg Vorbis, True Audio, WavPack and OptimFROG audio files. All
         versions of ID3v2 are supported, and all standard ID3v2.4 frames are
         parsed. It can read Xing headers to accurately calculate the bitrate
         and length of MP3s. ID3 and APEv2 tags can be edited regardless of
         audio format. It can also manipulate Ogg streams on an individual
-        packet/page level.
+        packet/page level."
         
 Platform: UNKNOWN
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+Classifier: Topic :: Multimedia :: Sound/Audio
+Classifier: Topic :: Software Development :: Libraries :: Python Modules

@@ -1,10 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 # Full tag list for any given file.
 # Copyright 2005 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
+
+from __future__ import print_function, absolute_import, division
 
 import sys
 import locale
@@ -13,7 +19,7 @@ from optparse import OptionParser
 
 
 def main(argv):
-    from mutagen import File
+    from mutagenx import File
 
     parser = OptionParser()
     parser.add_option("--no-flac", help="Compatibility; does nothing.")
@@ -26,15 +32,15 @@ def main(argv):
 
     enc = locale.getpreferredencoding()
     for filename in args:
-        print "--", filename
+        print("--%s" % filename)
         try:
-            print "- " + File(filename).pprint().encode(enc, 'replace')
+            print ("- " + File(filename).pprint()).encode(enc, 'replace')
         except AttributeError:
-            print "- Unknown file type"
+            print "- Unknown file type".encode(enc, 'replace')
         except KeyboardInterrupt:
             raise
         except Exception, err:
-            print str(err)
+            print(str(err).encode(enc, 'replace'))
         print
 
 

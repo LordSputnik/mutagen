@@ -1,17 +1,21 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 # ID3iconv is a Java based ID3 encoding convertor, here's the Python version.
 # Copyright 2006 Emfox Zhou <EmfoxZhou@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
+#
+# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
+
+from __future__ import print_function, absolute_import, division
 
 import sys
 import locale
 
-from __future__ import print_function, absolute_import, division
-
-# Deprecated - should be dropped when 2.6 is eventually no longer supported.
+# Deprecated - should be dropped if/when 2.6 is eventually no longer supported.
 from optparse import OptionParser
 
 import mutagenx
@@ -38,15 +42,14 @@ def isascii(string):
 
 
 class ID3OptionParser(OptionParser):
-
     def __init__(self):
         mutagen_version = mutagenx.version_string
-        my_version = ".".join(str(v) for v in VERSION)
-        version = "mid3iconv {}\nUses Mutagen {}".format(my_version,
-                                                         mutagen_version)
-
+        my_version = ".".join(map(str, VERSION))
+        version = "mid3iconv %s\nUses Mutagen %s" % (
+            my_version, mutagen_version)
         return OptionParser.__init__(
-            self, version=version, usage="%prog [OPTION] [FILE]...",
+            self, version=version,
+            usage="%prog [OPTION] [FILE]...",
             description=("Mutagen-based replacement the id3iconv utility, "
                          "which converts ID3 tags from legacy encodings "
                          "to Unicode and stores them using the ID3v2 format."))
@@ -68,7 +71,7 @@ def update(options, filenames):
 
     for filename in filenames:
         if verbose != "quiet":
-            print("Updating {}".format(filename))
+            print("Updating %s" % filename)
 
         if has_id3v1(filename) and not noupdate and force_v1:
             mutagen.id3.delete(filename, False, True)
@@ -126,10 +129,11 @@ def has_id3v1(filename):
 
 def main(argv):
     parser = ID3OptionParser()
-    parser.add_option("-e", "--encoding", metavar="ENCODING", action="store",
-                      type="string", dest="encoding",
-                      help=("Specify original tag encoding (default is {})".format(
-                        locale.getpreferredencoding())))
+    parser.add_option(
+        "-e", "--encoding", metavar="ENCODING", action="store",
+        type="string", dest="encoding",
+        help=("Specify original tag encoding (default is %s)" % (
+              locale.getpreferredencoding())))
     parser.add_option(
         "-p", "--dry-run", action="store_true", dest="noupdate",
         help="Do not actually modify files")
