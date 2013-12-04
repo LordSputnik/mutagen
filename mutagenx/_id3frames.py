@@ -19,7 +19,7 @@ from mutagenx._id3specs import (
     VolumeAdjustmentsSpec, VolumePeakSpec, VolumeAdjustmentSpec,
     ChannelSpec, MultiSpec, SynchronizedTextSpec, KeyEventSpec, TimeStampSpec,
     EncodedNumericPartTextSpec, EncodedNumericTextSpec)
-from ._compat import text_type, string_types, swap_to_string
+from mutagenx._compat import text_type, string_types, swap_to_string
 
 
 def is_valid_frame_id(frame_id):
