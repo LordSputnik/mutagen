@@ -19,6 +19,7 @@ from mutagenx._id3specs import (
     VolumeAdjustmentsSpec, VolumePeakSpec, VolumeAdjustmentSpec,
     ChannelSpec, MultiSpec, SynchronizedTextSpec, KeyEventSpec, TimeStampSpec,
     EncodedNumericPartTextSpec, EncodedNumericTextSpec)
+from ._compat import text_type, string_types, swap_to_string
 
 
 def is_valid_frame_id(frame_id):
@@ -249,6 +250,7 @@ class FrameOpt(Frame):
         return '%s(%s)' % (type(self).__name__, ', '.join(kw))
 
 
+@swap_to_string
 class TextFrame(Frame):
     """Text strings.
 
@@ -269,13 +271,17 @@ class TextFrame(Frame):
         MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000'),
     ]
 
+    def __bytes__(self):
+        return text_type(self).encode('utf-8')
+
     def __str__(self):
         return u'\u0000'.join(self.text)
 
     def __eq__(self, other):
-        if isinstance(other, str):
-            return str(self) == other
-
+        if isinstance(other, bytes):
+            return bytes(self) == other
+        elif isinstance(other, text_type):
+            return text_type(self) == other
         return self.text == other
 
     __hash__ = Frame.__hash__
@@ -338,6 +344,7 @@ class NumericPartTextFrame(TextFrame):
         return int(self.text[0].split("/")[0])
 
 
+@swap_to_string
 class TimeStampTextFrame(TextFrame):
     """A list of time stamps.
 
@@ -350,13 +357,17 @@ class TimeStampTextFrame(TextFrame):
         MultiSpec('text', TimeStampSpec('stamp'), sep=u','),
     ]
 
+    def __bytes__(self):
+        return text_type(self).encode('utf-8')
+
     def __str__(self):
-        return ','.join(stamp.text for stamp in self.text)
+        return u','.join(stamp.text for stamp in self.text)
 
     def _pprint(self):
-        return " / ".join(stamp.text for stamp in self.text)
+        return u" / ".join(stamp.text for stamp in self.text)
 
 
+@swap_to_string
 class UrlFrame(Frame):
     """A frame containing a URL string.
 
@@ -371,6 +382,9 @@ class UrlFrame(Frame):
 
     _framespec = [Latin1TextSpec('url')]
 
+    def __bytes__(self):
+        return self.url.encode('utf-8')
+
     def __str__(self):
         return self.url
 
@@ -379,7 +393,8 @@ class UrlFrame(Frame):
 
     __hash__ = Frame.__hash__
 
-    _pprint = __str__
+    def _pprint(self):
+        return self.url
 
 
 class UrlFrameU(UrlFrame):
@@ -433,7 +448,7 @@ class TCON(TextFrame):
                 if genreid:
                     for gid in genreid[1:-1].split(")("):
                         if gid.isdigit() and int(gid) < len(self.GENRES):
-                            gid = self.GENRES[int(gid)]
+                            gid = text_type(self.GENRES[int(gid)])
                             newgenres.append(gid)
                         elif gid == "CR":
                             newgenres.append(u"Cover")
@@ -454,13 +469,12 @@ class TCON(TextFrame):
         return genres
 
     def __set_genres(self, genres):
-        if isinstance(genres, str):
+        if isinstance(genres, string_types):
             genres = [genres]
-
-        self.text = genres
+        self.text = [self.__decode(g) for g in genres]
 
     def __decode(self, value):
-        if isinstance(value, str):
+        if isinstance(value, bytes):
             enc = EncodedTextSpec._encodings[self.encoding][0]
             return value.decode(enc)
         else:
@@ -857,6 +871,7 @@ class SYTC(Frame):
     __hash__ = Frame.__hash__
 
 
+@swap_to_string
 class USLT(Frame):
     """Unsynchronised lyrics/text transcription.
 
@@ -875,6 +890,9 @@ class USLT(Frame):
     def HashKey(self):
         return '%s:%s:%r' % (self.FrameID, self.desc, self.lang)
 
+    def __bytes__(self):
+        return self.text.encode('utf-8')
+
     def __str__(self):
         return self.text
 
@@ -884,6 +902,7 @@ class USLT(Frame):
     __hash__ = Frame.__hash__
 
 
+@swap_to_string
 class SYLT(Frame):
     """Synchronised lyrics/text."""
 
@@ -905,8 +924,12 @@ class SYLT(Frame):
 
     __hash__ = Frame.__hash__
 
+    def __bytes__(self):
+        return u"".join(text for (text, time) in self.text).encode('utf-8')
+
     def __str__(self):
-        return "".join(text for (text, time) in self.text)
+        return u"".join(text for (text, time) in self.text)
+
 
 class COMM(TextFrame):
     """User comment.
@@ -1087,7 +1110,8 @@ class PCNT(Frame):
         return self.count
 
     def _pprint(self):
-        return str(self.count)
+        return text_type(self.count)
+
 
 class POPM(FrameOpt):
     """Popularimeter.
@@ -1186,6 +1210,7 @@ class RBUF(FrameOpt):
         return self.size
 
 
+@swap_to_string
 class AENC(FrameOpt):
     """Audio encryption.
 
@@ -1210,6 +1235,9 @@ class AENC(FrameOpt):
     @property
     def HashKey(self):
         return '%s:%s' % (self.FrameID, self.owner)
+
+    def __bytes__(self):
+        return self.owner.encode('utf-8')
 
     def __str__(self):
         return self.owner
@@ -1304,13 +1332,14 @@ class UFID(Frame):
     __hash__ = Frame.__hash__
 
     def _pprint(self):
-        isascii = max(self.data) < 128
+        isascii = max(self.data) < b'\x80'[0]
         if isascii:
             return "%s=%s" % (self.owner, self.data)
         else:
             return "%s (%d bytes)" % (self.owner, len(self.data))
 
 
+@swap_to_string
 class USER(Frame):
     """Terms of use.
 
@@ -1331,6 +1360,9 @@ class USER(Frame):
     def HashKey(self):
         return '%s:%r' % (self.FrameID, self.lang)
 
+    def __bytes__(self):
+        return self.text.encode('utf-8')
+
     def __str__(self):
         return self.text
 
@@ -1343,6 +1375,7 @@ class USER(Frame):
         return "%r=%s" % (self.lang, self.text)
 
 
+@swap_to_string
 class OWNE(Frame):
     """Ownership frame."""
 
@@ -1352,6 +1385,9 @@ class OWNE(Frame):
         FixedWidthStringSpec('date', 8),
         EncodedTextSpec('seller'),
     ]
+
+    def __bytes__(self):
+        return self.seller.encode('utf-8')
 
     def __str__(self):
         return self.seller
@@ -1390,6 +1426,7 @@ class COMR(FrameOpt):
     __hash__ = FrameOpt.__hash__
 
 
+@swap_to_string
 class ENCR(Frame):
     """Encryption method registration.
 
@@ -1407,7 +1444,7 @@ class ENCR(Frame):
     def HashKey(self):
         return "%s:%s" % (self.FrameID, self.owner)
 
-    def __str__(self):
+    def __bytes__(self):
         return self.data
 
     def __eq__(self, other):
@@ -1416,6 +1453,7 @@ class ENCR(Frame):
     __hash__ = Frame.__hash__
 
 
+@swap_to_string
 class GRID(FrameOpt):
     """Group identification registration."""
 
@@ -1432,6 +1470,9 @@ class GRID(FrameOpt):
 
     def __pos__(self):
         return self.group
+
+    def __bytes__(self):
+        return self.owner.encode('utf-8')
 
     def __str__(self):
         return self.owner
@@ -1462,7 +1503,7 @@ class PRIV(Frame):
         return self.data == other
 
     def _pprint(self):
-        isascii = max(self.data) < 128
+        isascii = max(self.data) < b'\x80'[0]
         if isascii:
             return "%s=%s" % (self.owner, self.data)
         else:
@@ -1531,6 +1572,12 @@ class ASPI(Frame):
 Frames = {k: v for k, v in globals().items() if
           (len(k) == 4 and isinstance(v, type) and issubclass(v, Frame))}
 """All supported ID3v2 frames, keyed by frame name."""
+
+try:
+    del(k)
+    del(v)
+except NameError:
+    pass
 
 
 # ID3v2.2 frames
@@ -1811,3 +1858,9 @@ class LNK(LINK):
 
 Frames_2_2 = {k: v for k, v in globals().items() if
               (len(k) == 3 and isinstance(v, type) and issubclass(v, Frame))}
+
+try:
+    del k
+    del v
+except NameError:
+    pass

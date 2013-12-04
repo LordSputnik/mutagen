@@ -9,7 +9,7 @@
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 
-"""Mutagen aims to be an all purpose tagging library.
+"""Mutagen aims to be an all purpose multimedia tagging library.
 
 ::
 
@@ -22,10 +22,10 @@ depending on tag or format. They may also be entirely different objects
 for certain keys, again depending on format.
 """
 
-version = (1, 22)
+version = (1, 22, -1)
 """Version tuple."""
 
-version_string = u'.'.join(str(v) for v in version)
+version_string = u'.'.join(map(str, version))
 """Version string."""
 
 
@@ -192,6 +192,20 @@ class FileType(MutableMapping):
 
     @staticmethod
     def score(filename, fileobj, header):
+        raise NotImplementedError
+
+
+class StreamInfo(object):
+    """Abstract stream information object.
+
+    Provides attributes for length, bitrate, sample rate etc.
+
+    See the implementations for details.
+    """
+
+    def pprint(self):
+        """Print stream information"""
+
         raise NotImplementedError
 
 
