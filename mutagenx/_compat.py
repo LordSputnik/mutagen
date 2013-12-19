@@ -61,6 +61,12 @@ elif PY3:
     def chr_(x):
         return bytes((x,))
 
+    def ord_(x):
+        if isinstance(x, int):
+            return x
+        else:
+            return ord(x)
+
     def endswith(text, end):
         # usefull for paths which can be both, str and bytes
         if isinstance(text, str):
