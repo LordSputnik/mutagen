@@ -57,6 +57,12 @@ class TVComment(TestCase):
         self.failUnlessRaises(ValueError, self.c.validate)
         self.failUnlessRaises(ValueError, self.c.write)
 
+    #mutagenx issue #23 - make sure VorbisComment accepts utf-8 bytes
+    def test_validate_utf8_value(self):
+        self.c.append((b"valid", b"abc"))
+        self.c.validate()
+        self.c.write()
+
     def test_vendor_default(self):
         self.failUnless(self.c.vendor.startswith("Mutagen"))
 

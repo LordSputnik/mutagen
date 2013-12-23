@@ -12,9 +12,8 @@ from functools import total_ordering
 from ._compat import text_type, chr_, ord_, PY3, swap_to_string, string_types
 from mutagenx._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
 
-# As far as I can tell, the purpose of validate is to return valid data for
-# write, and if it can't do that, raise an exception. I've rewritten a few
-# with this in mind.
+# The purpose of validate is to convert input data to the format the tag
+# is expecting. If it cannot do that, it should raise an exception.
 
 class Spec(object):
     def __init__(self, name):
@@ -41,8 +40,11 @@ class ByteSpec(Spec):
     def validate(self, frame, value):
         if value is None:
             return None
-
-        return chr_(value)
+        elif isinstance(value, bytes):
+            return ord_(value[0])
+        else:
+            bytearray([value])
+            return value
 
 class IntegerSpec(Spec):
     def read(self, frame, data):
@@ -54,8 +56,8 @@ class IntegerSpec(Spec):
     def validate(self, frame, value):
         if value is None:
             return None
-
-        return int(value)
+        else:
+            return int(value)
 
 class SizedIntegerSpec(Spec):
     def __init__(self, name, size):
@@ -70,8 +72,8 @@ class SizedIntegerSpec(Spec):
     def validate(self, frame, value):
         if value is None:
             return None
-
-        return int(value)
+        else:
+            return int(value)
 
 class EncodingSpec(ByteSpec):
     def read(self, frame, data):
@@ -84,8 +86,10 @@ class EncodingSpec(ByteSpec):
     def validate(self, frame, value):
         if value is None:
             return None
+        
         if 0 <= value <= 3:
             return value
+        
         raise ValueError('Invalid Encoding: %r' % value)
 
     def _validate23(self, frame, value, **kwargs):
@@ -116,6 +120,7 @@ class StringSpec(Spec):
 
         if len(value) == s.len:
             return value
+            
         raise ValueError('Invalid StringSpec[%d] data: %r' % (s.len, value))
 
 
@@ -125,14 +130,17 @@ class BinaryDataSpec(Spec):
 
     def write(self, frame, value):
         if value is None:
-            return b""
+            return None
+        
         if isinstance(value, bytes):
             return value
+            
         return text_type(value).encode('ascii')
 
     def validate(self, frame, value):
         if isinstance(value, bytes):
             return value
+            
         return text_type(value).encode('ascii')
 
 
@@ -268,7 +276,7 @@ class Latin1TextSpec(EncodedTextSpec):
         if value is None:
             return None
 
-        return value.encode('latin').decode('latin1')
+        return value.encode('latin1').decode('latin1')
 
 @swap_to_string
 @total_ordering

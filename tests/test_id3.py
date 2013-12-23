@@ -792,6 +792,7 @@ def TestReadTags():
             id3 = __import__('mutagenx.id3', globals(), locals(), [tag])
             TAG = getattr(id3, tag)
             tag = TAG.fromData(_23, 0, data)
+            print("Representation: {!r}".format(tag))
             tag2 = eval(repr(tag), {TAG.__name__:TAG,
                     'ID3TimeStamp':ID3TimeStamp})
             self.assertEquals(type(tag), type(tag2))

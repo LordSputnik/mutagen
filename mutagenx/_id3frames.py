@@ -14,7 +14,7 @@ from mutagenx._id3util import (
     ID3Warning, ID3JunkFrameError, ID3BadCompressedData,
     ID3EncryptionUnsupportedError, ID3BadUnsynchData, unsynch)
 from mutagenx._id3specs import (
-    BinaryDataSpec, FixedWidthStringSpec, Latin1TextSpec, EncodedTextSpec, ByteSpec,
+    BinaryDataSpec, StringSpec, Latin1TextSpec, EncodedTextSpec, ByteSpec,
     EncodingSpec, ASPIIndexSpec, SizedIntegerSpec, IntegerSpec,
     VolumeAdjustmentsSpec, VolumePeakSpec, VolumeAdjustmentSpec,
     ChannelSpec, MultiSpec, SynchronizedTextSpec, KeyEventSpec, TimeStampSpec,
@@ -881,7 +881,7 @@ class USLT(Frame):
 
     _framespec = [
         EncodingSpec('encoding'),
-        FixedWidthStringSpec('lang', 3),
+        StringSpec('lang', 3),
         EncodedTextSpec('desc'),
         EncodedTextSpec('text')
     ]
@@ -908,7 +908,7 @@ class SYLT(Frame):
 
     _framespec = [
         EncodingSpec('encoding'),
-        FixedWidthStringSpec('lang', 3),
+        StringSpec('lang', 3),
         ByteSpec('format'),
         ByteSpec('type'),
         EncodedTextSpec('desc'),
@@ -940,7 +940,7 @@ class COMM(TextFrame):
 
     _framespec = [
         EncodingSpec('encoding'),
-        FixedWidthStringSpec('lang', 3),
+        StringSpec('lang', 3),
         EncodedTextSpec('desc'),
         MultiSpec('text', EncodedTextSpec('text'), sep=u'\u0000'),
     ]
@@ -1259,7 +1259,7 @@ class LINK(FrameOpt):
     """
 
     _framespec = [
-        FixedWidthStringSpec('frameid', 4),
+        StringSpec('frameid', 4),
         Latin1TextSpec('url')
     ]
 
@@ -1352,7 +1352,7 @@ class USER(Frame):
 
     _framespec = [
         EncodingSpec('encoding'),
-        FixedWidthStringSpec('lang', 3),
+        StringSpec('lang', 3),
         EncodedTextSpec('text')
     ]
 
@@ -1382,7 +1382,7 @@ class OWNE(Frame):
     _framespec = [
         EncodingSpec('encoding'),
         Latin1TextSpec('price'),
-        FixedWidthStringSpec('date', 8),
+        StringSpec('date', 8),
         EncodedTextSpec('seller'),
     ]
 
@@ -1404,7 +1404,7 @@ class COMR(FrameOpt):
     _framespec = [
         EncodingSpec('encoding'),
         Latin1TextSpec('price'),
-        FixedWidthStringSpec('valid_until', 8),
+        StringSpec('valid_until', 8),
         Latin1TextSpec('contact'),
         ByteSpec('format'),
         EncodedTextSpec('seller'),
@@ -1810,7 +1810,7 @@ class PIC(APIC):
 
     _framespec = [
         EncodingSpec('encoding'),
-        FixedWidthStringSpec('mime', 3),
+        StringSpec('mime', 3),
         ByteSpec('type'),
         EncodedTextSpec('desc'),
         BinaryDataSpec('data')
@@ -1850,7 +1850,7 @@ class CRA(AENC):
 class LNK(LINK):
     """Linked information"""
     _framespec = [
-        FixedWidthStringSpec('frameid', 3),
+        StringSpec('frameid', 3),
         Latin1TextSpec('url')
     ]
 
