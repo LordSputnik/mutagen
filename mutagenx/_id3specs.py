@@ -115,8 +115,8 @@ class StringSpec(Spec):
         if value is None:
             return None
 
-        if not isinstance(value, bytes):
-            value = value.encode("latin1")
+        if not isinstance(value, text_type):
+            value = value.decode("latin1")
 
         if len(value) == s.len:
             return value
