@@ -167,11 +167,13 @@ class VComment(MutableMapping, mutagenx.Metadata):
             except:
                 raise ValueError("%r is not a valid key" % key)
 
-            if not isinstance(value, str):
-                try:
-                    value.encode("utf-8")
-                except:
-                    raise ValueError("%r is not a valid value" % value)
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+                
+            try:
+                value.encode("utf-8")
+            except:
+                raise ValueError("%r is not a valid value" % value)
         else:
             return True
 
@@ -192,6 +194,9 @@ class VComment(MutableMapping, mutagenx.Metadata):
         f.write(self.vendor.encode('utf-8'))
         f.write(cdata.to_uint_le(len(self)))
         for tag, value in self._internal:
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+                
             comment = tag.encode('ascii') + b"=" + value.encode('utf-8')
             f.write(cdata.to_uint_le(len(comment)))
             f.write(comment)
