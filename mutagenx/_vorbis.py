@@ -24,6 +24,7 @@ from io import BytesIO
 
 import mutagenx
 from mutagenx._util import cdata
+from mutagenx._compat import xrange, ord_, text_type
 
 from collections.abc import MutableMapping
 
@@ -117,7 +118,7 @@ class VComment(MutableMapping, mutagenx.Metadata):
             vendor_length = cdata.uint_le(fileobj.read(4))
             self.vendor = fileobj.read(vendor_length).decode('utf-8', errors)
             count = cdata.uint_le(fileobj.read(4))
-            for i in range(count):
+            for i in xrange(count):
                 length = cdata.uint_le(fileobj.read(4))
                 try:
                     string = fileobj.read(length).decode('utf-8', errors)
@@ -132,7 +133,6 @@ class VComment(MutableMapping, mutagenx.Metadata):
                         tag, value = u"unknown%d" % i, string
                     else:
                         raise VorbisEncodingError(str(err)).with_traceback(sys.exc_info()[2])
-
                 try:
                     tag = tag.encode('ascii', errors).decode('ascii')
                 except UnicodeEncodeError:
@@ -140,8 +140,7 @@ class VComment(MutableMapping, mutagenx.Metadata):
                 else:
                     if is_valid_key(tag):
                         self.append((tag, value))
-
-            if framing and not fileobj.read(1)[0] & 0x01:
+            if framing and not ord_(fileobj.read(1)) & 0x01:
                 raise VorbisUnsetFrameError("framing bit was unset")
         except (cdata.error, TypeError):
             raise error("file is not a valid Vorbis comment")
@@ -154,7 +153,7 @@ class VComment(MutableMapping, mutagenx.Metadata):
         any invalid keys or values are found, a ValueError is raised.
         """
 
-        if not isinstance(self.vendor, str):
+        if not isinstance(self.vendor, text_type):
             try:
                 self.vendor.decode('utf-8')
             except UnicodeDecodeError:
