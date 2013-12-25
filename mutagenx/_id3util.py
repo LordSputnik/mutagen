@@ -48,44 +48,28 @@ class ID3Warning(error, UserWarning):
 class unsynch(object):
     @staticmethod
     def decode(value):
-        output = []
-        safe = True
-        append = output.append
-        for val in value:
-            if safe:
-                append(val)
-                safe = (val != 0xFF)
-            else:
-                if val >= 0xE0:
-                    raise ValueError('invalid sync-safe string')
-                elif val != 0x00:
-                    append(val)
-                safe = True
-        if not safe:
+        fragments = [bytearray(x) for x in value.split(b'\xff')]
+        if not fragments[-1]:
             raise ValueError('string ended unsafe')
-
-        return bytes(output)
+                
+        for f in (fragments[1:] if not fragments[0] else fragments):
+            if (not f) or (f[0] >= b'\xE0'[0]):
+                raise ValueError('invalid sync-safe string')
+            
+            if f[0] == b'\x00'[0]:
+                del f[0]
+        
+        return b'\xff'.join(fragments)
 
     @staticmethod
     def encode(value):
-        output = []
-        safe = True
-        append = output.append
-        for val in value:
-            if safe:
-                append(val)
-                if val == 0xFF:
-                    safe = False
-            elif (val == 0x00) or (val >= 0xE0):
-                append(0x00)
-                append(val)
-                safe = (val != 0xFF)
-            else:
-                append(val)
-                safe = True
-        if not safe:
-            append(0x00)
-        return bytes(output)
+        fragments = [bytearray(x) for x in value.split(b'\xff')]
+                
+        for f in (fragments[1:] if not fragments[0] else fragments):
+            if (not f) or (f[0] >= b'\xE0'[0]) or (f[0] == b'\x00'[0]):
+                f[0:0] = b'\x00'
+            
+        return b'\xff'.join(map(bytes, fragments))
 
 class BitPaddedInt(int):
     def __new__(cls, value, bits=7, bigendian=True):
