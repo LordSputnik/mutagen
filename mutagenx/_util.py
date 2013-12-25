@@ -21,6 +21,7 @@ from fnmatch import fnmatchcase
 from collections import OrderedDict
 from collections.abc import MutableMapping
 
+from mutagenx._compat import text_type, iteritems
 
 
 class DictProxy(MutableMapping):
@@ -269,7 +270,7 @@ def utf8(data):
 
     if isinstance(data, bytes):
         return data.decode("utf-8", "replace").encode("utf-8")
-    elif isinstance(data, str):
+    elif isinstance(data, text_type):
         return data.encode("utf-8")
     else:
         raise TypeError("only str/bytes types can be converted to UTF-8")
@@ -278,7 +279,7 @@ def dict_match(d, key, default=None):
     try:
         return d[key]
     except KeyError:
-        for pattern, value in d.items():
+        for pattern, value in iteritems(d):
             if fnmatchcase(key, pattern):
                 return value
     return default
