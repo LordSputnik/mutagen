@@ -36,7 +36,7 @@ def is_valid_key(key):
     """
 
     if isinstance(key, bytes):
-        raise ValueError
+        raise ValueError("Vorbis Comment key must be a unicode string.")
 
     for c in key:
         if c < " " or c > "}" or c == "=":

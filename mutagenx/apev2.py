@@ -42,12 +42,16 @@ from functools import total_ordering
 
 from mutagenx import Metadata, FileType
 from mutagenx._util import cdata, utf8, delete_bytes
+from mutagenx._compat import long_, text_type
 
 def is_valid_apev2_key(key):
+    if isinstance(key, bytes):
+        raise ValueError("APEv2 key must be a unicode string.")
+
     return ((2 <= len(key) <= 255) and
-            (min(key) >= ' ') and
-            (max(key) <= '~') and
-            (key not in ["OggS", "TAG", "ID3", "MP+"]))
+            (min(key) >= u' ') and
+            (max(key) <= u'~') and
+            (key not in [u"OggS", u"TAG", u"ID3", u"MP+"]))
 
 # There are three different kinds of APE tag values.
 # "0: Item contains text information coded in UTF-8
@@ -56,9 +60,9 @@ def is_valid_apev2_key(key):
 #  3: reserved"
 TEXT, BINARY, EXTERNAL = range(3)
 
-HAS_HEADER = 1 << 31
-HAS_NO_FOOTER = 1 << 30
-IS_HEADER = 1 << 29
+HAS_HEADER = long_(1) << 31
+HAS_NO_FOOTER = long_(1) << 30
+IS_HEADER = long_(1) << 29
 
 
 class error(IOError):
@@ -322,7 +326,7 @@ class APEv2(collections.abc.MutableMapping, Metadata):
 
         if not isinstance(value, _APEValue):
             # let's guess at the content if we're not already a value...
-            if isinstance(value, str):
+            if isinstance(value, text_type):
                 # unicode? we've got to be text.
                 value = APEValue(value, TEXT)
             elif isinstance(value, list):
@@ -490,7 +494,7 @@ class APETextValue(_APEValue):
         self.value = "\0".join(values)
 
     def pprint(self):
-        return " / ".join(x for x in self)
+        return u" / ".join(x for x in self)
 
 
 class APEBinaryValue(_APEValue):
@@ -512,7 +516,7 @@ class APEExtValue(_APEValue):
     External values are usually URI or IRI strings.
     """
     def pprint(self):
-        return "[External] %s" % str(self.value)
+        return u"[External] %s" % text_type(self.value)
 
 
 class APEv2File(FileType):

@@ -20,6 +20,7 @@ from functools import total_ordering
 
 from mutagenx import FileType, Metadata
 from mutagenx._util import insert_bytes, delete_bytes
+from mutagenx._compat import swap_to_string, text_type, string_types
 
 
 class error(IOError):
@@ -99,9 +100,9 @@ class ASFTags(collections.abc.MutableMapping, Metadata):
             pass
         for value in values:
             if key in _standard_attribute_names:
-                value = str(value)
+                value = text_type(value)
             elif not isinstance(value, ASFBaseAttribute):
-                if isinstance(value, str):
+                if isinstance(value, string_types):
                     value = ASFUnicodeAttribute(value)
                 elif isinstance(value, bool):
                     value = ASFBoolAttribute(value)
@@ -193,15 +194,16 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
         return self.value
 
     def __eq__(self, other):
-        return str(self) == other
+        return text_type(self) == other
 
     def __lt__(self, other):
-        return str(self) < other
+        return text_type(self) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
 @total_ordering
+@swap_to_string
 class ASFByteArrayAttribute(ASFBaseAttribute):
     """Byte array attribute."""
     TYPE = 0x0001
@@ -231,6 +233,7 @@ class ASFByteArrayAttribute(ASFBaseAttribute):
 
 
 @total_ordering
+@swap_to_string
 class ASFBoolAttribute(ASFBaseAttribute):
     """Bool attribute."""
     TYPE = 0x0002
@@ -253,8 +256,8 @@ class ASFBoolAttribute(ASFBaseAttribute):
     def __bool__(self):
         return self.value
 
-    def __str__(self):
-        return str(self.value)
+    def __bytes__(self):
+        return bytes(self.value)
 
     def __eq__(self, other):
         return bool(self) == other
@@ -266,6 +269,7 @@ class ASFBoolAttribute(ASFBaseAttribute):
 
 
 @total_ordering
+@swap_to_string
 class ASFDWordAttribute(ASFBaseAttribute):
     """DWORD attribute."""
     TYPE = 0x0003
@@ -282,8 +286,8 @@ class ASFDWordAttribute(ASFBaseAttribute):
     def __int__(self):
         return self.value
 
-    def __str__(self):
-        return str(self.value)
+    def __bytes__(self):
+        return bytes(self.value)
 
     def __eq__(self, other):
         return int(self) == other
@@ -295,6 +299,7 @@ class ASFDWordAttribute(ASFBaseAttribute):
 
 
 @total_ordering
+@swap_to_string
 class ASFQWordAttribute(ASFBaseAttribute):
     """QWORD attribute."""
     TYPE = 0x0004
@@ -311,8 +316,8 @@ class ASFQWordAttribute(ASFBaseAttribute):
     def __int__(self):
         return self.value
 
-    def __str__(self):
-        return str(self.value)
+    def __bytes__(self):
+        return bytes(self.value)
 
     def __eq__(self, other):
         return int(self) == other
@@ -324,6 +329,7 @@ class ASFQWordAttribute(ASFBaseAttribute):
 
 
 @total_ordering
+@swap_to_string
 class ASFWordAttribute(ASFBaseAttribute):
     """WORD attribute."""
     TYPE = 0x0005
@@ -340,8 +346,8 @@ class ASFWordAttribute(ASFBaseAttribute):
     def __int__(self):
         return self.value
 
-    def __str__(self):
-        return str(self.value)
+    def __bytes__(self):
+        return bytes(self.value)
 
     def __eq__(self, other):
         return int(self) == other
@@ -352,6 +358,7 @@ class ASFWordAttribute(ASFBaseAttribute):
     __hash__ = ASFBaseAttribute.__hash__
 
 
+@swap_to_string
 class ASFGUIDAttribute(ASFBaseAttribute):
     """GUID attribute."""
     TYPE = 0x0006
