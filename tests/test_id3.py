@@ -4,7 +4,7 @@ from tests import TestCase
 from tests import add
 from mutagen import id3
 from mutagen.id3 import ID3, COMR, Frames, Frames_2_2, ID3Warning, ID3JunkFrameError
-from mutagen._compat import cBytesIO, PY2, iteritems, integer_types
+from mutagen._compat import cBytesIO, PY2, iteritems, integer_types, ord_, chr_
 import warnings
 warnings.simplefilter('error', ID3Warning)
 
@@ -323,7 +323,7 @@ class ID3v1Tags(TestCase):
         self.failUnless(32, ParseID3v1(tag)["TRCK"])
         del(self.id3["TRCK"])
         tag = MakeID3v1(self.id3)
-        tag = tag[:125] + b'  ' + bytes([tag[-1]])
+        tag = tag[:125] + b'  ' + chr_(ord_(tag[-1]))
         self.failIf("TRCK" in ParseID3v1(tag))
 
     def test_nulls(self):

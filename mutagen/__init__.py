@@ -30,7 +30,12 @@ version_string = u'.'.join(map(str, version))
 
 import warnings
 
-from collections.abc import MutableMapping
+from ._compat import PY2
+
+if PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
 
 
 class Metadata(object):

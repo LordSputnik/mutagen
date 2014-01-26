@@ -27,6 +27,7 @@ def is_valid_frame_id(frame_id):
     return frame_id.isalnum() and frame_id.isupper()
 
 
+@swap_to_string
 class Frame(object):
     """Fundamental unit of ID3 data.
 
@@ -192,6 +193,12 @@ class Frame(object):
 
     def __hash__(self):
         raise TypeError("Frame objects are unhashable")
+        
+    def __str__(self):
+        return u"No tag-specific string/unicode representation for " + type(self).__name__
+        
+    def __bytes__(self):
+        return b"No tag-specific bytes representation for " + type(self).__name__.encode('utf-8')
 
 
 @swap_to_string
@@ -928,6 +935,9 @@ class SYLT(Frame):
 
     def __str__(self):
         return u"".join([text for (text, time) in self.text])
+        
+    def __bytes__(self):
+        return text_type(self).encode("utf-8")
 
 
 class COMM(TextFrame):
