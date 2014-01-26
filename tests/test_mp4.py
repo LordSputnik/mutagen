@@ -5,9 +5,9 @@ import struct
 from io import BytesIO
 from tempfile import mkstemp
 from tests import TestCase, add
-from mutagenx.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
+from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
      delete, MP4Cover, MP4MetadataError, MP4FreeForm, error
-from mutagenx._util import cdata
+from mutagen._util import cdata
 from os import devnull
 
 

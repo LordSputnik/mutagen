@@ -4,8 +4,8 @@ import shutil
 
 from io import BytesIO
 from tests import TestCase, add
-from mutagenx.ogg import OggPage, OggFileType, error as OggError
-from mutagenx._util import cdata
+from mutagen.ogg import OggPage, OggFileType, error as OggError
+from mutagen._util import cdata
 from tempfile import mkstemp
 from os import devnull
 

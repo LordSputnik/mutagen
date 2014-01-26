@@ -2,13 +2,13 @@ import sys
 
 from tests import TestCase, add
 
-from mutagenx.id3 import BitPaddedInt
+from mutagen.id3 import BitPaddedInt
 
 
 class SpecSanityChecks(TestCase):
 
     def test_bytespec(self):
-        from mutagenx.id3 import ByteSpec
+        from mutagen.id3 import ByteSpec
         s = ByteSpec('name')
         self.assertEquals((97, b'bcdefg'), s.read(None, b'abcdefg'))
         self.assertEquals(b'a', s.write(None, 97))
@@ -16,7 +16,7 @@ class SpecSanityChecks(TestCase):
         self.assertRaises(TypeError, s.write, None, None)
 
     def test_encodingspec(self):
-        from mutagenx.id3 import EncodingSpec
+        from mutagen.id3 import EncodingSpec
         s = EncodingSpec('name')
         self.assertEquals((0, b'abcdefg'), s.read(None, b'abcdefg'))
         self.assertEquals((3, b'abcdefg'), s.read(None, b'\x03abcdefg'))
@@ -25,7 +25,7 @@ class SpecSanityChecks(TestCase):
         self.assertRaises(TypeError, s.write, None, None)
 
     def test_StringSpec(self):
-        from mutagenx.id3 import StringSpec
+        from mutagen.id3 import StringSpec
         s = StringSpec('name', 3)
         self.assertEquals(('abc', b'defg'),  s.read(None, b'abcdefg'))
         self.assertEquals(b'abc', s.write(None, 'abcdefg'))
@@ -34,14 +34,14 @@ class SpecSanityChecks(TestCase):
         self.assertEquals(b'a\x00\x00', s.write(None, 'a'))
 
     def test_binarydataspec(self):
-        from mutagenx.id3 import BinaryDataSpec
+        from mutagen.id3 import BinaryDataSpec
         s = BinaryDataSpec('name')
         self.assertEquals((b'abcdefg', b''), s.read(None, b'abcdefg'))
         self.assertEquals(None,  s.write(None, None))
         self.assertEquals(b'43',  s.write(None, 43))
 
     def test_encodedtextspec(self):
-        from mutagenx.id3 import EncodedTextSpec, Frame
+        from mutagen.id3 import EncodedTextSpec, Frame
         s = EncodedTextSpec('name')
         f = Frame(); f.encoding = 0
         self.assertEquals(('abcd', b'fg'), s.read(f, b'abcd\x00fg'))
@@ -49,7 +49,7 @@ class SpecSanityChecks(TestCase):
         self.assertRaises(AttributeError, s.write, f, None)
 
     def test_timestampspec(self):
-        from mutagenx.id3 import TimeStampSpec, Frame, ID3TimeStamp
+        from mutagen.id3 import TimeStampSpec, Frame, ID3TimeStamp
         s = TimeStampSpec('name')
         f = Frame(); f.encoding = 0
         self.assertEquals((ID3TimeStamp('ab'), b'fg'), s.read(f, b'ab\x00fg'))
@@ -58,7 +58,7 @@ class SpecSanityChecks(TestCase):
         self.assertRaises(AttributeError, s.write, f, None)
 
     def test_volumeadjustmentspec(self):
-        from mutagenx.id3 import VolumeAdjustmentSpec
+        from mutagen.id3 import VolumeAdjustmentSpec
         s = VolumeAdjustmentSpec('gain')
         self.assertEquals((0.0, b''), s.read(None, b'\x00\x00'))
         self.assertEquals((2.0, b''), s.read(None, b'\x04\x00'))
@@ -73,17 +73,17 @@ add(SpecSanityChecks)
 class SpecValidateChecks(TestCase):
 
     def test_volumeadjustmentspec(self):
-        from mutagenx.id3 import VolumeAdjustmentSpec
+        from mutagen.id3 import VolumeAdjustmentSpec
         s = VolumeAdjustmentSpec('gain')
         self.assertRaises(ValueError, s.validate, None, 65)
 
     def test_volumepeakspec(self):
-        from mutagenx.id3 import VolumePeakSpec
+        from mutagen.id3 import VolumePeakSpec
         s = VolumePeakSpec('peak')
         self.assertRaises(ValueError, s.validate, None, 2)
 
     def test_bytespec(self):
-        from mutagenx.id3 import ByteSpec
+        from mutagen.id3 import ByteSpec
         s = ByteSpec('byte')
         self.assertRaises(ValueError, s.validate, None, 1000)
 
@@ -93,7 +93,7 @@ add(SpecValidateChecks)
 class NoHashSpec(TestCase):
 
     def test_spec(self):
-        from mutagenx.id3 import Spec
+        from mutagen.id3 import Spec
         self.failUnlessRaises(TypeError, {}.__setitem__, Spec("foo"), None)
 
 add(NoHashSpec)
@@ -195,7 +195,7 @@ add(BitPaddedIntTest)
 class TestUnsynch(TestCase):
 
     def test_unsync_encode(self):
-        from mutagenx.id3 import unsynch as un
+        from mutagen.id3 import unsynch as un
         for d in (b'\xff\xff\xff\xff', b'\xff\xf0\x0f\x00', b'\xff\x00\x0f\xf0'):
             self.assertEquals(d, un.decode(un.encode(d)))
             self.assertNotEqual(d, un.encode(d))
@@ -203,7 +203,7 @@ class TestUnsynch(TestCase):
         self.assertEquals(b'\xff\x00\x00', un.encode(b'\xff\x00'))
 
     def test_unsync_decode(self):
-        from mutagenx.id3 import unsynch as un
+        from mutagen.id3 import unsynch as un
         self.assertRaises(ValueError, un.decode, b'\xff\xff\xff\xff')
         self.assertRaises(ValueError, un.decode, b'\xff\xf0\x0f\x00')
         self.assertRaises(ValueError, un.decode, b'\xff\xe0')

@@ -3,8 +3,8 @@ import shutil
 from tempfile import mkstemp
 from io import BytesIO
 
-from mutagenx.oggopus import OggOpus, OggOpusInfo, delete
-from mutagenx.ogg import OggPage
+from mutagen.oggopus import OggOpus, OggOpusInfo, delete
+from mutagen.ogg import OggPage
 from tests import add
 from tests.test_ogg import TOggFileType
 

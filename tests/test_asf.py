@@ -2,8 +2,8 @@ import os
 import shutil
 from tempfile import mkstemp
 from tests import TestCase, add
-from mutagenx.asf import ASF, ASFHeaderError, ASFValue, UNICODE, DWORD, QWORD
-from mutagenx.asf import BOOL, WORD, BYTEARRAY, GUID
+from mutagen.asf import ASF, ASFHeaderError, ASFValue, UNICODE, DWORD, QWORD
+from mutagen.asf import BOOL, WORD, BYTEARRAY, GUID
 
 class TASFFile(TestCase):
 

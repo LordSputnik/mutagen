@@ -1,4 +1,4 @@
-from mutagenx._util import cdata, utf8, insert_bytes, delete_bytes
+from mutagen._util import cdata, utf8, insert_bytes, delete_bytes
 from tests import TestCase, add
 import random
 

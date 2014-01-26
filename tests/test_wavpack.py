@@ -1,6 +1,6 @@
 import os
 
-from mutagenx.wavpack import WavPack
+from mutagen.wavpack import WavPack
 from tests import TestCase, add
 
 class TWavPack(TestCase):

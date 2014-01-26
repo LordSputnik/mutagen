@@ -2,8 +2,8 @@ import os
 import shutil
 from tempfile import mkstemp
 
-from mutagenx.id3 import ID3, TIT2
-from mutagenx.musepack import Musepack, MusepackInfo, MusepackHeaderError
+from mutagen.id3 import ID3, TIT2
+from mutagen.musepack import Musepack, MusepackInfo, MusepackHeaderError
 from io import BytesIO
 from tests import TestCase, add
 

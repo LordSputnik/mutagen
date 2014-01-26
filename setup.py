@@ -108,10 +108,10 @@ class coverage_cmd(Command):
             ignoredirs=[sys.prefix, sys.exec_prefix])
 
         def run_tests():
-            import mutagenx
-            import mutagenx._util
-            reload(mutagenx._util)
-            reload(mutagenx)
+            import mutagen
+            import mutagen._util
+            reload(mutagen._util)
+            reload(mutagen)
             cmd = self.reinitialize_command("test")
             cmd.quick = self.quick
             cmd.ensure_finalized()
@@ -155,7 +155,7 @@ else:
     data_files = []
 
 if __name__ == "__main__":
-    from mutagenx import version_string
+    from mutagen import version_string
 
     cmd_classes = {
         "clean": clean,

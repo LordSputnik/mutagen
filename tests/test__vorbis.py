@@ -1,5 +1,5 @@
 from tests import add, TestCase
-from mutagenx._vorbis import VComment, istag
+from mutagen._vorbis import VComment, istag
 
 class Tistag(TestCase):
 

@@ -1,6 +1,7 @@
 from tests import TestCase, add
 
-from mutagenx.id3 import Frames, Frames_2_2, ID3
+from mutagen.id3 import Frames, Frames_2_2, ID3
+from mutagen._compat import text_type
 
 _22 = ID3(); _22.version = (2,2,0)
 _23 = ID3(); _23.version = (2,3,0)
@@ -10,32 +11,32 @@ _24 = ID3(); _24.version = (2,4,0)
 class FrameSanityChecks(TestCase):
 
     def test_TF(self):
-        from mutagenx.id3 import TextFrame
+        from mutagen.id3 import TextFrame
         self.assert_(isinstance(TextFrame(encoding=0, text='text'), TextFrame))
 
     def test_UF(self):
-        from mutagenx.id3 import UrlFrame
+        from mutagen.id3 import UrlFrame
         self.assert_(isinstance(UrlFrame('url'), UrlFrame))
 
     def test_WXXX(self):
-        from mutagenx.id3 import WXXX
+        from mutagen.id3 import WXXX
         self.assert_(isinstance(WXXX(url='durl'), WXXX))
 
     def test_NTF(self):
-        from mutagenx.id3 import NumericTextFrame
+        from mutagen.id3 import NumericTextFrame
         self.assert_(isinstance(NumericTextFrame(encoding=0, text='1'), NumericTextFrame))
 
     def test_NTPF(self):
-        from mutagenx.id3 import NumericPartTextFrame
+        from mutagen.id3 import NumericPartTextFrame
         self.assert_(
             isinstance(NumericPartTextFrame(encoding=0, text='1/2'), NumericPartTextFrame))
 
     def test_MTF(self):
-        from mutagenx.id3 import TextFrame
+        from mutagen.id3 import TextFrame
         self.assert_(isinstance(TextFrame(encoding=0, text=['a','b']), TextFrame))
 
     def test_TXXX(self):
-        from mutagenx.id3 import TXXX
+        from mutagen.id3 import TXXX
         self.assert_(isinstance(TXXX(encoding=0, desc='d',text='text'), TXXX))
 
     def test_22_uses_direct_ints(self):
@@ -56,26 +57,26 @@ class FrameSanityChecks(TestCase):
 
 
     def test_zlib_latin1(self):
-        from mutagenx.id3 import TPE1
+        from mutagen.id3 import TPE1
         tag = TPE1.fromData(_24, 0x9, b'\x00\x00\x00\x0f'
-                b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
+            b'x\x9cc(\xc9\xc8,V\x00\xa2D\xfd\x92\xd4\xe2\x12\x00&\x7f\x05%')
         self.assertEquals(tag.encoding, 0)
         self.assertEquals(tag, ['this is a/test'])
 
     def test_datalen_but_not_compressed(self):
-        from mutagenx.id3 import TPE1
+        from mutagen.id3 import TPE1
         tag = TPE1.fromData(_24, 0x01, b'\x00\x00\x00\x06\x00A test')
         self.assertEquals(tag.encoding, 0)
         self.assertEquals(tag, ['A test'])
 
     def test_utf8(self):
-        from mutagenx.id3 import TPE1
+        from mutagen.id3 import TPE1
         tag = TPE1.fromData(_23, 0x00, b'\x03this is a test')
         self.assertEquals(tag.encoding, 3)
         self.assertEquals(tag, 'this is a test')
 
     def test_zlib_utf16(self):
-        from mutagenx.id3 import TPE1
+        from mutagen.id3 import TPE1
         data = (b'\x00\x00\x00\x1fx\x9cc\xfc\xff\xaf\x84!\x83!\x93\xa1\x98A'
                 b'\x01J&2\xe83\x940\xa4\x02\xd9%\x0c\x00\x87\xc6\x07#')
         tag = TPE1.fromData(_23, 0x80, data)
@@ -87,7 +88,7 @@ class FrameSanityChecks(TestCase):
         self.assertEquals(tag, ['this is a/test'])
 
     def test_load_write(self):
-        from mutagenx.id3 import TPE1, Frames
+        from mutagen.id3 import TPE1, Frames
         artists= [s.decode('utf8') for s in
                   [b'\xc2\xb5', b'\xe6\x97\xa5\xe6\x9c\xac']]
         artist = TPE1(encoding=3, text=artists)
@@ -98,7 +99,7 @@ class FrameSanityChecks(TestCase):
         self.assertEquals(artist.text, tag.text)
 
     def test_22_to_24(self):
-        from mutagenx.id3 import TT1
+        from mutagen.id3 import TT1
         id3 = ID3()
         tt1 = TT1(encoding=0, text=u'whatcha staring at?')
         id3.loaded_frame(tt1)
@@ -109,53 +110,53 @@ class FrameSanityChecks(TestCase):
         self.assert_('TT1' not in id3)
 
     def test_single_TXYZ(self):
-        from mutagenx.id3 import TIT2
+        from mutagen.id3 import TIT2
         self.assertEquals(TIT2(encoding=0, text="a").HashKey, TIT2(encoding=0, text="b").HashKey)
 
     def test_multi_TXXX(self):
-        from mutagenx.id3 import TXXX
+        from mutagen.id3 import TXXX
         self.assertEquals(TXXX(encoding=0, text="a").HashKey, TXXX(encoding=0, text="b").HashKey)
         self.assertNotEquals(TXXX(encoding=0, desc="a").HashKey, TXXX(encoding=0, desc="b").HashKey)
 
     def test_multi_WXXX(self):
-        from mutagenx.id3 import WXXX
+        from mutagen.id3 import WXXX
         self.assertEquals(WXXX(encoding=0, text="a").HashKey, WXXX(encoding=0, text="b").HashKey)
         self.assertNotEquals(WXXX(encoding=0, desc="a").HashKey, WXXX(encoding=0, desc="b").HashKey)
 
     def test_multi_COMM(self):
-        from mutagenx.id3 import COMM
+        from mutagen.id3 import COMM
         self.assertEquals(COMM(encoding=0, text="a").HashKey, COMM(encoding=0, text="b").HashKey)
         self.assertNotEquals(COMM(encoding=0, desc="a").HashKey, COMM(encoding=0, desc="b").HashKey)
         self.assertNotEquals(
             COMM(lang="abc").HashKey, COMM(lang="def").HashKey)
 
     def test_multi_RVA2(self):
-        from mutagenx.id3 import RVA2
+        from mutagen.id3 import RVA2
         self.assertEquals(RVA2(gain=1).HashKey, RVA2(gain=2).HashKey)
         self.assertNotEquals(RVA2(desc="a").HashKey, RVA2(desc="b").HashKey)
 
     def test_multi_APIC(self):
-        from mutagenx.id3 import APIC
+        from mutagen.id3 import APIC
         self.assertEquals(APIC(data=b"1").HashKey, APIC(data=b"2").HashKey)
         self.assertNotEquals(APIC(encoding=0, desc="a").HashKey, APIC(encoding=0, desc="b").HashKey)
 
     def test_multi_POPM(self):
-        from mutagenx.id3 import POPM
+        from mutagen.id3 import POPM
         self.assertEquals(POPM(count=1).HashKey, POPM(count=2).HashKey)
         self.assertNotEquals(POPM(email="a").HashKey, POPM(email="b").HashKey)
 
     def test_multi_GEOB(self):
-        from mutagenx.id3 import GEOB
+        from mutagen.id3 import GEOB
         self.assertEquals(GEOB(data=b"1").HashKey, GEOB(data=b"2").HashKey)
         self.assertNotEquals(GEOB(encoding=0, desc="a").HashKey, GEOB(encoding=0, desc="b").HashKey)
 
     def test_multi_UFID(self):
-        from mutagenx.id3 import UFID
+        from mutagen.id3 import UFID
         self.assertEquals(UFID(data=b"1").HashKey, UFID(data=b"2").HashKey)
         self.assertNotEquals(UFID(owner="a").HashKey, UFID(owner="b").HashKey)
 
     def test_multi_USER(self):
-        from mutagenx.id3 import USER
+        from mutagen.id3 import USER
         self.assertEquals(USER(encoding=0, text="a").HashKey, USER(encoding=0, text="b").HashKey)
         self.assertNotEquals(
             USER(lang="abc").HashKey, USER(lang="def").HashKey)
@@ -165,9 +166,9 @@ add(FrameSanityChecks)
 
 class Genres(TestCase):
 
-    from mutagenx.id3 import TCON
+    from mutagen.id3 import TCON
     TCON = TCON
-    from mutagenx._constants import GENRES
+    from mutagen._constants import GENRES
     GENRES = GENRES
 
     def _g(self, s): return self.TCON(encoding=0, text=s).genres
@@ -243,7 +244,7 @@ add(Genres)
 
 class TimeStamp(TestCase):
 
-    from mutagenx.id3 import ID3TimeStamp as Stamp
+    from mutagen.id3 import ID3TimeStamp as Stamp
     Stamp = Stamp
 
     def test_Y(self):
@@ -314,7 +315,7 @@ add(TimeStamp)
 class NoHashFrame(TestCase):
 
     def test_frame(self):
-        from mutagenx.id3 import TIT1
+        from mutagen.id3 import TIT1
         self.failUnlessRaises(
             TypeError, {}.__setitem__, TIT1(encoding=0, text="foo"), None)
 
@@ -324,12 +325,12 @@ add(NoHashFrame)
 class FrameIDValidate(TestCase):
 
     def test_valid(self):
-        from mutagenx.id3 import is_valid_frame_id
+        from mutagen.id3 import is_valid_frame_id
         self.failUnless(is_valid_frame_id("APIC"))
         self.failUnless(is_valid_frame_id("TPE2"))
 
     def test_invalid(self):
-        from mutagenx.id3 import is_valid_frame_id
+        from mutagen.id3 import is_valid_frame_id
         self.failIf(is_valid_frame_id("MP3e"))
         self.failIf(is_valid_frame_id("+ABC"))
 
@@ -338,12 +339,12 @@ add(FrameIDValidate)
 
 class TimeStampTextFrame(TestCase):
 
-    from mutagenx.id3 import TimeStampTextFrame as Frame
+    from mutagen.id3 import TimeStampTextFrame as Frame
     Frame = Frame
 
     def test_compare_to_unicode(self):
         frame = self.Frame(encoding=0, text=[u'1987', u'1988'])
-        self.failUnlessEqual(frame, str(frame))
+        self.failUnlessEqual(frame, text_type(frame))
 
 add(TimeStampTextFrame)
 
@@ -351,7 +352,7 @@ add(TimeStampTextFrame)
 class TTextFrame(TestCase):
 
     def test_list_iface(self):
-        from mutagenx.id3 import TextFrame
+        from mutagen.id3 import TextFrame
 
         frame = TextFrame()
         frame.append("a")
@@ -364,9 +365,9 @@ add(TTextFrame)
 class TRVA2(TestCase):
 
     def test_basic(self):
-        from mutagenx.id3 import RVA2
+        from mutagen.id3 import RVA2
         r = RVA2(gain=1, channel=1, peak=1)
-        self.assertReallyEqual(r, r)
-        self.assertReallyNotEqual(r, 42)
+        self.assertEqual(r, r)
+        self.assertNotEqual(r, 42)
 
 add(TRVA2)
