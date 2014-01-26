@@ -17,15 +17,15 @@ import sys
 
 from optparse import OptionParser
 
-import mutagenx.ogg
+import mutagen.ogg
 
 
 def main(argv):
-    from mutagenx.ogg import OggPage
+    from mutagen.ogg import OggPage
     parser = OptionParser(
         usage="%prog [options] filename.ogg ...",
         description="Split Ogg logical streams using Mutagen.",
-        version="Mutagen %s" % mutagenx.version_string
+        version="Mutagen %s" % mutagen.version_string
         )
 
     parser.add_option(

@@ -18,8 +18,8 @@ import locale
 # Deprecated - should be dropped if/when 2.6 is eventually no longer supported.
 from optparse import OptionParser
 
-import mutagenx
-import mutagenx.id3
+import mutagen
+import mutagen.id3
 
 
 VERSION = (0, 3)
@@ -43,7 +43,7 @@ def isascii(string):
 
 class ID3OptionParser(OptionParser):
     def __init__(self):
-        mutagen_version = mutagenx.version_string
+        mutagen_version = mutagen.version_string
         my_version = ".".join(map(str, VERSION))
         version = "mid3iconv %s\nUses Mutagen %s" % (
             my_version, mutagen_version)
