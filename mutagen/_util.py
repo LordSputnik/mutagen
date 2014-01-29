@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Utility classes for Mutagen.
 
@@ -18,11 +17,25 @@ import struct
 
 from fnmatch import fnmatchcase
 
+from mutagen._compat import text_type, iteritems, PY2
+
 from collections import OrderedDict
-from collections.abc import MutableMapping
 
-from mutagen._compat import text_type, iteritems
+if PY2:
+    from collections.abc import MutableMapping
+else:
+    from collections import MutableMapping
 
+def total_ordering(cls):
+    assert hasattr(cls, "__eq__")
+    assert hasattr(cls, "__lt__")
+
+    cls.__le__ = lambda self, other: self == other or self < other
+    cls.__gt__ = lambda self, other: not (self == other or self < other)
+    cls.__ge__ = lambda self, other: not self < other
+    cls.__ne__ = lambda self, other: not self.__eq__(other)
+
+    return cls
 
 class DictProxy(MutableMapping):
     def __init__(self, *args, **kwargs):

@@ -2,6 +2,7 @@ import sys
 
 from tests import TestCase, add
 
+from mutagen._compat import PY2, PY3, text_type
 from mutagen.id3 import BitPaddedInt
 
 
@@ -12,7 +13,7 @@ class SpecSanityChecks(TestCase):
         s = ByteSpec('name')
         self.assertEquals((97, b'bcdefg'), s.read(None, b'abcdefg'))
         self.assertEquals(b'a', s.write(None, 97))
-        self.assertRaises(TypeError, s.write, None, 'abc')
+        self.assertRaises(TypeError, s.write, None, b'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
     def test_encodingspec(self):
@@ -21,10 +22,10 @@ class SpecSanityChecks(TestCase):
         self.assertEquals((0, b'abcdefg'), s.read(None, b'abcdefg'))
         self.assertEquals((3, b'abcdefg'), s.read(None, b'\x03abcdefg'))
         self.assertEquals(b'\x00', s.write(None, 0))
-        self.assertRaises(TypeError, s.write, None, 'abc')
+        self.assertRaises(TypeError, s.write, None, b'abc')
         self.assertRaises(TypeError, s.write, None, None)
 
-    def test_StringSpec(self):
+    def test_stringspec(self):
         from mutagen.id3 import StringSpec
         s = StringSpec('name', 3)
         self.assertEquals(('abc', b'defg'),  s.read(None, b'abcdefg'))
@@ -37,15 +38,16 @@ class SpecSanityChecks(TestCase):
         from mutagen.id3 import BinaryDataSpec
         s = BinaryDataSpec('name')
         self.assertEquals((b'abcdefg', b''), s.read(None, b'abcdefg'))
-        self.assertEquals(None,  s.write(None, None))
+        self.assertEquals(b'',  s.write(None, None))
         self.assertEquals(b'43',  s.write(None, 43))
+        self.assertEquals(b'abc',  s.write(None, b'abc'))
 
     def test_encodedtextspec(self):
         from mutagen.id3 import EncodedTextSpec, Frame
         s = EncodedTextSpec('name')
         f = Frame(); f.encoding = 0
-        self.assertEquals(('abcd', b'fg'), s.read(f, b'abcd\x00fg'))
-        self.assertEquals(b'abcdefg\x00', s.write(f, 'abcdefg'))
+        self.assertEquals((u'abcd', b'fg'), s.read(f, b'abcd\x00fg'))
+        self.assertEquals(b'abcdefg\x00', s.write(f, u'abcdefg'))
         self.assertRaises(AttributeError, s.write, f, None)
 
     def test_timestampspec(self):
@@ -56,6 +58,12 @@ class SpecSanityChecks(TestCase):
         self.assertEquals((ID3TimeStamp('1234'), b''), s.read(f, b'1234\x00'))
         self.assertEquals(b'1234\x00', s.write(f, ID3TimeStamp('1234')))
         self.assertRaises(AttributeError, s.write, f, None)
+        if PY3:
+            self.assertRaises(TypeError, ID3TimeStamp, b"blah")
+        self.assertEquals(
+            text_type(ID3TimeStamp(u"2000-01-01")),  u"2000-01-01")
+        self.assertEquals(
+            bytes(ID3TimeStamp(u"2000-01-01")), b"2000-01-01")
 
     def test_volumeadjustmentspec(self):
         from mutagen.id3 import VolumeAdjustmentSpec
@@ -172,6 +180,12 @@ class BitPaddedIntTest(TestCase):
 
     def test_inval_input(self):
         self.assertRaises(TypeError, BitPaddedInt, None)
+
+    if PY2:
+        def test_promote_long(self):
+            l = BitPaddedInt(sys.maxint ** 2)
+            self.assertTrue(isinstance(l, long))
+            self.assertEqual(BitPaddedInt(l.as_bytes(width=-1)), l)
 
     def test_has_valid_padding(self):
         self.failUnless(BitPaddedInt.has_valid_padding(b"\xff\xff", bits=8))

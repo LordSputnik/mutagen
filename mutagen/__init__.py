@@ -30,7 +30,7 @@ version_string = u'.'.join(map(str, version))
 
 import warnings
 
-from ._compat import PY2
+from mutagen._compat import PY2
 
 if PY2:
     from collections import MutableMapping

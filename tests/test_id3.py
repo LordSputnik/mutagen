@@ -645,7 +645,7 @@ def TestReadTags():
      ("TIT1", 'http://www.example.org/TIT1.txt'), '',
      dict(frameid='TIT1', url='http://www.example.org/TIT1.txt')],
     ['LINK', b'COMMhttp://www.example.org/COMM.txt\x00engfoo',
-     ("COMM", 'http://www.example.org/COMM.txt', b'engfoo'), '',
+     ('COMM', 'http://www.example.org/COMM.txt', b'engfoo'), '',
      dict(frameid='COMM', url='http://www.example.org/COMM.txt',
           data=b'engfoo')],
 
@@ -742,7 +742,7 @@ def TestReadTags():
      dict(frames=1, bytes=2, milliseconds=3, bits_for_bytes=4,
           bits_for_milliseconds=8, data=b'foobar')],
     ['LNK', b'TT1http://www.example.org/TIT1.txt\x00',
-     ("TT1", 'http://www.example.org/TIT1.txt'), '',
+     ('TT1', 'http://www.example.org/TIT1.txt'), '',
      dict(frameid='TT1', url='http://www.example.org/TIT1.txt')],
     ['CRM', b'foo@example.org\x00test\x00woo',
      b'woo', '', dict(owner='foo@example.org', desc='test', data=b'woo')],
@@ -846,7 +846,7 @@ class UpdateTo24(TestCase):
         from mutagen.id3 import PIC
         id3 = ID3()
         id3.version = (2, 2)
-        id3.add(PIC(encoding=0, mime="PNG", desc="cover", type=3, data=b""))
+        id3.add(PIC(encoding=0, mime=b"PNG", desc="cover", type=3, data=b""))
         id3.update_to_v24()
         self.failUnlessEqual(id3["APIC:cover"].mime, "image/png")
 

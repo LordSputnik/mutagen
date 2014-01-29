@@ -7,10 +7,10 @@
 import struct
 from struct import unpack, pack
 from warnings import warn
-from functools import total_ordering
 
 from ._compat import text_type, chr_, ord_, PY3, swap_to_string, string_types
 from mutagen._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
+from mutagen._util import total_ordering
 
 # The purpose of validate is to convert input data to the format the tag
 # is expecting. If it cannot do that, it should raise an exception.
@@ -32,19 +32,16 @@ class Spec(object):
 
 class ByteSpec(Spec):
     def read(self, frame, data):
-        return ord_(data[0]), data[1:]
+        return bytearray(data)[0], data[1:]
 
     def write(self, frame, value):
         return chr_(value)
 
     def validate(self, frame, value):
-        if value is None:
-            return None
-        elif isinstance(value, bytes):
-            return ord_(value[0])
-        else:
-            bytearray([value])
-            return value
+        if value is not None:
+            chr_(value)
+        return value
+
 
 class IntegerSpec(Spec):
     def read(self, frame, data):
@@ -54,10 +51,8 @@ class IntegerSpec(Spec):
         return BitPaddedInt.to_bytes(value, bits=8, width=-1)
 
     def validate(self, frame, value):
-        if value is None:
-            return None
-        else:
-            return int(value)
+        return value
+
 
 class SizedIntegerSpec(Spec):
     def __init__(self, name, size):
@@ -70,10 +65,8 @@ class SizedIntegerSpec(Spec):
         return BitPaddedInt.to_bytes(value, bits=8, width=self.__sz)
 
     def validate(self, frame, value):
-        if value is None:
-            return None
-        else:
-            return int(value)
+        return value
+
 
 class EncodingSpec(ByteSpec):
     def read(self, frame, data):
@@ -86,10 +79,8 @@ class EncodingSpec(ByteSpec):
     def validate(self, frame, value):
         if value is None:
             return None
-        
         if 0 <= value <= 3:
             return value
-        
         raise ValueError('Invalid Encoding: %r' % value)
 
     def _validate23(self, frame, value, **kwargs):
@@ -116,11 +107,10 @@ class StringSpec(Spec):
             return None
 
         if not isinstance(value, text_type):
-            value = value.decode("latin1")
+            value = value.decode("ascii")
 
         if len(value) == s.len:
             return value
-            
         raise ValueError('Invalid StringSpec[%d] data: %r' % (s.len, value))
 
 
@@ -130,18 +120,17 @@ class BinaryDataSpec(Spec):
 
     def write(self, frame, value):
         if value is None:
-            return None
-        
+            return b""
         if isinstance(value, bytes):
             return value
-            
-        return text_type(value).encode('ascii')
+        value = text_type(value).encode("ascii")
+        return value
 
     def validate(self, frame, value):
         if isinstance(value, bytes):
             return value
-            
-        return text_type(value).encode('ascii')
+        value = text_type(value).encode("ascii")
+        return value
 
 
 class EncodedTextSpec(Spec):
@@ -182,12 +171,8 @@ class EncodedTextSpec(Spec):
         return value.encode(enc) + term
 
     def validate(self, frame, value):
-        if value is None:
-            return None
+        return text_type(value)
 
-        enc = self._encodings[frame.encoding][0]
-
-        return value.encode(enc).decode(enc)
 
 class MultiSpec(Spec):
     def __init__(self, name, *specs, **kw):
@@ -273,10 +258,8 @@ class Latin1TextSpec(EncodedTextSpec):
         return value.encode('latin1') + b'\x00'
 
     def validate(self, frame, value):
-        if value is None:
-            return None
+        return text_type(value)
 
-        return value.encode('latin1').decode('latin1')
 
 @swap_to_string
 @total_ordering
@@ -301,33 +284,30 @@ class ID3TimeStamp(object):
                 raise TypeError("not a str")
             text = text.decode("utf-8")
 
-        self.year = self.month = self.day = None
-        self.hour = self.minute = self.second = None
-
         self.text = text
 
+    __formats = ['%04d'] + ['%02d'] * 5
+    __seps = ['-', '-', ' ', ':', ':', 'x']
+
     def get_text(self):
-        data = [(self.year, '{:04d}-'), (self.month, '{:02d}-'),
-                (self.day, '{:02d} '), (self.hour, '{:02d}:'),
-                (self.minute, '{:02d}:'), (self.second, '{:02d}x')]
-
-        string_parts = []
-        for p in data:
-            if p[0] is None:
+        parts = [self.year, self.month, self.day,
+                 self.hour, self.minute, self.second]
+        pieces = []
+        for i, part in enumerate(parts):
+            if part is None:
                 break
-            string_parts.append(p[1].format(p[0]))
-
-        return ''.join(string_parts)[:-1]
-
+            pieces.append(self.__formats[i] % part + self.__seps[i])
+        return u''.join(pieces)[:-1]
 
     def set_text(self, text, splitre=re.compile('[-T:/.]|\s+')):
-        data = splitre.split(text + ':::::')[:6]
-
-        for i, a in enumerate('year month day hour minute second'.split()):
+        year, month, day, hour, minute, second = \
+            splitre.split(text + ':::::')[:6]
+        for a in 'year month day hour minute second'.split():
             try:
-                setattr(self, a, int(data[i]))
+                v = int(locals()[a])
             except ValueError:
-                break
+                v = None
+            setattr(self, a, v)
 
     text = property(get_text, set_text, doc="ID3v2.4 date and time.")
 
@@ -377,7 +357,7 @@ class ChannelSpec(ByteSpec):
 class VolumeAdjustmentSpec(Spec):
     def read(self, frame, data):
         value, = unpack('>h', data[0:2])
-        return value/512, data[2:]
+        return value/512.0, data[2:]
 
     def write(self, frame, value):
         number = int(round(value * 512))
@@ -399,7 +379,8 @@ class VolumePeakSpec(Spec):
     def read(self, frame, data):
         # http://bugs.xmms.org/attachment.cgi?id=113&action=view
         peak = 0
-        bits = ord_(data[0])
+        data_array = bytearray(data)
+        bits = data_array[0]
         vol_bytes = min(4, (bits + 7) >> 3)
         # not enough frame data
         if vol_bytes + 1 > len(data):
@@ -409,9 +390,9 @@ class VolumePeakSpec(Spec):
 
         for i in range(1, vol_bytes+1):
             peak *= 256
-            peak += ord_(data[i])
+            peak += data_array[i]
         peak *= 2 ** shift
-        return (peak / ((2**31)-1)), data[1+vol_bytes:]
+        return (float(peak) / (2**31-1)), data[1+vol_bytes:]
 
     def write(self, frame, value):
         number = int(round(value * 32768))
@@ -443,7 +424,7 @@ class SynchronizedTextSpec(EncodedTextSpec):
             value = data[:value_idx].decode(encoding)
             if len(data) < value_idx + l + 4:
                 raise ID3JunkFrameError
-            time = struct.unpack(">I", data[value_idx+l:value_idx+l+4])[0]
+            time, = struct.unpack(">I", data[value_idx+l:value_idx+l+4])
             texts.append((value, time))
             data = data[value_idx+l+4:]
         return texts, b""
@@ -482,8 +463,8 @@ class VolumeAdjustmentsSpec(Spec):
         while len(data) >= 4:
             freq, adj = struct.unpack(">Hh", data[:4])
             data = data[4:]
-            freq /= 2
-            adj /= 512
+            freq /= 2.0
+            adj /= 512.0
             adjustments[freq] = adj
         adjustments = sorted(adjustments.items())
         return adjustments, data
