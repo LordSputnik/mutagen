@@ -19,12 +19,7 @@ from fnmatch import fnmatchcase
 
 from mutagen._compat import text_type, iteritems, PY2
 
-from collections import OrderedDict
-
-if PY2:
-    from collections.abc import MutableMapping
-else:
-    from collections import MutableMapping
+from collections import OrderedDict, MutableMapping
 
 def total_ordering(cls):
     assert hasattr(cls, "__eq__")

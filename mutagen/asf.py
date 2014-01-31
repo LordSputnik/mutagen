@@ -1,26 +1,26 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006-2007 Lukas Lalinsky
 # Copyright 2005-2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write ASF (Window Media Audio) files."""
 
 __all__ = ["ASF", "Open"]
 
+from mutagen._compat import swap_to_string, text_type, PY2, string_types
+
 import struct
-import collections.abc
 
-from functools import total_ordering
+from collections import MutableMapping
 
-from mutagen import FileType, Metadata
-from mutagen._util import insert_bytes, delete_bytes
-from mutagen._compat import swap_to_string, text_type, string_types
+from mutagen import FileType, Metadata, StreamInfo
+from mutagen._util import insert_bytes, delete_bytes, total_ordering
+
 
 
 class error(IOError):
@@ -35,7 +35,7 @@ class ASFHeaderError(error):
     pass
 
 
-class ASFInfo(object):
+class ASFInfo(StreamInfo):
     """ASF stream information."""
 
     def __init__(self):
@@ -50,7 +50,7 @@ class ASFInfo(object):
         return s
 
 
-class ASFTags(collections.abc.MutableMapping, Metadata):
+class ASFTags(MutableMapping, Metadata):
     """Dictionary containing ASF attributes."""
 
     def __init__(self):
@@ -103,7 +103,8 @@ class ASFTags(collections.abc.MutableMapping, Metadata):
                 value = text_type(value)
             elif not isinstance(value, ASFBaseAttribute):
                 if isinstance(value, string_types):
-                    value = ASFUnicodeAttribute(value)
+                    if PY2 or isinstance(value, text_type):
+                        value = ASFUnicodeAttribute(value)
                 elif isinstance(value, bool):
                     value = ASFBoolAttribute(value)
                 elif isinstance(value, int):
@@ -172,10 +173,12 @@ class ASFBaseAttribute(object):
             data = self._render(dword=False)
         else:
             data = self._render()
+
         return (struct.pack("<HHHHI", self.language or 0, self.stream or 0,
                             len(name), self.TYPE, len(data)) + name + data)
 
 
+@swap_to_string
 @total_ordering
 class ASFUnicodeAttribute(ASFBaseAttribute):
     """Unicode string attribute."""
@@ -190,6 +193,9 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
     def data_size(self):
         return len(self._render())
 
+    def __bytes__(self):
+        return self.value.encode("utf-16-le")
+
     def __str__(self):
         return self.value
 
@@ -202,16 +208,18 @@ class ASFUnicodeAttribute(ASFBaseAttribute):
     __hash__ = ASFBaseAttribute.__hash__
 
 
-@total_ordering
 @swap_to_string
+@total_ordering
 class ASFByteArrayAttribute(ASFBaseAttribute):
     """Byte array attribute."""
     TYPE = 0x0001
 
     def parse(self, data):
+        assert isinstance(data, bytes)
         return data
 
     def _render(self):
+        assert isinstance(self.value, bytes)
         return self.value
 
     def data_size(self):
@@ -221,19 +229,19 @@ class ASFByteArrayAttribute(ASFBaseAttribute):
         return self.value
 
     def __str__(self):
-        return "[binary data (%s bytes)]" % len(self.value)
+        return u"[binary data (%s bytes)]" % len(self.value)
 
     def __eq__(self, other):
-        return bytes(self) == other
+        return self.value == other
 
     def __lt__(self, other):
-        return bytes(self) < other
+        return self.value < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
-@total_ordering
 @swap_to_string
+@total_ordering
 class ASFBoolAttribute(ASFBaseAttribute):
     """Bool attribute."""
     TYPE = 0x0002
@@ -254,22 +262,22 @@ class ASFBoolAttribute(ASFBaseAttribute):
         return 4
 
     def __bool__(self):
-        return self.value
+        return bool(self.value)
 
     def __bytes__(self):
-        return bytes(self.value)
+        return self.value
 
     def __eq__(self, other):
-        return bool(self) == other
+        return bool(self.value) == other
 
     def __lt__(self, other):
-        return bool(self) < other
+        return bool(self.value) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
-@total_ordering
 @swap_to_string
+@total_ordering
 class ASFDWordAttribute(ASFBaseAttribute):
     """DWORD attribute."""
     TYPE = 0x0003
@@ -287,19 +295,19 @@ class ASFDWordAttribute(ASFBaseAttribute):
         return self.value
 
     def __bytes__(self):
-        return bytes(self.value)
+        return self.value
 
     def __eq__(self, other):
-        return int(self) == other
+        return int(self.value) == other
 
     def __lt__(self, other):
-        return int(self) < other
+        return int(self.value) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
-@total_ordering
 @swap_to_string
+@total_ordering
 class ASFQWordAttribute(ASFBaseAttribute):
     """QWORD attribute."""
     TYPE = 0x0004
@@ -317,19 +325,19 @@ class ASFQWordAttribute(ASFBaseAttribute):
         return self.value
 
     def __bytes__(self):
-        return bytes(self.value)
+        return self.value
 
     def __eq__(self, other):
-        return int(self) == other
+        return int(self.value) == other
 
     def __lt__(self, other):
-        return int(self) < other
+        return int(self.value) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
-@total_ordering
 @swap_to_string
+@total_ordering
 class ASFWordAttribute(ASFBaseAttribute):
     """WORD attribute."""
     TYPE = 0x0005
@@ -347,26 +355,29 @@ class ASFWordAttribute(ASFBaseAttribute):
         return self.value
 
     def __bytes__(self):
-        return bytes(self.value)
+        return self.value
 
     def __eq__(self, other):
-        return int(self) == other
+        return int(self.value) == other
 
     def __lt__(self, other):
-        return int(self) < other
+        return int(self.value) < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
 
 @swap_to_string
+@total_ordering
 class ASFGUIDAttribute(ASFBaseAttribute):
     """GUID attribute."""
     TYPE = 0x0006
 
     def parse(self, data):
+        assert isinstance(data, bytes)
         return data
 
     def _render(self):
+        assert isinstance(self.value, bytes)
         return self.value
 
     def data_size(self):
@@ -376,10 +387,13 @@ class ASFGUIDAttribute(ASFBaseAttribute):
         return self.value
 
     def __str__(self):
-        return "".join("%02X" % i for i in self.value)
+        return u"".join("%02X" % i for i in self.value)
 
     def __eq__(self, other):
-        return bytes(self) == other
+        return self.value == other
+
+    def __lt__(self, other):
+        return self.value < other
 
     __hash__ = ASFBaseAttribute.__hash__
 
@@ -435,6 +449,7 @@ class BaseObject(object):
 class UnknownObject(BaseObject):
     """Unknown ASF object."""
     def __init__(self, guid):
+        assert isinstance(guid, bytes)
         self.GUID = guid
 
 
@@ -520,7 +535,7 @@ class FilePropertiesObject(BaseObject):
     def parse(self, asf, data, fileobj, size):
         super(FilePropertiesObject, self).parse(asf, data, fileobj, size)
         length, _, preroll = struct.unpack("<QQQ", data[40:64])
-        asf.info.length = (length / 10000000) - (preroll / 1000)
+        asf.info.length = (length / 10000000.0) - (preroll / 1000.0)
 
 
 class StreamPropertiesObject(BaseObject):
