@@ -60,7 +60,7 @@ class unsynch(object):
             if f[0] == b'\x00'[0]:
                 del f[0]
         
-        return b'\xff'.join(fragments)
+        return b'\xff'.join(map(bytes, fragments))
 
     @staticmethod
     def encode(value):
