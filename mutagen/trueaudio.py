@@ -66,8 +66,13 @@ class TrueAudio(ID3FileType):
 
     @staticmethod
     def score(filename, fileobj, header):
+        if isinstance(filename, bytes):
+            filename = filename.decode('utf-8')
+            
+        filename = filename.lower()
+        
         return (header.startswith(b"ID3") + header.startswith(b"TTA") +
-                filename.lower().endswith(".tta") * 2)
+                filename.endswith(".tta") * 2)
 
 
 Open = TrueAudio

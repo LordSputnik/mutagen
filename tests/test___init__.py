@@ -189,18 +189,18 @@ class TFile(TestCase):
 add(TFile)
 
 class TFileUpperExt(TestCase):
-    FILES = [(os.path.join(b"tests", b"data", b"empty.ofr"), OptimFROG),
-             (os.path.join(b"tests", b"data", b"sv5_header.mpc"), Musepack),
-             (os.path.join(b"tests", b"data", b"silence-3.wma"), ASF),
-             (os.path.join(b"tests", b"data", b"truncated-64bit.mp4"), MP4),
-             (os.path.join(b"tests", b"data", b"silence-44-s.flac"), FLAC),
+    FILES = [(os.path.join(u"tests", u"data", u"empty.ofr"), OptimFROG),
+             (os.path.join(u"tests", u"data", u"sv5_header.mpc"), Musepack),
+             (os.path.join(u"tests", u"data", u"silence-3.wma"), ASF),
+             (os.path.join(u"tests", u"data", u"truncated-64bit.mp4"), MP4),
+             (os.path.join(u"tests", u"data", u"silence-44-s.flac"), FLAC),
              ]
 
     def setUp(self):
         checks = []
         for (original, instance) in self.FILES:
             ext = os.path.splitext(original)[1]
-            fd, filename = mkstemp(suffix=b'.'+ext.upper())
+            fd, filename = mkstemp(suffix=ext.upper())
             os.close(fd)
             shutil.copy(original, filename)
             checks.append((filename, instance))

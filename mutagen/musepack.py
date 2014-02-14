@@ -249,8 +249,12 @@ class Musepack(APEv2File):
 
     @staticmethod
     def score(filename, fileobj, header):
+        if isinstance(filename, bytes):
+            filename = filename.decode('utf-8')
+        filename = filename.lower()
+        
         return (header.startswith(b"MP+") + header.startswith(b"MPCK") +
-                filename.lower().endswith(".mpc"))
+                filename.endswith(".mpc"))
 
 
 Open = Musepack

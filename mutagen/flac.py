@@ -619,8 +619,12 @@ class FLAC(FileType):
 
     @staticmethod
     def score(filename, fileobj, header_data):
+        if isinstance(filename, bytes):
+            filename = filename.decode('utf-8')
+        filename = filename.lower()
+            
         return (header_data.startswith(b"fLaC") +
-                filename.lower().endswith(".flac") * 3)
+                filename.endswith(".flac") * 3)
 
     def __read_metadata_block(self, fileobj):
         byte = fileobj.read(1)[0]

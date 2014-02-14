@@ -197,10 +197,14 @@ class TAPEv2(TestCase):
         self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_utf8(self):
-        from mutagen.apev2 import APETextValue
+        from mutagen.apev2 import APETextValue, APEBinaryValue
         self.audio["test"] = b"foobar"
-        self.failUnlessEqual(self.audio["test"], "foobar")
-        self.failUnless(isinstance(self.audio["test"], APETextValue))
+        if PY3:
+            self.failUnlessEqual(self.audio["test"], b"foobar")
+            self.failUnless(isinstance(self.audio["test"], APEBinaryValue))
+        else:
+            self.failUnlessEqual(self.audio["test"], "foobar")
+            self.failUnless(isinstance(self.audio["test"], APETextValue))
 
     def test_guess_not_utf8(self):
         from mutagen.apev2 import APEBinaryValue
@@ -236,7 +240,7 @@ class TAPEv2(TestCase):
             list(self.audio.items()), list(zip(self.audio.keys(), self.audio.values())))
 
     def test_key_type(self):
-        key = self.audio.keys()[0]
+        key = list(self.audio.keys())[0]
         if PY3:
             self.assertTrue(isinstance(key, text_type))
         else:

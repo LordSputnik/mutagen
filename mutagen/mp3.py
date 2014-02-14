@@ -253,6 +253,9 @@ class MP3(ID3FileType):
 
     @staticmethod
     def score(filename, fileobj, header_data):
+        if isinstance(filename, bytes):
+            filename = filename.decode('utf-8')
+            
         filename = filename.lower()
         return (header_data.startswith(b"ID3") * 2 + filename.endswith(".mp3") +
                 filename.endswith(".mp2") + filename.endswith(".mpg") +

@@ -85,8 +85,12 @@ class test_cmd(Command):
     def run(self):
         import tests
 
-        if tests.unit(self.to_run, self.quick):
+        count, failures = tests.unit(self.to_run, self.quick)
+        if failures:
+            print("%d out of %d failed" % (failures, count))
             raise SystemExit("Test failures are listed above.")
+        else:
+            print("All tests passed")
 
 
 class coverage_cmd(Command):
