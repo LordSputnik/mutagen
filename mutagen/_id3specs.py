@@ -48,7 +48,7 @@ class IntegerSpec(Spec):
         return int(BitPaddedInt(data, bits=8)), b''
 
     def write(self, frame, value):
-        return BitPaddedInt.to_bytes(value, bits=8, width=-1)
+        return BitPaddedInt.to_str(value, bits=8, width=-1)
 
     def validate(self, frame, value):
         return value
@@ -62,7 +62,7 @@ class SizedIntegerSpec(Spec):
         return int(BitPaddedInt(data[:self.__sz], bits=8)), data[self.__sz:]
 
     def write(self, frame, value):
-        return BitPaddedInt.to_bytes(value, bits=8, width=self.__sz)
+        return BitPaddedInt.to_str(value, bits=8, width=self.__sz)
 
     def validate(self, frame, value):
         return value

@@ -135,48 +135,48 @@ class BitPaddedIntTest(TestCase):
         self.assertEquals(BitPaddedInt(0xFFFFFFFF, bits=8), 0xFFFFFFFF)
 
     def test_s32b(self):
-        self.assertEquals(BitPaddedInt(b'\xFF\xFF\xFF\xFF', bits=8).as_bytes(),
+        self.assertEquals(BitPaddedInt(b'\xFF\xFF\xFF\xFF', bits=8).as_str(),
             b'\xFF\xFF\xFF\xFF')
 
     def test_s0(self):
-        self.assertEquals(BitPaddedInt.to_bytes(0), b'\x00\x00\x00\x00')
+        self.assertEquals(BitPaddedInt.to_str(0), b'\x00\x00\x00\x00')
 
     def test_s1(self):
-        self.assertEquals(BitPaddedInt.to_bytes(1), b'\x00\x00\x00\x01')
+        self.assertEquals(BitPaddedInt.to_str(1), b'\x00\x00\x00\x01')
 
     def test_s1l(self):
         self.assertEquals(
-            BitPaddedInt.to_bytes(1, bigendian=False), b'\x01\x00\x00\x00')
+            BitPaddedInt.to_str(1, bigendian=False), b'\x01\x00\x00\x00')
 
     def test_s129(self):
-        self.assertEquals(BitPaddedInt.to_bytes(129), b'\x00\x00\x01\x01')
+        self.assertEquals(BitPaddedInt.to_str(129), b'\x00\x00\x01\x01')
 
     def test_s65(self):
-        self.assertEquals(BitPaddedInt.to_bytes(0x41, 6), b'\x00\x00\x01\x01')
+        self.assertEquals(BitPaddedInt.to_str(0x41, 6), b'\x00\x00\x01\x01')
 
     def test_w129(self):
-        self.assertEquals(BitPaddedInt.to_bytes(129, width=2), b'\x01\x01')
+        self.assertEquals(BitPaddedInt.to_str(129, width=2), b'\x01\x01')
 
     def test_w129l(self):
         self.assertEquals(
-            BitPaddedInt.to_bytes(129, width=2, bigendian=False), b'\x01\x01')
+            BitPaddedInt.to_str(129, width=2, bigendian=False), b'\x01\x01')
 
     def test_wsmall(self):
-        self.assertRaises(ValueError, BitPaddedInt.to_bytes, 129, width=1)
+        self.assertRaises(ValueError, BitPaddedInt.to_str, 129, width=1)
 
     def test_str_int_init(self):
         from struct import pack
-        self.assertEquals(BitPaddedInt(238).as_bytes(),
-                BitPaddedInt(pack('>L', 238)).as_bytes())
+        self.assertEquals(BitPaddedInt(238).as_str(),
+                BitPaddedInt(pack('>L', 238)).as_str())
 
     def test_varwidth(self):
-        self.assertEquals(len(BitPaddedInt.to_bytes(100)), 4)
-        self.assertEquals(len(BitPaddedInt.to_bytes(100, width=-1)), 4)
-        self.assertEquals(len(BitPaddedInt.to_bytes(2**32, width=-1)), 5)
+        self.assertEquals(len(BitPaddedInt.to_str(100)), 4)
+        self.assertEquals(len(BitPaddedInt.to_str(100, width=-1)), 4)
+        self.assertEquals(len(BitPaddedInt.to_str(2**32, width=-1)), 5)
 
     def test_minwidth(self):
         self.assertEquals(
-            len(BitPaddedInt.to_bytes(100, width=-1, minwidth=6)), 6)
+            len(BitPaddedInt.to_str(100, width=-1, minwidth=6)), 6)
 
     def test_inval_input(self):
         self.assertRaises(TypeError, BitPaddedInt, None)
@@ -185,7 +185,7 @@ class BitPaddedIntTest(TestCase):
         def test_promote_long(self):
             l = BitPaddedInt(sys.maxint ** 2)
             self.assertTrue(isinstance(l, long))
-            self.assertEqual(BitPaddedInt(l.as_bytes(width=-1)), l)
+            self.assertEqual(BitPaddedInt(l.as_str(width=-1)), l)
 
     def test_has_valid_padding(self):
         self.failUnless(BitPaddedInt.has_valid_padding(b"\xff\xff", bits=8))

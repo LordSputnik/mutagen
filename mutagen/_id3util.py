@@ -7,6 +7,8 @@
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
 
+from ._compat import long_, integer_types
+
 
 class error(Exception):
     pass
@@ -44,7 +46,6 @@ class ID3Warning(error, UserWarning):
     pass
 
 
-# TODO Must be a better way to do this with bytearray?
 class unsynch(object):
     @staticmethod
     def decode(value):
@@ -71,37 +72,13 @@ class unsynch(object):
             
         return b'\xff'.join(map(bytes, fragments))
 
-class BitPaddedInt(int):
-    def __new__(cls, value, bits=7, bigendian=True):
-        "Strips 8-bits bits out of every byte"
-        mask = (1 << (bits)) - 1
-        if isinstance(value, int):
-            reformed_bytes = []
-            while value:
-                reformed_bytes.append(value & ((1 << bits) - 1))
-                value = value >> 8
-        elif isinstance(value, bytes):
-            reformed_bytes = [b & mask for b in value]
-            if bigendian:
-                reformed_bytes.reverse()
-        else:
-            raise TypeError
+class _BitPaddedMixin(object):
 
-        numeric_value = 0
-        for shift, byte in zip(range(0, len(reformed_bytes) * bits, bits),
-                               reformed_bytes):
-            numeric_value += byte << shift
-
-        self = int.__new__(BitPaddedInt, numeric_value)
-        self.bits = bits
-        self.bigendian = bigendian
-        return self
+    def as_str(self, width=4, minwidth=4):
+        return self.to_str(self, self.bits, self.bigendian, width, minwidth)
 
     @staticmethod
-    def to_bytes(value, bits=7, bigendian=True, width=4, minwidth=4):
-        bits = getattr(value, 'bits', bits)
-        bigendian = getattr(value, 'bigendian', bigendian)
-        value = int(value)
+    def to_str(value, bits=7, bigendian=True, width=4, minwidth=4):
         mask = (1 << bits) - 1
 
         if width != -1:
@@ -128,9 +105,6 @@ class BitPaddedInt(int):
             bytes_.reverse()
         return bytes(bytes_)
 
-    def as_bytes(self, bits=7, bigendian=True, width=4):
-        return BitPaddedInt.to_bytes(self,bits,bigendian,width)
-
     @staticmethod
     def has_valid_padding(value, bits=7):
         """Whether the padding bits are all zero"""
@@ -139,16 +113,52 @@ class BitPaddedInt(int):
 
         mask = (((1 << (8 - bits)) - 1) << bits)
 
-        if isinstance(value, int):
+        if isinstance(value, integer_types):
             while value:
                 if value & mask:
                     return False
                 value >>= 8
         elif isinstance(value, bytes):
-            for byte in value:
+            for byte in bytearray(value):
                 if byte & mask:
                     return False
         else:
             raise TypeError
 
         return True
+
+
+class BitPaddedInt(int, _BitPaddedMixin):
+
+    def __new__(cls, value, bits=7, bigendian=True):
+
+        mask = (1 << (bits)) - 1
+        numeric_value = 0
+        shift = 0
+
+        if isinstance(value, integer_types):
+            while value:
+                numeric_value += (value & mask) << shift
+                value >>= 8
+                shift += bits
+        elif isinstance(value, bytes):
+            if bigendian:
+                value = reversed(value)
+            for byte in bytearray(value):
+                numeric_value += (byte & mask) << shift
+                shift += bits
+        else:
+            raise TypeError
+
+        if isinstance(numeric_value, int):
+            self = int.__new__(BitPaddedInt, numeric_value)
+        else:
+            self = long_.__new__(BitPaddedLong, numeric_value)
+
+        self.bits = bits
+        self.bigendian = bigendian
+        return self
+
+
+class BitPaddedLong(long_, _BitPaddedMixin):
+    pass

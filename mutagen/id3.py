@@ -492,7 +492,7 @@ class ID3(DictProxy, mutagen.Metadata):
                 outsize = (framesize + 1023) & ~0x3FF
             framedata += b'\x00' * (outsize - framesize)
 
-            framesize = BitPaddedInt.to_bytes(outsize, width=4)
+            framesize = BitPaddedInt.to_str(outsize, width=4)
             flags = 0
             header = pack('>3sBBB4s', b'ID3', v2_version, 0, flags, framesize)
             data = header + framedata
@@ -576,7 +576,7 @@ class ID3(DictProxy, mutagen.Metadata):
         else:
             raise ValueError
 
-        datasize = BitPaddedInt.to_bytes(len(framedata), width=4, bits=bits)
+        datasize = BitPaddedInt.to_str(len(framedata), width=4, bits=bits)
         header = pack('>4s4sH',
                       (name or type(frame).__name__).encode('ascii'),
                       datasize, flags)
