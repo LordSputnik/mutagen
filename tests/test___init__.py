@@ -1,9 +1,9 @@
 import os
-from io import BytesIO
 from tempfile import mkstemp
 import shutil
 
 from tests import TestCase, add
+from mutagen._compat import cBytesIO, text_type
 from mutagen import File, Metadata, FileType
 from mutagen.oggvorbis import OggVorbis
 from mutagen.oggflac import OggFLAC
@@ -181,7 +181,7 @@ class TFile(TestCase):
 
     def test_id3_indicates_mp3_not_tta(self):
         header = b"ID3 the rest of this is garbage"
-        fileobj = BytesIO(header)
+        fileobj = cBytesIO(header)
         filename = "not-identifiable.ext"
         self.failUnless(TrueAudio.score(filename, fileobj, header) <
                         MP3.score(filename, fileobj, header))
@@ -189,18 +189,18 @@ class TFile(TestCase):
 add(TFile)
 
 class TFileUpperExt(TestCase):
-    FILES = [(os.path.join("tests", "data", "empty.ofr"), OptimFROG),
-             (os.path.join("tests", "data", "sv5_header.mpc"), Musepack),
-             (os.path.join("tests", "data", "silence-3.wma"), ASF),
-             (os.path.join("tests", "data", "truncated-64bit.mp4"), MP4),
-             (os.path.join("tests", "data", "silence-44-s.flac"), FLAC),
+    FILES = [(os.path.join(b"tests", b"data", b"empty.ofr"), OptimFROG),
+             (os.path.join(b"tests", b"data", b"sv5_header.mpc"), Musepack),
+             (os.path.join(b"tests", b"data", b"silence-3.wma"), ASF),
+             (os.path.join(b"tests", b"data", b"truncated-64bit.mp4"), MP4),
+             (os.path.join(b"tests", b"data", b"silence-44-s.flac"), FLAC),
              ]
 
     def setUp(self):
         checks = []
         for (original, instance) in self.FILES:
             ext = os.path.splitext(original)[1]
-            fd, filename = mkstemp(suffix='.'+ext.upper())
+            fd, filename = mkstemp(suffix=b'.'+ext.upper())
             os.close(fd)
             shutil.copy(original, filename)
             checks.append((filename, instance))
@@ -208,7 +208,13 @@ class TFileUpperExt(TestCase):
 
     def test_case_insensitive_ext(self):
         for (path, instance) in self.checks:
-            self.failUnless(isinstance(File(path, options=[instance]), instance))
+            if isinstance(path, bytes):
+                path = path.decode("ascii")
+            self.failUnless(
+                isinstance(File(path, options=[instance]), instance))
+            path = path.encode("ascii")
+            self.failUnless(
+                isinstance(File(path, options=[instance]), instance))
 
     def tearDown(self):
         for (path, instance) in self.checks:

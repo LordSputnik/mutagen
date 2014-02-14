@@ -1,5 +1,3 @@
-from __future__ import division
-
 import re
 import glob
 import os
@@ -9,6 +7,8 @@ import unittest
 from unittest import TestCase as BaseTestCase
 suites = []
 add = suites.append
+
+from mutagen._compat import cmp
 
 
 class TestCase(BaseTestCase):
@@ -38,6 +38,8 @@ class TestCase(BaseTestCase):
         self.assertTrue(b == a)
         self.assertFalse(a != b)
         self.assertFalse(b != a)
+        self.assertEqual(0, cmp(a, b))
+        self.assertEqual(0, cmp(b, a))
 
     def assertReallyNotEqual(self, a, b):
         self.assertNotEqual(a, b)
@@ -46,9 +48,14 @@ class TestCase(BaseTestCase):
         self.assertFalse(b == a)
         self.assertTrue(a != b)
         self.assertTrue(b != a)
+        self.assertNotEqual(0, cmp(a, b))
+        self.assertNotEqual(0, cmp(b, a))
 
 
 for name in glob.glob(os.path.join(os.path.dirname(__file__), "test_*.py")):
+    # skip m4a in py3k
+    if sys.version_info[0] != 2 and "test_m4a" in name:
+        continue
     module = "tests." + os.path.basename(name)
     __import__(module[:-3], {}, {}, [])
 
@@ -99,7 +106,8 @@ def unit(run=[], quick=False):
     import mmap
 
     runner = Runner()
-    failures = False
+    failures = 0
+    count = 0
     tests = [t for t in suites if not run or t.__name__ in run]
 
     # normal run, trace mmap calls
@@ -112,15 +120,16 @@ def unit(run=[], quick=False):
                 uses_mmap.append(test)
             return orig_mmap(*args, **kwargs)
         mmap.mmap = new_mmap
-        failures |= runner.run(test)
+        failures += runner.run(test)
     mmap.mmap = orig_mmap
+    count += len(tests)
 
     # make sure the above works
     if not run:
         assert len(uses_mmap) > 1
 
     if quick:
-        return failures
+        return count, failures
 
     # run mmap using tests with mocked lockf
     try:
@@ -134,8 +143,9 @@ def unit(run=[], quick=False):
         fcntl.lockf = MockLockF
         print("Running tests with mocked failing fcntl.lockf.")
         for test in uses_mmap:
-            failures |= runner.run(test)
+            failures += runner.run(test)
         fcntl.lockf = lockf
+        count += len(uses_mmap)
 
     # failing mmap.move
     class MockMMap(object):
@@ -151,7 +161,8 @@ def unit(run=[], quick=False):
     print("Running tests with mocked failing mmap.move.")
     mmap.mmap = MockMMap
     for test in uses_mmap:
-        failures |= runner.run(test)
+        failures += runner.run(test)
+    count += len(uses_mmap)
 
     # failing mmap.mmap
     def MockMMap2(*args, **kwargs):
@@ -160,6 +171,7 @@ def unit(run=[], quick=False):
     mmap.mmap = MockMMap2
     print("Running tests with mocked failing mmap.mmap.")
     for test in uses_mmap:
-        failures |= runner.run(test)
+        failures += runner.run(test)
+    count += len(uses_mmap)
 
-    return failures
+    return count, failures
