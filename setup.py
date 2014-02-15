@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
+# Copyright 2005-2009,2011 Joe Wreschnig
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
 
 import glob
 import os
 import shutil
 import sys
+import subprocess
 
 from imp import reload
 from distutils.core import setup, Command
@@ -48,6 +54,26 @@ class sdist(distutils_sdist):
         self.run_command("test")
 
         distutils_sdist.run(self)
+
+        # make sure MANIFEST.in includes all tracked files
+        if subprocess.call(["hg", "status"],
+                           stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE) == 0:
+            # contains the packaged files after run() is finished
+            included_files = self.filelist.files
+
+            process = subprocess.Popen(["hg", "locate"],
+                                       stdout=subprocess.PIPE)
+            out, err = process.communicate()
+            assert process.returncode == 0
+
+            tracked_files = out.splitlines()
+            for ignore in [".hgignore", ".hgtags"]:
+                tracked_files.remove(ignore)
+
+            assert not set(tracked_files) - set(included_files), \
+                "Not all tracked files included in tarball, update MANIFEST.in"
+
 
 class build_sphinx(Command):
     description = "build sphinx documentation"

@@ -1,4 +1,5 @@
 from mutagen._util import cdata, utf8, insert_bytes, delete_bytes
+from mutagen._compat import text_type, itervalues, iterkeys, iteritems, PY2
 from tests import TestCase, add
 import random
 
@@ -182,8 +183,9 @@ class FileHandling(TestCase):
     def test_insert_6106_79_51760(self):
         # This appears to be due to ANSI C limitations in read/write on rb+
         # files. The problematic behavior only showed up in our mmap fallback
-        # code for transfers of this or similar sizes.
-        data = b''.join(str(x).encode('ascii') for x in range(12574)) # 51760 bytes
+        # code for transfers of this or similar sizes. 
+        data = u''.join(map(text_type, range(12574))) # 51760 bytes
+        data = data.encode("ascii")
         o = self.file(data)
         insert_bytes(o, 6106, 79)
         self.failUnless(data[:6106+79] + data[79:] == self.read(o))
@@ -191,8 +193,9 @@ class FileHandling(TestCase):
     def test_delete_6106_79_51760(self):
         # This appears to be due to ANSI C limitations in read/write on rb+
         # files. The problematic behavior only showed up in our mmap fallback
-        # code for transfers of this or similar sizes.
-        data = b''.join(str(x).encode('ascii') for x in range(12574)) # 51760 bytes
+        # code for transfers of this or similar sizes. 
+        data = u''.join(map(text_type, range(12574))) # 51760 bytes
+        data = data.encode("ascii")
         o = self.file(data[:6106+79] + data[79:])
         delete_bytes(o, 6106, 79)
         self.failUnless(data == self.read(o))
