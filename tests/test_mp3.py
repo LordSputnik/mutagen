@@ -2,7 +2,7 @@ import os
 import shutil
 
 from tests import TestCase
-from io import BytesIO
+from mutagen._compat import cBytesIO
 from tests import add
 from mutagen.mp3 import MP3, error as MP3Error, delete, MPEGInfo, EasyMP3
 from mutagen.id3 import ID3
@@ -57,7 +57,7 @@ class TMP3(TestCase):
         self.failUnlessEqual(self.mp3_4.info.bitrate, 9300)
 
     def test_notmp3(self):
-        self.failUnlessRaises(MP3Error, MP3, "README.md")
+        self.failUnlessRaises(MP3Error, MP3, "NEWS")
 
     def test_sketchy(self):
         self.failIf(self.mp3.info.sketchy)
@@ -125,6 +125,10 @@ class TMP3(TestCase):
 
     def test_mime(self):
         self.failUnless("audio/mp3" in self.mp3.mime)
+        # XXX
+        self.mp3.info.layer = 2
+        self.failIf("audio/mp3" in self.mp3.mime)
+        self.failUnless("audio/mp2" in self.mp3.mime)
 
     def tearDown(self):
         os.unlink(self.filename)
@@ -135,11 +139,11 @@ class TMPEGInfo(TestCase):
 
     def test_not_real_file(self):
         filename = os.path.join("tests", "data", "silence-44-s-v1.mp3")
-        fileobj = BytesIO(open(filename, "rb").read(20))
+        fileobj = cBytesIO(open(filename, "rb").read(20))
         MPEGInfo(fileobj)
 
     def test_empty(self):
-        fileobj = BytesIO(b"")
+        fileobj = cBytesIO(b"")
         self.failUnlessRaises(IOError, MPEGInfo, fileobj)
 add(TMPEGInfo)
 

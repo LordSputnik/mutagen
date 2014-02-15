@@ -4,7 +4,7 @@ from tempfile import mkstemp
 
 from mutagen.id3 import ID3, TIT2
 from mutagen.musepack import Musepack, MusepackInfo, MusepackHeaderError
-from io import BytesIO
+from mutagen._compat import cBytesIO
 from tests import TestCase, add
 
 class TMusepack(TestCase):
@@ -65,11 +65,11 @@ class TMusepack(TestCase):
 
     def test_almost_my_file(self):
         self.failUnlessRaises(
-            MusepackHeaderError, MusepackInfo, BytesIO(b"MP+" + b"\x00" * 32))
+            MusepackHeaderError, MusepackInfo, cBytesIO(b"MP+" + b"\x00" * 32))
         self.failUnlessRaises(
-            MusepackHeaderError, MusepackInfo, BytesIO(b"MP+" + b"\x00" * 100))
+            MusepackHeaderError, MusepackInfo, cBytesIO(b"MP+" + b"\x00" * 100))
         self.failUnlessRaises(
-            MusepackHeaderError, MusepackInfo, BytesIO(b"MPCK" + b"\x00" * 100))
+            MusepackHeaderError, MusepackInfo, cBytesIO(b"MPCK" + b"\x00" * 100))
 
     def test_pprint(self):
         self.sv8.pprint()
@@ -90,7 +90,9 @@ class TMusepackWithID3(TestCase):
         fd, self.NEW = mkstemp(suffix='mpc')
         os.close(fd)
         shutil.copy(self.SAMPLE, self.NEW)
-        self.failUnlessEqual(open(self.SAMPLE,"rb").read(), open(self.NEW,"rb").read())
+        with open(self.SAMPLE, "rb") as h1:
+            with open(self.NEW, "rb") as h2:
+                self.failUnlessEqual(h1.read(), h2.read())
 
     def tearDown(self):
         os.unlink(self.NEW)

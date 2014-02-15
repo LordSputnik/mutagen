@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 
-# MP3 stream header information support for mutagen.
+# Copyright 2013 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """MPEG audio stream information and tags."""
 
 import os
 import struct
 
+from ._compat import endswith
+from mutagen import StreamInfo
 from mutagen.id3 import ID3FileType, BitPaddedInt, delete
 
 __all__ = ["MP3", "Open", "delete", "MP3"]
@@ -35,7 +35,7 @@ class InvalidMPEGHeader(error, IOError):
 STEREO, JOINTSTEREO, DUALCHANNEL, MONO = range(4)
 
 
-class MPEGInfo(object):
+class MPEGInfo(StreamInfo):
     """MPEG audio stream information
 
     Parse information about an MPEG audio file. This also reads the
@@ -186,7 +186,7 @@ class MPEGInfo(object):
             frame_size = 1152
 
         if check_second:
-            possible = frame_1 + frame_length
+            possible = int(frame_1 + frame_length)
             if possible > len(data) + 4:
                 raise HeaderNotFoundError("can't sync to second MPEG frame")
             try:
@@ -197,7 +197,7 @@ class MPEGInfo(object):
             if (frame_data & 0xFFE0) != 0xFFE0:
                 raise HeaderNotFoundError("can't sync to second MPEG frame")
 
-        self.length = 8 * real_size / self.bitrate
+        self.length = 8 * real_size / float(self.bitrate)
 
         # Try to find/parse the Xing header, which trumps the above length
         # and bitrate calculation.
@@ -219,7 +219,7 @@ class MPEGInfo(object):
                 if vbri_version == 1:
                     frame_count = struct.unpack(
                         '>I', data[vbri + 14:vbri + 18])[0]
-                    samples = frame_size * frame_count
+                    samples = float(frame_size * frame_count)
                     self.length = (samples / self.sample_rate) or self.length
         else:
             # If a Xing header was found, this is definitely MPEG audio.
@@ -227,7 +227,7 @@ class MPEGInfo(object):
             flags = struct.unpack('>I', data[xing + 4:xing + 8])[0]
             if flags & 0x1:
                 frame_count = struct.unpack('>I', data[xing + 8:xing + 12])[0]
-                samples = frame_size * frame_count
+                samples = float(frame_size * frame_count)
                 self.length = (samples / self.sample_rate) or self.length
             if flags & 0x2:
                 br_bytes = struct.unpack('>I', data[xing + 12:xing + 16])[0]
@@ -248,8 +248,13 @@ class MP3(ID3FileType):
     """
 
     _Info = MPEGInfo
-    _mimes = ["audio/mp3", "audio/x-mp3", "audio/mpeg", "audio/mpg",
-              "audio/x-mpeg"]
+
+    _mimes = ["audio/mpeg", "audio/mpg", "audio/x-mpeg"]
+
+    @property
+    def mime(self):
+        l = self.info.layer
+        return ["audio/mp%d" % l, "audio/x-mp%d" % l] + super(MP3, self).mime
 
     @staticmethod
     def score(filename, fileobj, header_data):
@@ -257,9 +262,10 @@ class MP3(ID3FileType):
             filename = filename.decode('utf-8')
             
         filename = filename.lower()
-        return (header_data.startswith(b"ID3") * 2 + filename.endswith(".mp3") +
-                filename.endswith(".mp2") + filename.endswith(".mpg") +
-                filename.endswith(".mpeg"))
+
+        return (header_data.startswith(b"ID3") * 2 + endswith(filename, b".mp3") +
+                endswith(filename, b".mp2") + endswith(filename, b".mpg") +
+                endswith(filename, b".mpeg"))
 
 
 Open = MP3

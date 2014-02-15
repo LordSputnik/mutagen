@@ -2,7 +2,7 @@ import os
 import shutil
 import struct
 
-from io import BytesIO
+from mutagen._compat import cBytesIO
 from tempfile import mkstemp
 from tests import TestCase, add
 from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
@@ -14,22 +14,22 @@ from os import devnull
 class TAtom(TestCase):
 
     def test_no_children(self):
-        fileobj = BytesIO(b"\x00\x00\x00\x08atom")
+        fileobj = cBytesIO(b"\x00\x00\x00\x08atom")
         atom = Atom(fileobj)
         self.failUnlessRaises(KeyError, atom.__getitem__, "test")
 
     def test_length_1(self):
-        fileobj = BytesIO(b"\x00\x00\x00\x01atom"
-                          b"\x00\x00\x00\x00\x00\x00\x00\x10" + b"\x00" * 16)
+        fileobj = cBytesIO(b"\x00\x00\x00\x01atom"
+                           b"\x00\x00\x00\x00\x00\x00\x00\x10" + b"\x00" * 16)
         self.failUnlessEqual(Atom(fileobj).length, 16)
 
     def test_length_64bit_less_than_16(self):
-        fileobj = BytesIO(b"\x00\x00\x00\x01atom"
-                          b"\x00\x00\x00\x00\x00\x00\x00\x08" + b"\x00" * 8)
+        fileobj = cBytesIO(b"\x00\x00\x00\x01atom"
+                           b"\x00\x00\x00\x00\x00\x00\x00\x08" + b"\x00" * 8)
         self.assertRaises(error, Atom, fileobj)
 
     def test_length_less_than_8(self):
-        fileobj = BytesIO(b"\x00\x00\x00\x02atom")
+        fileobj = cBytesIO(b"\x00\x00\x00\x02atom")
         self.assertRaises(MP4MetadataError, Atom, fileobj)
 
     def test_render_too_big(self):
@@ -46,18 +46,18 @@ class TAtom(TestCase):
             self.failUnlessEqual(len(data), 4 + 4 + 8 + 4)
 
     def test_non_top_level_length_0_is_invalid(self):
-        data = BytesIO(struct.pack(">I4s", 0, b"whee"))
+        data = cBytesIO(struct.pack(">I4s", 0, b"whee"))
         self.assertRaises(MP4MetadataError, Atom, data, level=1)
 
     def test_length_0(self):
-        fileobj = BytesIO(b"\x00\x00\x00\x00atom" + 40 * b"\x00")
+        fileobj = cBytesIO(b"\x00\x00\x00\x00atom" + 40 * b"\x00")
         atom = Atom(fileobj)
         self.failUnlessEqual(fileobj.tell(), 48)
         self.failUnlessEqual(atom.length, 48)
 
     def test_length_0_container(self):
-        data = BytesIO(struct.pack(">I4s", 0, b"moov") +
-                       Atom.render(b"data", b"whee"))
+        data = cBytesIO(struct.pack(">I4s", 0, b"moov") +
+                        Atom.render(b"data", b"whee"))
         atom = Atom(data)
         self.failUnlessEqual(len(atom.children), 1)
         self.failUnlessEqual(atom.length, 20)
@@ -91,7 +91,7 @@ class TAtoms(TestCase):
         self.failUnless(self.atoms.atoms[0].children is None)
 
     def test_extra_trailing_data(self):
-        data = BytesIO(Atom.render(b"data", b"whee") + b"\x00\x00")
+        data = cBytesIO(Atom.render(b"data", b"whee") + b"\x00\x00")
         self.failUnless(Atoms(data))
 
     def test_repr(self):
@@ -112,7 +112,7 @@ class TMP4Info(TestCase):
         mdia = Atom.render(b"mdia", mdhd + hdlr)
         trak = Atom.render(b"trak", mdia)
         moov = Atom.render(b"moov", trak)
-        fileobj = BytesIO(moov)
+        fileobj = cBytesIO(moov)
         atoms = Atoms(fileobj)
         info = MP4Info(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
@@ -128,7 +128,7 @@ class TMP4Info(TestCase):
         mdia = Atom.render(b"mdia", mdhd + hdlr)
         trak2 = Atom.render(b"trak", mdia)
         moov = Atom.render(b"moov", trak1 + trak2)
-        fileobj = BytesIO(moov)
+        fileobj = cBytesIO(moov)
         atoms = Atoms(fileobj)
         info = MP4Info(atoms, fileobj)
         self.failUnlessEqual(info.length, 8)
@@ -140,7 +140,7 @@ class TMP4Tags(TestCase):
         ilst = Atom.render(b"ilst", data)
         meta = Atom.render(b"meta", b"\x00" * 4 + ilst)
         data = Atom.render(b"moov", Atom.render(b"udta", meta))
-        fileobj = BytesIO(data)
+        fileobj = cBytesIO(data)
         return MP4Tags(Atoms(fileobj), fileobj)
 
     def test_genre(self):
@@ -165,6 +165,12 @@ class TMP4Tags(TestCase):
 
     def test_strips_unknown_types(self):
         data = Atom.render(b"data", b"\x00" * 8 + b"whee")
+        foob = Atom.render(b"foob", data)
+        tags = self.wrap_ilst(foob)
+        self.failIf(tags)
+
+    def test_strips_bad_unknown_types(self):
+        data = Atom.render(b"datA", b"\x00" * 8 + b"whee")
         foob = Atom.render(b"foob", data)
         tags = self.wrap_ilst(foob)
         self.failIf(tags)
@@ -194,11 +200,11 @@ class TMP4Tags(TestCase):
              b"\x00\x00\x00*purl\x00\x00\x00\"data\x00\x00\x00\x00\x00\x00"
              b"\x00\x00http://foo/bar.xml")
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_text(b'aART', ['\u0041lbum Artist']),
+             MP4Tags()._MP4Tags__render_text(b'aART', [u'\u0041lbum Artist']),
              b"\x00\x00\x00$aART\x00\x00\x00\x1cdata\x00\x00\x00\x01\x00\x00"
              b"\x00\x00\x41lbum Artist")
         self.failUnlessEqual(
-             MP4Tags()._MP4Tags__render_text(b'aART', ['Album Artist', 'Whee']),
+             MP4Tags()._MP4Tags__render_text(b'aART', [u'Album Artist', u'Whee']),
              b"\x00\x00\x008aART\x00\x00\x00\x1cdata\x00\x00\x00\x01\x00\x00"
              b"\x00\x00Album Artist\x00\x00\x00\x14data\x00\x00\x00\x01\x00"
              b"\x00\x00\x00Whee")
@@ -284,6 +290,7 @@ class TMP4(TestCase):
         fileobj = open(self.filename, "rb")
         header = fileobj.read(128)
         self.failUnless(MP4.score(self.filename, fileobj, header))
+        fileobj.close()
 
     def test_channels(self):
         self.failUnlessEqual(self.audio.info.channels, 2)
@@ -301,16 +308,16 @@ class TMP4(TestCase):
         self.failUnlessAlmostEqual(3.7, self.audio.info.length, 1)
 
     def test_padding(self):
-        self.audio[b"\xa9nam"] = "wheeee" * 10
+        self.audio[b"\xa9nam"] = u"wheeee" * 10
         self.audio.save()
         size1 = os.path.getsize(self.audio.filename)
-        self.audio[b"\xa9nam"] = "wheeee" * 11
+        self.audio[b"\xa9nam"] = u"wheeee" * 11
         self.audio.save()
         size2 = os.path.getsize(self.audio.filename)
         self.failUnless(size1, size2)
 
     def test_padding_2(self):
-        self.audio[b"\xa9nam"] = "wheeee" * 10
+        self.audio[b"\xa9nam"] = u"wheeee" * 10
         self.audio.save()
         # Reorder "free" and "ilst" atoms
         fileobj = open(self.audio.filename, "rb+")
@@ -335,7 +342,7 @@ class TMP4(TestCase):
         self.failUnlessEqual(free.offset + free.length, ilst.offset)
         fileobj.close()
         # Save the file
-        self.audio[b"\xa9nam"] = "wheeee" * 11
+        self.audio[b"\xa9nam"] = u"wheeee" * 11
         self.audio.save()
         # Check the order of "free" and "ilst" atoms
         fileobj = open(self.audio.filename, "rb+")
