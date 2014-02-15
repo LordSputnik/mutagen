@@ -77,7 +77,10 @@ elif PY3:
     iterkeys = lambda d: iter(d.keys())
 
     def reraise(tp, value, tb):
-        raise tp(value).with_traceback(tb)
+        if value is None:
+            raise tp.with_traceback(tb)
+        else:
+            raise tp(value).with_traceback(tb)
 
     def swap_to_string(cls):
         return cls

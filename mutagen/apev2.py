@@ -43,8 +43,14 @@ from mutagen._util import cdata, delete_bytes, total_ordering
 import collections
 
 def is_valid_apev2_key(key):
-    if PY3 and not isinstance(key, text_type):
-        raise TypeError("APEv2 key must be unicode")
+    if not isinstance(key, text_type):
+        if PY3:
+            raise TypeError("APEv2 key must be unicode")
+            
+        try:
+            key = key.decode('ascii')
+        except UnicodeDecodeError:
+            return False
 
     return ((2 <= len(key) <= 255) and (min(key) >= u' ') and
             (max(key) <= u'~') and (key not in [u"OggS", u"TAG", u"ID3", u"MP+"]))

@@ -3,12 +3,11 @@
 # Copyright (C) 2005  Michael Urman
 #               2006  Lukas Lalinsky
 #               2013  Christoph Reiter
+#               2014  Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """ID3v2 reading and writing.
 
@@ -38,13 +37,9 @@ import struct
 
 from struct import unpack, pack, error as StructError
 
-import re
-import zlib
-import functools
-import os.path
-
 import mutagen
 from mutagen._util import insert_bytes, delete_bytes, DictProxy
+from ._compat import reraise, chr_
 
 from mutagen._id3util import *
 from mutagen._id3frames import *
@@ -82,6 +77,7 @@ class ID3(DictProxy, mutagen.Metadata):
 
     def __fullread(self, size):
         """ Read a certain number of bytes from the source file. """
+
         try:
             if size < 0:
                 raise ValueError('Requested bytes (%s) less than zero' % size)
@@ -124,7 +120,7 @@ class ID3(DictProxy, mutagen.Metadata):
         self.filename = filename
         self.__known_frames = known_frames
         self.__fileobj = open(filename, 'rb')
-        self.__filesize = os.path.getsize(filename)
+        self.__filesize = getsize(filename)
         try:
             try:
                 self.__load_header()
@@ -139,15 +135,15 @@ class ID3(DictProxy, mutagen.Metadata):
                 try:
                     self.__fileobj.seek(-128, 2)
                 except EnvironmentError:
-                    raise err.with_traceback(stack)
+                    reraise(err, None, stack)
                 else:
                     frames = ParseID3v1(self.__fileobj.read(128))
                     if frames is not None:
                         self.version = self._V11
-                        for f in frames.values():
-                            self.add(f)
+                        for v in frames.values():
+                            self.add(v)
                     else:
-                        raise err.with_traceback(stack)
+                        reraise(err, None, stack)
             else:
                 frames = self.__known_frames
                 if frames is None:
@@ -245,9 +241,9 @@ class ID3(DictProxy, mutagen.Metadata):
         self.version = (2, vmaj, vrev)
 
         if id3 != b'ID3':
-            raise ID3NoHeaderError("'%s' doesn't start with an ID3 tag" % fn)
+            raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
         if vmaj not in [2, 3, 4]:
-            raise ID3UnsupportedVersionError("'%s' ID3v2.%d not supported"
+            raise ID3UnsupportedVersionError("%r ID3v2.%d not supported"
                                              % (fn, vmaj))
 
         if self.PEDANTIC:
@@ -255,9 +251,9 @@ class ID3(DictProxy, mutagen.Metadata):
                 raise ValueError("Header size not synchsafe")
 
             if (self._V24 <= self.version) and (flags & 0x0f):
-                raise ValueError("'%s' has invalid flags %#02x" % (fn, flags))
+                raise ValueError("%r has invalid flags %#02x" % (fn, flags))
             elif (self._V23 <= self.version < self._V24) and (flags & 0x1f):
-                raise ValueError("'%s' has invalid flags %#02x" % (fn, flags))
+                raise ValueError("%r has invalid flags %#02x" % (fn, flags))
 
         if self.f_extended:
             extsize = self.__fullread(4)
@@ -290,7 +286,7 @@ class ID3(DictProxy, mutagen.Metadata):
             else:
                 self.__extdata = b''
 
-    def __determine_bpi(self, data, frames, EMPTY="\x00" * 10):
+    def __determine_bpi(self, data, frames, EMPTY=b'\x00' * 10):
         if self.version < self._V24:
             return int
         # have to special case whether to use bitpaddedints here
@@ -577,9 +573,8 @@ class ID3(DictProxy, mutagen.Metadata):
             raise ValueError
 
         datasize = BitPaddedInt.to_str(len(framedata), width=4, bits=bits)
-        header = pack('>4s4sH',
-                      (name or type(frame).__name__).encode('ascii'),
-                      datasize, flags)
+        n = (name or type(frame).__name__).encode("ascii")
+        header = pack('>4s4sH', n, datasize, flags)
         return header + framedata
 
     def __update_common(self):
@@ -629,14 +624,17 @@ class ID3(DictProxy, mutagen.Metadata):
 
         # TDAT, TYER, and TIME have been turned into TDRC.
         try:
-            if str(self.get("TYER", "")).strip("\x00"):
-                date = str(self.pop("TYER"))
-                if str(self.get("TDAT", "")).strip("\x00"):
-                    dat = str(self.pop("TDAT"))
-                    date = date + '-' + dat[2:] + '-' + dat[:2]
-                    if str(self.get("TIME", "")).strip("\x00"):
-                        time = str(self.pop("TIME"))
-                        date += 'T' + time[:2] + ':' + time[2:] + ':00'
+            date = text_type(self.get("TYER", ""))
+            if date.strip(u"\x00"):
+                self.pop("TYER")
+                dat = text_type(self.get("TDAT", ""))
+                if dat.strip("\x00"):
+                    self.pop("TDAT")
+                    date = "%s-%s-%s" % (date, dat[2:], dat[:2])
+                    time = text_type(self.get("TIME", ""))
+                    if time.strip("\x00"):
+                        self.pop("TIME")
+                        date += "T%s:%s:00" % (time[:2], time[2:])
                 if "TDRC" not in self:
                     self.add(TDRC(encoding=0, text=date))
         except UnicodeDecodeError:
@@ -775,7 +773,7 @@ def ParseID3v1(data):
         data = data[data.index(b'TAG'):]
     except ValueError:
         return None
-    if 128 < len(data) < 124:
+    if 128 < len(data) or len(data) < 124:
         return None
 
     # Issue #69 - Previous versions of Mutagen, when encountering
@@ -844,7 +842,7 @@ def MakeID3v1(id3):
 
     if "TRCK" in id3:
         try:
-            v1["track"] = bytes((+id3["TRCK"],))
+            v1["track"] = chr_(+id3["TRCK"])
         except ValueError:
             v1["track"] = b'\x00'
     else:
@@ -857,21 +855,27 @@ def MakeID3v1(id3):
             pass
         else:
             if genre in TCON.GENRES:
-                v1["genre"] = bytes((TCON.GENRES.index(genre),))
+                v1["genre"] = chr_(TCON.GENRES.index(genre))
     if "genre" not in v1:
         v1["genre"] = b"\xff"
 
     if "TDRC" in id3:
-        year = str(id3["TDRC"]).encode('latin1', 'replace')
+        year = text_type(id3["TDRC"]).encode('latin1', 'replace')
     elif "TYER" in id3:
-        year = str(id3["TYER"]).encode('latin1', 'replace')
+        year = text_type(id3["TYER"]).encode('latin1', 'replace')
     else:
         year = b''
-
     v1['year'] = (year + b'\x00\x00\x00\x00')[:4]
 
-    return (b'TAG' + v1['title'] + v1['artist'] + v1['album'] + v1['year'] +
-            v1['comment'] + v1['track'] + v1['genre'])
+
+    return (b'TAG' +
+            v1['title'] +
+            v1['artist'] +
+            v1['album'] +
+            v1['year'] +
+            v1['comment'] +
+            v1['track'] +
+            v1['genre'])
 
 
 class ID3FileType(mutagen.FileType):
@@ -879,7 +883,7 @@ class ID3FileType(mutagen.FileType):
 
     ID3 = ID3
 
-    class _Info(object):
+    class _Info(mutagen.StreamInfo):
         length = 0
 
         def __init__(self, fileobj, offset):

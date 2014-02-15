@@ -534,7 +534,7 @@ def TestReadTags():
         dict(desc='T', lang='ENU', encoding=0)],
     # found in a real MP3
     ['COMM', b'\x00\x00\xcc\x01\x00     ', '     ', '',
-        dict(desc=u'', lang='\x00\xcc\x01', encoding=0)],
+        dict(desc=u'', lang=u'\x00\xcc\x01', encoding=0)],
 
     ['APIC', b'\x00-->\x00\x03cover\x00cover.jpg', b'cover.jpg', '',
         dict(mime='-->', type=3, desc='cover', encoding=0)],

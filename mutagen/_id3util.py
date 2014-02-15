@@ -54,20 +54,20 @@ class unsynch(object):
             raise ValueError('string ended unsafe')
                 
         for f in (fragments[1:] if not fragments[0] else fragments):
-            if (not f) or (f[0] >= b'\xE0'[0]):
+            if (not f) or (f[0] >= 0xE0):
                 raise ValueError('invalid sync-safe string')
             
-            if f[0] == b'\x00'[0]:
+            if f[0] == 0:
                 del f[0]
         
         return b'\xff'.join(map(bytes, fragments))
-
+    
     @staticmethod
     def encode(value):
         fragments = [bytearray(x) for x in value.split(b'\xff')]
                 
         for f in (fragments[1:] if not fragments[0] else fragments):
-            if (not f) or (f[0] >= b'\xE0'[0]) or (f[0] == b'\x00'[0]):
+            if (not f) or (f[0] >= 0xE0) or (f[0] == 0):
                 f[0:0] = b'\x00'
             
         return b'\xff'.join(map(bytes, fragments))
