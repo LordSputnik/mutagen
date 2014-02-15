@@ -1,8 +1,8 @@
 import os
 import shutil
 from tempfile import mkstemp
-from io import BytesIO
 
+from mutagen._compat import BytesIO
 from mutagen.oggopus import OggOpus, OggOpusInfo, delete
 from mutagen.ogg import OggPage
 from tests import add

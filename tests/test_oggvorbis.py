@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from io import BytesIO
+from mutagen._compat import cBytesIO
 from mutagen.ogg import OggPage
 from mutagen.oggvorbis import OggVorbis, OggVorbisInfo, delete
 from tests import add
@@ -35,7 +35,7 @@ class TOggVorbis(TOggFileType):
     def test_invalid_not_first(self):
         page = OggPage(open(self.filename, "rb"))
         page.first = False
-        self.failUnlessRaises(IOError, OggVorbisInfo, BytesIO(page.write()))
+        self.failUnlessRaises(IOError, OggVorbisInfo, cBytesIO(page.write()))
 
     def test_avg_bitrate(self):
         page = OggPage(open(self.filename, "rb"))
@@ -43,7 +43,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\x00\x00\x01\x00" + b"\x00\x00\x00\x00" +
                   b"\x00\x00\x00\x00" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(BytesIO(page.write()))
+        info = OggVorbisInfo(cBytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 32768)
 
     def test_overestimated_bitrate(self):
@@ -52,7 +52,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\x00\x00\x01\x00" + b"\x00\x00\x00\x01" +
                   b"\x00\x00\x00\x00" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(BytesIO(page.write()))
+        info = OggVorbisInfo(cBytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 65536)
 
     def test_underestimated_bitrate(self):
@@ -61,7 +61,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\x00\x00\x01\x00" + b"\x01\x00\x00\x00" +
                   b"\x00\x00\x01\x00" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(BytesIO(page.write()))
+        info = OggVorbisInfo(cBytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 65536)
 
     def test_negative_bitrate(self):
@@ -70,7 +70,7 @@ class TOggVorbis(TOggFileType):
         packet = (packet[:16] + b"\xff\xff\xff\xff" + b"\xff\xff\xff\xff" +
                   b"\xff\xff\xff\xff" + packet[28:])
         page.packets[0] = packet
-        info = OggVorbisInfo(BytesIO(page.write()))
+        info = OggVorbisInfo(cBytesIO(page.write()))
         self.failUnlessEqual(info.bitrate, 0)
 
     def test_vendor(self):

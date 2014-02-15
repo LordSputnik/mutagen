@@ -2,7 +2,7 @@ import os
 import random
 import shutil
 
-from io import BytesIO
+from mutagen._compat import BytesIO
 from tests import TestCase, add
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 from mutagen._util import cdata
@@ -108,8 +108,6 @@ class TOggPage(TestCase):
             fileobj.write(page.write())
         fileobj.write(b"left over data")
         fileobj.seek(0)
-        orig_data = fileobj.read()
-        fileobj.seek(0)
         # Trying to rewrite should raise an error...
         self.failUnlessRaises(Exception, OggPage.renumber, fileobj, 1, 10)
         fileobj.seek(0)
@@ -149,7 +147,8 @@ class TOggPage(TestCase):
         self.failUnlessEqual(pages[1].serial, 2)
         self.failUnlessEqual(pages[1].sequence, 100)
         pages.pop(1)
-        self.failUnlessEqual([page.sequence for page in pages], list(range(20, 29)))
+        self.failUnlessEqual(
+            [page.sequence for page in pages], list(range(20, 29)))
 
     def test_to_packets(self):
         self.failUnlessEqual(
@@ -329,7 +328,7 @@ class TOggPage(TestCase):
     # which we need to make a best guess for.
     #
     #def test_find_last_invalid_sync(self):
-    #    data = StringIO("if you think this is an OggS, you're crazy")
+    #    data = BytesIO("if you think this is an OggS, you're crazy")
     #    self.failUnlessRaises(OggError, OggPage.find_last, data, 0)
 
     def test_find_last_invalid_sync(self):
