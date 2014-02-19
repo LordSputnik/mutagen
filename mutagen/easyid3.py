@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Easier access to ID3 tags.
 
@@ -14,12 +13,13 @@ EasyID3 is a wrapper around mutagen.id3.ID3 to make ID3 tags appear
 more like Vorbis or APEv2 tags.
 """
 
-import collections
+from collections import MutableMapping
 
 from fnmatch import fnmatchcase
 
 import mutagen.id3
 
+from ._compat import iteritems, text_type, PY2
 from mutagen import Metadata
 from mutagen._util import dict_match
 from mutagen.id3 import ID3, error, delete, ID3FileType
@@ -36,7 +36,7 @@ class EasyID3KeyError(KeyError, ValueError, error):
     """
 
 
-class EasyID3(collections.abc.MutableMapping, mutagen.Metadata):
+class EasyID3(MutableMapping, mutagen.Metadata):
     """A file with an ID3 tag.
 
     Like Vorbis comments, EasyID3 keys are case-insensitive ASCII
@@ -50,7 +50,7 @@ class EasyID3(collections.abc.MutableMapping, mutagen.Metadata):
     keys. These can be set on EasyID3 or on individual instances after
     creation.
 
-    To use an EasyID3 class with mutagen.mp3.MP3:
+    To use an EasyID3 class with mutagen.mp3.MP3::
 
         from mutagen.mp3 import EasyMP3 as MP3
         MP3(filename)
@@ -203,8 +203,12 @@ class EasyID3(collections.abc.MutableMapping, mutagen.Metadata):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        if isinstance(value, str):
-            value = [value]
+        if PY2:
+            if isinstance(value, basestring):
+                value = [value]
+        else:
+            if isinstance(value, text_type):
+                value = [value]
         func = dict_match(self.Set, key, self.SetFallback)
         if func is not None:
             return func(self.__id3, key, value)
@@ -337,6 +341,7 @@ def performer_list(id3, key):
     else:
         return list({("performer:" + p[0]) for p in mcl.people})
 
+
 def musicbrainz_trackid_get(id3, key):
     return [id3["UFID:http://musicbrainz.org"].data.decode('ascii')]
 
@@ -453,7 +458,7 @@ def peakgain_list(id3, key):
         keys.append("replaygain_%s_peak" % frame.desc)
     return keys
 
-for frameid, key in {
+for frameid, key in iteritems({
     "TALB": "album",
     "TBPM": "bpm",
     "TCMP": "compilation",  # iTunes extension
@@ -481,7 +486,7 @@ for frameid, key in {
     "TSOT": "titlesort",
     "TSRC": "isrc",
     "TSST": "discsubtitle",
-}.items():
+}):
     EasyID3.RegisterTextKey(key, frameid)
 
 EasyID3.RegisterKey("genre", genre_get, genre_set, genre_delete)
@@ -500,8 +505,7 @@ EasyID3.RegisterKey("replaygain_*_peak", peak_get, peak_set, peak_delete)
 # http://musicbrainz.org/docs/specs/metadata_tags.html
 # http://bugs.musicbrainz.org/ticket/1383
 # http://musicbrainz.org/doc/MusicBrainzTag
-# Had to remove ALBUMARTISTSORT, because it conflicts with iTunes' TSO2.
-for desc, key in {
+for desc, key in iteritems({
     u"MusicBrainz Artist Id": "musicbrainz_artistid",
     u"MusicBrainz Album Id": "musicbrainz_albumid",
     u"MusicBrainz Album Artist Id": "musicbrainz_albumartistid",
@@ -513,8 +517,8 @@ for desc, key in {
     u"MusicBrainz Album Release Country": "releasecountry",
     u"MusicBrainz Disc Id": "musicbrainz_discid",
     u"ASIN": "asin",
-    u"BARCODE": "barcode"
-}.items():
+    u"BARCODE": "barcode",
+}):
     EasyID3.RegisterTXXXKey(key, desc)
 
 

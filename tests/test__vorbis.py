@@ -1,18 +1,43 @@
 from tests import add, TestCase
 from mutagen._vorbis import VComment, istag
+from mutagen._compat import text_type, PY3
+
 
 class Tistag(TestCase):
 
-    def test_empty(self): self.failIf(istag(""))
-    def test_tilde(self): self.failIf(istag("ti~tle"))
-    def test_equals(self): self.failIf(istag("ti=tle"))
-    def test_less(self): self.failIf(istag("ti\x19tle"))
-    def test_greater(self): self.failIf(istag("ti\xa0tle"))
+    def test_empty(self):
+        self.failIf(istag(""))
 
-    def test_simple(self): self.failUnless(istag("title"))
-    def test_space(self): self.failUnless(istag("ti tle"))
-    def test_ugly(self): self.failUnless(istag("!{}[]-_()*&"))
+    def test_tilde(self):
+        self.failIf(istag("ti~tle"))
+
+    def test_equals(self):
+        self.failIf(istag("ti=tle"))
+
+    def test_less(self):
+        self.failIf(istag("ti\x19tle"))
+
+    def test_greater(self):
+        self.failIf(istag("ti\xa0tle"))
+
+    def test_simple(self):
+        self.failUnless(istag("title"))
+
+    def test_space(self):
+        self.failUnless(istag("ti tle"))
+
+    def test_ugly(self):
+        self.failUnless(istag("!{}[]-_()*&"))
+
+    def test_unicode(self):
+        self.failUnless(istag(u"ti tle"))
+
+    if PY3:
+        def test_py3(self):
+            self.failUnlessRaises(ValueError, istag, b"abc")
+
 add(Tistag)
+
 
 class TVComment(TestCase):
     Kind = VComment
@@ -64,7 +89,7 @@ class TVComment(TestCase):
         self.c.write()
 
     def test_vendor_default(self):
-        self.failUnless(self.c.vendor.startswith("Mutagen"))
+        self.failUnless(self.c.vendor.startswith(u"Mutagen"))
 
     def test_vendor_set(self):
         self.c.vendor = u"Not Mutagen"
@@ -84,7 +109,14 @@ class TVComment(TestCase):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
                 b'\x00abc\x01')
         comment = self.Kind(data)
-        self.failUnlessEqual("abc", comment._internal[0][1])
+        self.failUnlessEqual(u"abc", comment._internal[0][1])
+
+    def test_python_key_value_type(self):
+        data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
+                b'\x00abc\x01')
+        comment = self.Kind(data)
+        self.assertTrue(isinstance(comment._internal[0][0], type('')))
+        self.assertTrue(isinstance(comment._internal[0][1], text_type))
 
     def test_invalid_format_ignore(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x03\x00\x00'
@@ -103,7 +135,7 @@ class TVComment(TestCase):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
                 b'\x00\xc2\xaa=c\x01')
         comment = self.Kind(data)
-        self.failUnlessEqual("?=c", comment.pprint())
+        self.failUnlessEqual(u"?=c", comment.pprint())
 
     def test_invalid_tag_ignore(self):
         data = (b'\x07\x00\x00\x00Mutagen\x01\x00\x00\x00\x04\x00\x00'
@@ -112,7 +144,7 @@ class TVComment(TestCase):
         self.failIf(len(comment))
 
     def test_roundtrip(self):
-        self.failUnlessEqual(self.c, self.Kind(self.c.write()))
+        self.assertReallyEqual(self.c, self.Kind(self.c.write()))
 
     def test_correct_len(self):
         self.failUnlessEqual(len(self.c), 3)
@@ -183,9 +215,9 @@ class TVComment(TestCase):
 
     def test_empty(self):
         self.c = self.Kind()
-        self.failIf(self.c.keys())
-        self.failIf(self.c.values())
-        self.failIf(self.c.items())
+        self.failIf(list(self.c.keys()))
+        self.failIf(list(self.c.values()))
+        self.failIf(list(self.c.items()))
 
     def test_as_dict(self):
         d = self.c.as_dict()

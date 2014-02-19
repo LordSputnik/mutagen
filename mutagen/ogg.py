@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg bitstreams and pages.
 
@@ -22,10 +21,10 @@ import struct
 import sys
 import zlib
 
-from io import BytesIO
-
 from mutagen import FileType
 from mutagen._util import cdata, insert_bytes, delete_bytes
+from ._compat import cBytesIO, reraise, chr_
+
 
 class error(IOError):
     """Ogg stream parsing errors."""
@@ -99,7 +98,7 @@ class OggPage(object):
         lacing_bytes = fileobj.read(segments)
         if len(lacing_bytes) != segments:
             raise error("unable to read %r lacing bytes" % segments)
-        for c in lacing_bytes:
+        for c in bytearray(lacing_bytes):
             total += c
             if c < 255:
                 lacings.append(total)
@@ -144,11 +143,11 @@ class OggPage(object):
         lacing_data = []
         for datum in self.packets:
             quot, rem = divmod(len(datum), 255)
-            lacing_data.append(b"\xff" * quot + bytes((rem,)))
+            lacing_data.append(b"\xff" * quot + chr_(rem))
         lacing_data = b"".join(lacing_data)
         if not self.complete and lacing_data.endswith(b"\x00"):
             lacing_data = lacing_data[:-1]
-        data.append(bytes((len(lacing_data),)))
+        data.append(chr_(len(lacing_data)))
         data.append(lacing_data)
         data.extend(self.packets)
         data = b"".join(data)
@@ -413,7 +412,7 @@ class OggPage(object):
             index = data.rindex(b"OggS")
         except ValueError:
             raise error("unable to find final Ogg header")
-        bytesobj = BytesIO(data[index:])
+        bytesobj = cBytesIO(data[index:])
         best_page = None
         try:
             page = OggPage(bytesobj)
@@ -463,7 +462,7 @@ class OggFileType(FileType):
                 self.tags = self._Tags(fileobj, self.info)
                 self.info._post_tags(fileobj)
             except error as e:
-                raise self._Error(e).with_traceback(sys.exc_info()[2])
+                reraise(self._Error, e, sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
         finally:
@@ -484,7 +483,7 @@ class OggFileType(FileType):
             try:
                 self.tags._inject(fileobj)
             except error as e:
-                raise self._Error(e).with_traceback(sys.exc_info()[2])
+                reraise(self._Error, e, sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
         finally:
@@ -503,7 +502,7 @@ class OggFileType(FileType):
             try:
                 self.tags._inject(fileobj)
             except error as e:
-                raise self._Error(e).with_traceback(sys.exc_info()[2])
+                reraise(self._Error, e, sys.exc_info()[2])
             except EOFError:
                 raise self._Error("no appropriate stream found")
         finally:

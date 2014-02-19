@@ -17,9 +17,14 @@ import struct
 
 from fnmatch import fnmatchcase
 
-from mutagen._compat import text_type, iteritems, PY2
+from mutagen._compat import text_type, iteritems, PY2, chr_
 
-from collections import OrderedDict, MutableMapping
+from collections import OrderedDict
+
+if PY2:
+    from collections import MutableMapping
+else:
+    from collections.abc import MutableMapping
 
 def total_ordering(cls):
     assert hasattr(cls, "__eq__")
@@ -60,71 +65,47 @@ class cdata(object):
     from struct import error
     error = error
 
-    @staticmethod
-    def short_le(data): return struct.unpack('<h', data)[0]
-    @staticmethod
-    def ushort_le(data): return struct.unpack('<H', data)[0]
+    short_le = staticmethod(lambda data: struct.unpack('<h', data)[0])
+    ushort_le = staticmethod(lambda data: struct.unpack('<H', data)[0])
 
-    @staticmethod
-    def short_be(data): return struct.unpack('>h', data)[0]
-    @staticmethod
-    def ushort_be(data): return struct.unpack('>H', data)[0]
+    short_be = staticmethod(lambda data: struct.unpack('>h', data)[0])
+    ushort_be = staticmethod(lambda data: struct.unpack('>H', data)[0])
 
-    @staticmethod
-    def int_le(data): return struct.unpack('<i', data)[0]
-    @staticmethod
-    def uint_le(data): return struct.unpack('<I', data)[0]
+    int_le = staticmethod(lambda data: struct.unpack('<i', data)[0])
+    uint_le = staticmethod(lambda data: struct.unpack('<I', data)[0])
 
-    @staticmethod
-    def int_be(data): return struct.unpack('>i', data)[0]
-    @staticmethod
-    def uint_be(data): return struct.unpack('>I', data)[0]
+    int_be = staticmethod(lambda data: struct.unpack('>i', data)[0])
+    uint_be = staticmethod(lambda data: struct.unpack('>I', data)[0])
 
-    @staticmethod
-    def longlong_le(data): return struct.unpack('<q', data)[0]
-    @staticmethod
-    def ulonglong_le(data): return struct.unpack('<Q', data)[0]
+    longlong_le = staticmethod(lambda data: struct.unpack('<q', data)[0])
+    ulonglong_le = staticmethod(lambda data: struct.unpack('<Q', data)[0])
 
-    @staticmethod
-    def longlong_be(data): return struct.unpack('>q', data)[0]
-    @staticmethod
-    def ulonglong_be(data): return struct.unpack('>Q', data)[0]
+    longlong_be = staticmethod(lambda data: struct.unpack('>q', data)[0])
+    ulonglong_be = staticmethod(lambda data: struct.unpack('>Q', data)[0])
 
-    @staticmethod
-    def to_short_le(data): return struct.pack('<h', data)
-    @staticmethod
-    def to_ushort_le(data): return struct.pack('<H', data)
+    to_short_le = staticmethod(lambda data: struct.pack('<h', data))
+    to_ushort_le = staticmethod(lambda data: struct.pack('<H', data))
 
-    @staticmethod
-    def to_short_be(data): return struct.pack('>h', data)
-    @staticmethod
-    def to_ushort_be(data): return struct.pack('>H', data)
+    to_short_be = staticmethod(lambda data: struct.pack('>h', data))
+    to_ushort_be = staticmethod(lambda data: struct.pack('>H', data))
 
-    @staticmethod
-    def to_int_le(data): return struct.pack('<i', data)
-    @staticmethod
-    def to_uint_le(data): return struct.pack('<I', data)
+    to_int_le = staticmethod(lambda data: struct.pack('<i', data))
+    to_uint_le = staticmethod(lambda data: struct.pack('<I', data))
 
-    @staticmethod
-    def to_int_be(data): return struct.pack('>i', data)
-    @staticmethod
-    def to_uint_be(data): return struct.pack('>I', data)
+    to_int_be = staticmethod(lambda data: struct.pack('>i', data))
+    to_uint_be = staticmethod(lambda data: struct.pack('>I', data))
 
-    @staticmethod
-    def to_longlong_le(data): return struct.pack('<q', data)
-    @staticmethod
-    def to_ulonglong_le(data): return struct.pack('<Q', data)
+    to_longlong_le = staticmethod(lambda data: struct.pack('<q', data))
+    to_ulonglong_le = staticmethod(lambda data: struct.pack('<Q', data))
 
-    @staticmethod
-    def to_longlong_be(data): return struct.pack('>q', data)
-    @staticmethod
-    def to_ulonglong_be(data): return struct.pack('>Q', data)
+    to_longlong_be = staticmethod(lambda data: struct.pack('>q', data))
+    to_ulonglong_be = staticmethod(lambda data: struct.pack('>Q', data))
 
-    bitswap = bytes(sum(((val >> i) & 1) << (7-i) for i in range(8))
-                       for val in range(256))
+    bitswap = b''.join(chr_(sum([((val >> i) & 1) << (7-i)
+                        for i in range(8)]))
+                        for val in range(256))
 
-    @staticmethod
-    def test_bit(value, n): return bool((value >> n) & 1)
+    test_bit = staticmethod(lambda value, n: bool((value >> n) & 1))
 
 
 def lock(fileobj):
@@ -274,7 +255,7 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
 
 
 def utf8(data):
-    """Converts anything resembling a string to UTF8-encoded bytes."""
+    """Convert a basestring to a valid UTF-8 str."""
 
     if isinstance(data, bytes):
         return data.decode("utf-8", "replace").encode("utf-8")

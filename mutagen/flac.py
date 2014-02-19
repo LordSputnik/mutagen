@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2005 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write FLAC Vorbis comments and stream information.
 
@@ -25,9 +24,10 @@ http://flac.sourceforge.net/format.html
 __all__ = ["FLAC", "Open", "delete"]
 
 import struct
-from io import BytesIO
 from mutagen._vorbis import VComment
 from mutagen import FileType
+
+from ._compat import cBytesIO, endswith, chr_
 from mutagen._util import insert_bytes
 from mutagen.id3 import BitPaddedInt
 
@@ -49,7 +49,7 @@ class FLACVorbisError(ValueError, error):
 def to_int_be(data):
     """Convert an arbitrarily-long string to a long using big-endian
     byte order."""
-    return reduce(lambda a, b: (a << 8) + b, data, 0)
+    return reduce(lambda a, b: (a << 8) + b, bytearray(data), 0)
 
 class StrictFileObject(object):
     """Wraps a file-like object and raises an exception if the requested
@@ -91,7 +91,7 @@ class MetadataBlock(object):
         if data is not None:
             if not isinstance(data, StrictFileObject):
                 if isinstance(data, bytes):
-                    data = BytesIO(data)
+                    data = cBytesIO(data)
                 elif not hasattr(data, 'read'):
                     raise TypeError(
                         "StreamInfo requires string data or a file-like")
@@ -197,7 +197,7 @@ class StreamInfo(MetadataBlock):
         self.md5_signature = to_int_be(data.read(16))
 
     def write(self):
-        f = BytesIO()
+        f = cBytesIO()
         f.write(struct.pack(">I", self.min_blocksize)[-2:])
         f.write(struct.pack(">I", self.max_blocksize)[-2:])
         f.write(struct.pack(">I", self.min_framesize)[-3:])
@@ -287,7 +287,7 @@ class SeekTable(MetadataBlock):
             sp = data.tryread(self.__SEEKPOINT_SIZE)
 
     def write(self):
-        f = BytesIO()
+        f = cBytesIO()
         for seekpoint in self.seekpoints:
             packed = struct.pack(
                 self.__SEEKPOINT_FORMAT,
@@ -457,7 +457,7 @@ class CueSheet(MetadataBlock):
             self.tracks.append(val)
 
     def write(self):
-        f = BytesIO()
+        f = cBytesIO()
         flags = 0
         if self.compact_disc:
             flags |= 0x80
@@ -544,7 +544,7 @@ class Picture(MetadataBlock):
         self.data = data.read(length)
 
     def write(self):
-        f = BytesIO()
+        f = cBytesIO()
         mime = self.mime.encode('UTF-8')
         f.write(struct.pack('>2I', self.type, len(mime)))
         f.write(mime)
