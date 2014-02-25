@@ -208,8 +208,8 @@ if __name__ == "__main__":
           long_description="""\
 A fork of the mutagen package, modified to support Python 3.3+. I
 take no credit for the original mutagen - the copyright for that is
-owned by the original developers. This package isn't currently
-compatible with Python 2.x, but I am working with the mutagen
+owned by the original developers. As of the 1.22.1 release, this package
+is now compatible with Python 2.6/2.7, and I am working with the mutagen
 developers to make these two projects converge. Once this happens, I'll
 close this project and start working on improving mutagen itself.
 
