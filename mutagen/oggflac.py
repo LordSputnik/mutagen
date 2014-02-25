@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# Ogg FLAC support.
-#
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg FLAC comments.
 
@@ -23,7 +20,7 @@ __all__ = ["OggFLAC", "Open", "delete"]
 
 import struct
 
-from io import BytesIO
+from ._compat import cBytesIO
 
 from mutagen.flac import StreamInfo, VCFLACDict, StrictFileObject
 from mutagen.ogg import OggPage, OggFileType, error as OggError
@@ -70,17 +67,17 @@ class OggFLACStreamInfo(StreamInfo):
         self.serial = page.serial
 
         # Skip over the block header.
-        stringobj = StrictFileObject(BytesIO(page.packets[0][17:]))
+        stringobj = StrictFileObject(cBytesIO(page.packets[0][17:]))
         super(OggFLACStreamInfo, self).load(stringobj)
 
     def _post_tags(self, fileobj):
         if self.length:
             return
         page = OggPage.find_last(fileobj, self.serial)
-        self.length = page.position / self.sample_rate
+        self.length = page.position / float(self.sample_rate)
 
     def pprint(self):
-        return "Ogg " + super(OggFLACStreamInfo, self).pprint()
+        return u"Ogg " + super(OggFLACStreamInfo, self).pprint()
 
 
 class OggFLACVComment(VCFLACDict):
@@ -94,7 +91,7 @@ class OggFLACVComment(VCFLACDict):
             if page.serial == info.serial:
                 pages.append(page)
                 complete = page.complete or (len(page.packets) > 1)
-        comment = BytesIO(OggPage.to_packets(pages)[0][4:])
+        comment = cBytesIO(OggPage.to_packets(pages)[0][4:])
         super(OggFLACVComment, self).load(comment, errors=errors)
 
     def _inject(self, fileobj):
@@ -121,7 +118,7 @@ class OggFLACVComment(VCFLACDict):
 
         # Set the new comment block.
         data = self.write()
-        data = bytes((packets[0][0],)) + struct.pack(">I", len(data))[-3:] + data
+        data = packets[0][:1] + struct.pack(">I", len(data))[-3:] + data
         packets[0] = data
 
         new_pages = OggPage.from_packets(packets, old_pages[0].sequence)

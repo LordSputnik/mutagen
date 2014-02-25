@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """True Audio audio stream information and tags.
 
@@ -19,6 +18,8 @@ True Audio files use ID3 tags.
 
 __all__ = ["TrueAudio", "Open", "delete", "EasyTrueAudio"]
 
+from ._compat import endswith
+from mutagen import StreamInfo
 from mutagen.id3 import ID3FileType, delete
 from mutagen._util import cdata
 
@@ -31,7 +32,7 @@ class TrueAudioHeaderError(error, IOError):
     pass
 
 
-class TrueAudioInfo(object):
+class TrueAudioInfo(StreamInfo):
     """True Audio stream information.
 
     Attributes:
@@ -47,7 +48,7 @@ class TrueAudioInfo(object):
             raise TrueAudioHeaderError("TTA header not found")
         self.sample_rate = cdata.int_le(header[10:14])
         samples = cdata.uint_le(header[14:18])
-        self.length = samples / self.sample_rate
+        self.length = float(samples) / self.sample_rate
 
     def pprint(self):
         return "True Audio, %.2f seconds, %d Hz." % (
@@ -72,7 +73,7 @@ class TrueAudio(ID3FileType):
         filename = filename.lower()
         
         return (header.startswith(b"ID3") + header.startswith(b"TTA") +
-                filename.endswith(".tta") * 2)
+                endswith(filename, b".tta") * 2)
 
 
 Open = TrueAudio

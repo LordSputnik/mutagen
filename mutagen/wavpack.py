@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-# A WavPack reader/tagger
-#
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """WavPack reading and writing.
 
@@ -18,8 +15,10 @@ http://www.wavpack.com/ for more information.
 
 __all__ = ["WavPack", "Open", "delete"]
 
+from mutagen import StreamInfo
 from mutagen.apev2 import APEv2File, error, delete
 from mutagen._util import cdata
+
 
 class WavPackHeaderError(error):
     pass
@@ -28,7 +27,7 @@ RATES = [6000, 8000, 9600, 11025, 12000, 16000, 22050, 24000, 32000, 44100,
          48000, 64000, 88200, 96000, 192000]
 
 
-class WavPackInfo(object):
+class WavPackInfo(StreamInfo):
     """WavPack stream information.
 
     Attributes:
@@ -49,11 +48,11 @@ class WavPackInfo(object):
         self.version = cdata.short_le(header[8:10])
         self.channels = bool(flags & 4) or 2
         self.sample_rate = RATES[(flags >> 23) & 0xF]
-        self.length = samples / self.sample_rate
+        self.length = float(samples) / self.sample_rate
 
     def pprint(self):
-        return "WavPack, {:.2f} seconds, {} Hz".format(
-               self.length, self.sample_rate)
+        return "WavPack, %.2f seconds, %d Hz" % (self.length, self.sample_rate)
+
 
 class WavPack(APEv2File):
     _Info = WavPackInfo

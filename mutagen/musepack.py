@@ -1,5 +1,6 @@
-# A Musepack reader/tagger
-#
+# -*- coding: utf-8 -*-
+
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Lukas Lalinsky <lalinsky@gmail.com>
 # Copyright 2012 Christoph Reiter <christoph.reiter@gmx.at>
 #
@@ -19,6 +20,8 @@ __all__ = ["Musepack", "Open", "delete"]
 
 import struct
 
+from ._compat import endswith, xrange, ord_
+from mutagen import StreamInfo
 from mutagen.apev2 import APEv2File, error, delete
 from mutagen.id3 import BitPaddedInt
 from mutagen._util import cdata
@@ -42,12 +45,12 @@ def _parse_sv8_int(fileobj, limit=9):
     """
 
     num = 0
-    for i in range(limit):
+    for i in xrange(limit):
         c = fileobj.read(1)
         if len(c) != 1:
             raise EOFError
-        num = (num << 7) | (c[0] & 0x7F)
-        if not c[0] & 0x80:
+        num = (num << 7) | (ord_(c) & 0x7F)
+        if not ord_(c) & 0x80:
             return num, i + 1
     if limit > 0:
         raise ValueError
@@ -56,13 +59,14 @@ def _parse_sv8_int(fileobj, limit=9):
 
 def _calc_sv8_gain(gain):
     # 64.82 taken from mpcdec
-    return 64.82 - (gain / 256)
+    return 64.82 - gain / 256.0
+
 
 def _calc_sv8_peak(peak):
-    return (10 ** (peak / (256 * 20)) / 65535)
+    return (10 ** (peak / (256.0 * 20.0)) / 65535.0)
 
 
-class MusepackInfo(object):
+class MusepackInfo(StreamInfo):
     """Musepack stream information.
 
     Attributes:
@@ -142,16 +146,16 @@ class MusepackInfo(object):
             check_frame_key(frame_type)
 
         if mandatory_packets:
-            raise MusepackHeaderError("Missing mandatory packets: %s."
-                                      % str(", ".join(mandatory_packets)))
+            raise MusepackHeaderError("Missing mandatory packets: %s." %
+                                      ", ".join(map(repr, mandatory_packets)))
 
-        self.length = self.samples / self.sample_rate
+        self.length = float(self.samples) / self.sample_rate
         self.bitrate = 0
 
     def __parse_stream_header(self, fileobj, data_size):
         fileobj.seek(4, 1)
         try:
-            self.version = fileobj.read(1)[0]
+            self.version = ord_(fileobj.read(1))
         except TypeError:
             raise MusepackHeaderError("SH packet ended unexpectedly.")
         try:
@@ -166,8 +170,8 @@ class MusepackInfo(object):
         data = fileobj.read(left_size)
         if len(data) != left_size:
             raise MusepackHeaderError("SH packet ended unexpectedly.")
-        self.sample_rate = RATES[data[-2] >> 5]
-        self.channels = (data[-1] >> 4) + 1
+        self.sample_rate = RATES[ord_(data[-2:-1]) >> 5]
+        self.channels = (ord_(data[-1:]) >> 4) + 1
         self.samples = samples - samples_skip
 
     def __parse_replaygain_packet(self, fileobj, data_size):
@@ -197,7 +201,7 @@ class MusepackInfo(object):
 
         # SV7
         if header.startswith(b"MP+"):
-            self.version = header[3] & 0xF
+            self.version = ord_(header[3:4]) & 0xF
             if self.version < 7:
                 raise MusepackHeaderError("not a Musepack file")
             frames = cdata.uint_le(header[4:8])
@@ -207,10 +211,10 @@ class MusepackInfo(object):
                 "<Hh", header[12:16])
             self.album_peak, self.album_gain = struct.unpack(
                 "<Hh", header[16:20])
-            self.title_gain /= 100
-            self.album_gain /= 100
-            self.title_peak /= 65535
-            self.album_peak /= 65535
+            self.title_gain /= 100.0
+            self.album_gain /= 100.0
+            self.title_peak /= 65535.0
+            self.album_peak /= 65535.0
 
             self.sample_rate = RATES[(flags >> 16) & 0x0003]
             self.bitrate = 0
@@ -229,7 +233,7 @@ class MusepackInfo(object):
             if self.version < 6:
                 frames -= 1
         self.channels = 2
-        self.length = ((frames * 1152) - 576) / self.sample_rate
+        self.length = float(frames * 1152 - 576) / self.sample_rate
 
     def pprint(self):
         rg_data = []
@@ -254,7 +258,7 @@ class Musepack(APEv2File):
         filename = filename.lower()
         
         return (header.startswith(b"MP+") + header.startswith(b"MPCK") +
-                filename.endswith(".mpc"))
+                endswith(filename, b".mpc"))
 
 
 Open = Musepack
