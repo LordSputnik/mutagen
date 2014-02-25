@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2012 Christoph Reiter
+# Copyright 2014 Ben Ockmore
+# Copyright 2012, 2013 Christoph Reiter
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -18,6 +19,7 @@ __all__ = ["OggOpus", "Open", "delete"]
 
 import struct
 
+from mutagen import StreamInfo
 from mutagen._vorbis import VComment
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 
@@ -30,7 +32,7 @@ class OggOpusHeaderError(error):
     pass
 
 
-class OggOpusInfo(object):
+class OggOpusInfo(StreamInfo):
     """Ogg Opus stream information.
 
     Attributes:
@@ -64,10 +66,10 @@ class OggOpusInfo(object):
 
     def _post_tags(self, fileobj):
         page = OggPage.find_last(fileobj, self.serial)
-        self.length = (page.position - self.__pre_skip) / 48000
+        self.length = (page.position - self.__pre_skip) / float(48000)
 
     def pprint(self):
-        return "Ogg Opus, %.2f seconds" % self.length
+        return u"Ogg Opus, %.2f seconds" % (self.length)
 
 
 class OggOpusVComment(VComment):

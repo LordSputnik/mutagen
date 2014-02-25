@@ -20,6 +20,8 @@ __all__ = ["MonkeysAudio", "Open", "delete"]
 
 import struct
 
+from ._compat import endswith
+from mutagen import StreamInfo
 from mutagen.apev2 import APEv2File, error, delete
 from mutagen._util import cdata
 
@@ -28,7 +30,7 @@ class MonkeysAudioHeaderError(error):
     pass
 
 
-class MonkeysAudioInfo(object):
+class MonkeysAudioInfo(StreamInfo):
     """Monkey's Audio stream information.
 
     Attributes:
@@ -62,12 +64,12 @@ class MonkeysAudioInfo(object):
                 blocks_per_frame = 73728
             else:
                 blocks_per_frame = 9216
-        self.version /= 1000
+        self.version /= 1000.0
         self.length = 0.0
         if (self.sample_rate != 0) and (total_frames > 0):
             total_blocks = ((total_frames - 1) * blocks_per_frame +
                             final_frame_blocks)
-            self.length = total_blocks / self.sample_rate
+            self.length = float(total_blocks) / self.sample_rate
 
     def pprint(self):
         return "Monkey's Audio %.2f, %.2f seconds, %d Hz" % (
@@ -84,7 +86,7 @@ class MonkeysAudio(APEv2File):
             filename = filename.decode('utf-8')
         filename = filename.lower()
         
-        return header.startswith(b'MAC ') + filename.endswith('.ape')
+        return header.startswith(b'MAC ') + endswith(filename, ".ape")
 
 
 Open = MonkeysAudio

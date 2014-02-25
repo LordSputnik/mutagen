@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg Speex comments.
 
@@ -21,6 +20,7 @@ http://lists.xiph.org/pipermail/speex-dev/2006-July/004676.html.
 
 __all__ = ["OggSpeex", "Open", "delete"]
 
+from mutagen import StreamInfo
 from mutagen._vorbis import VComment
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 from mutagen._util import cdata
@@ -34,7 +34,7 @@ class OggSpeexHeaderError(error):
     pass
 
 
-class OggSpeexInfo(object):
+class OggSpeexInfo(StreamInfo):
     """Ogg Speex stream information.
 
     Attributes:
@@ -63,10 +63,10 @@ class OggSpeexInfo(object):
 
     def _post_tags(self, fileobj):
         page = OggPage.find_last(fileobj, self.serial)
-        self.length = page.position / self.sample_rate
+        self.length = page.position / float(self.sample_rate)
 
     def pprint(self):
-        return "Ogg Speex, %.2f seconds" % self.length
+        return u"Ogg Speex, %.2f seconds" % self.length
 
 
 class OggSpeexVComment(VComment):

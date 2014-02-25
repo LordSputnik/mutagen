@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg Vorbis comments.
 
@@ -21,6 +20,7 @@ __all__ = ["OggVorbis", "Open", "delete"]
 
 import struct
 
+from mutagen import StreamInfo
 from mutagen._vorbis import VComment
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 
@@ -33,7 +33,7 @@ class OggVorbisHeaderError(error):
     pass
 
 
-class OggVorbisInfo(object):
+class OggVorbisInfo(StreamInfo):
     """Ogg Vorbis stream information.
 
     Attributes:
@@ -72,10 +72,10 @@ class OggVorbisInfo(object):
 
     def _post_tags(self, fileobj):
         page = OggPage.find_last(fileobj, self.serial)
-        self.length = page.position / self.sample_rate
+        self.length = page.position / float(self.sample_rate)
 
     def pprint(self):
-        return "Ogg Vorbis, %.2f seconds, %d bps" % (self.length, self.bitrate)
+        return u"Ogg Vorbis, %.2f seconds, %d bps" % (self.length, self.bitrate)
 
 
 class OggVCommentDict(VComment):

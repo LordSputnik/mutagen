@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write Ogg Theora comments.
 
@@ -20,6 +19,7 @@ __all__ = ["OggTheora", "Open", "delete"]
 
 import struct
 
+from mutagen import StreamInfo
 from mutagen._vorbis import VComment
 from mutagen._util import cdata
 from mutagen.ogg import OggPage, OggFileType, error as OggError
@@ -33,7 +33,7 @@ class OggTheoraHeaderError(error):
     pass
 
 
-class OggTheoraInfo(object):
+class OggTheoraInfo(StreamInfo):
     """Ogg Theora stream information.
 
     Attributes:
@@ -57,7 +57,7 @@ class OggTheoraInfo(object):
             raise OggTheoraHeaderError(
                 "found Theora version %d.%d != 3.2" % (vmaj, vmin))
         fps_num, fps_den = struct.unpack(">2I", data[22:30])
-        self.fps = fps_num / fps_den
+        self.fps = fps_num / float(fps_den)
         self.bitrate = cdata.uint_be(b"\x00" + data[37:40])
         self.granule_shift = (cdata.ushort_be(data[40:42]) >> 5) & 0x1F
         self.serial = page.serial
@@ -67,7 +67,7 @@ class OggTheoraInfo(object):
         position = page.position
         mask = (1 << self.granule_shift) - 1
         frames = (position >> self.granule_shift) + (position & mask)
-        self.length = frames / self.fps
+        self.length = frames / float(self.fps)
 
     def pprint(self):
         return "Ogg Theora, %.2f seconds, %d bps" % (self.length, self.bitrate)

@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
 
 """Read and write MPEG-4 audio files with iTunes metadata.
 
@@ -28,9 +27,10 @@ were all consulted.
 import struct
 import sys
 
-from mutagen import FileType, Metadata
+from mutagen import FileType, Metadata, StreamInfo
 from mutagen._constants import GENRES
 from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
+from mutagen._compat import reraise, PY2, string_types, text_type, chr_, iteritems
 
 
 class error(IOError):
@@ -53,7 +53,7 @@ class MP4MetadataValueError(ValueError, MP4MetadataError):
 # ones this module needs to peek inside.
 _CONTAINERS = [b"moov", b"udta", b"trak", b"mdia", b"meta", b"ilst",
                b"stbl", b"minf", b"moof", b"traf"]
-_SKIP_SIZE = { b"meta": 4 }
+_SKIP_SIZE = {b"meta": 4}
 
 __all__ = ['MP4', 'Open', 'delete', 'MP4Cover', 'MP4FreeForm']
 
@@ -334,7 +334,7 @@ class MP4Tags(DictProxy, Metadata):
 
     @classmethod
     def _can_load(cls, atoms):
-        return "moov.udta.meta.ilst" in atoms
+        return b"moov.udta.meta.ilst" in atoms
 
     @staticmethod
     def __get_sort_stats(item):
@@ -361,6 +361,7 @@ class MP4Tags(DictProxy, Metadata):
 
     def save(self, filename):
         """Save the metadata to the given filename."""
+
         values = []
         items = sorted(self.items(), key=MP4Tags.__get_sort_stats )
         for key, value in items:
@@ -368,7 +369,7 @@ class MP4Tags(DictProxy, Metadata):
             try:
                 values.append(info[1](self, key, value, *info[2:]))
             except (TypeError, ValueError) as s:
-                raise MP4MetadataValueError(s).with_traceback(sys.exc_info()[2])
+                reraise(MP4MetadataValueError, s, sys.exc_info()[2])
         data = Atom.render(b"ilst", b"".join(values))
 
         # Find the old atoms.
@@ -526,7 +527,7 @@ class MP4Tags(DictProxy, Metadata):
                 raise MP4MetadataError(
                     "unexpected atom %r inside %r" % (atom_name, atom.name))
 
-            version = data[pos+8]
+            version = ord(data[pos+8:pos+8+1])
             if version != 0:
                 raise MP4MetadataError("Unsupported version: %r" % version)
 
@@ -595,7 +596,7 @@ class MP4Tags(DictProxy, Metadata):
                 raise TypeError
 
             if len(value) == 0:
-                return self.__render_data(key, 0x15, "")
+                return self.__render_data(key, 0x15, b"")
 
             if min(value) < 0 or max(value) >= 2**16:
                 raise MP4MetadataValueError(
@@ -609,12 +610,12 @@ class MP4Tags(DictProxy, Metadata):
 
     def __parse_bool(self, atom, data):
         try:
-            self[atom.name] = bool(data[16])
-        except IndexError:
+            self[atom.name] = bool(ord(data[16:17]))
+        except TypeError:
             self[atom.name] = False
 
     def __render_bool(self, key, value):
-        return self.__render_data(key, 0x15, [bytes((int(bool(value)),))])
+        return self.__render_data(key, 0x15, [chr_(bool(value))])
 
     def __parse_cover(self, atom, data):
         self[atom.name] = []
@@ -653,7 +654,7 @@ class MP4Tags(DictProxy, Metadata):
             self[atom.name] = value
 
     def __render_text(self, key, value, flags=1):
-        if isinstance(value, (str, bytes)):
+        if isinstance(value, (text_type, bytes)):
             value = [value]
         return self.__render_data(
             key, flags, [utf8(v) for v in value])
@@ -688,18 +689,18 @@ class MP4Tags(DictProxy, Metadata):
 
     def pprint(self):
         values = []
-        for key, value in self.items():
+        for key, value in iteritems(self):
             if key == b"covr":
-                values.append("%s=%s" % (key, ", ".join(
+                values.append("%r=%s" % (key, ", ".join(
                     [("[%d bytes of data]" % len(data)) for data in value])))
             elif isinstance(value, list):
-                values.append("%s=%s" % (key, " / ".join(map(str, value))))
+                values.append("%r=%s" % (key, " / ".join(map(text_type, value))))
             else:
-                values.append("%s=%s" % (key, value))
+                values.append("%r=%s" % (key, value))
         return "\n".join(values)
 
 
-class MP4Info(object):
+class MP4Info(StreamInfo):
     """MPEG-4 stream information.
 
     Attributes:
@@ -729,7 +730,7 @@ class MP4Info(object):
         mdhd = trak[b"mdia", b"mdhd"]
         fileobj.seek(mdhd.offset)
         data = fileobj.read(mdhd.length)
-        if data[8] == 0:
+        if ord(data[8:9]) == 0:
             offset = 20
             fmt = ">2I"
         else:
@@ -737,7 +738,7 @@ class MP4Info(object):
             fmt = ">IQ"
         end = offset + struct.calcsize(fmt)
         unit, length = struct.unpack(fmt, data[offset:end])
-        self.length = length / unit
+        self.length = float(length) / unit
 
         try:
             atom = trak[b"mdia", b"minf", b"stbl", b"stsd"]
@@ -748,7 +749,7 @@ class MP4Info(object):
                 (self.channels, self.bits_per_sample, _,
                  self.sample_rate) = struct.unpack(">3HI", data[40:50])
                 # ES descriptor type
-                if data[56:60] == b"esds" and data[64] == b'\x03'[0]:
+                if data[56:60] == b"esds" and ord(data[64:65]) == 0x03:
                     pos = 65
                     # skip extended descriptor type tag, length, ES ID
                     # and stream priority
@@ -756,7 +757,7 @@ class MP4Info(object):
                         pos += 3
                     pos += 4
                     # decoder config descriptor type
-                    if data[pos] == b'\x04'[0]:
+                    if ord(data[pos:pos+1]) == 0x04:
                         pos += 1
                         # skip extended descriptor type tag, length,
                         # object type ID, stream type, buffer size
@@ -801,14 +802,20 @@ class MP4(FileType):
 
             try:
                 self.info = MP4Info(atoms, fileobj)
+            except error:
+                raise
             except Exception as err:
-                raise MP4StreamInfoError(err).with_traceback(sys.exc_info()[2])
-            try:
-                self.tags = self.MP4Tags(atoms, fileobj)
-            except MP4MetadataError:
+                reraise(MP4StreamInfoError, err, sys.exc_info()[2])
+
+            if not MP4Tags._can_load(atoms):
                 self.tags = None
-            except Exception as err:
-                raise MP4MetadataError(err).with_traceback(sys.exc_info()[2])
+            else:
+                try:
+                    self.tags = self.MP4Tags(atoms, fileobj)
+                except error:
+                    raise
+                except Exception as err:
+                    reraise(MP4MetadataError, err, sys.exc_info()[2])
         finally:
             fileobj.close()
 

@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 
+# Copyright 2014 Ben Ockmore
 # Copyright 2009 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
 
-import collections.abc
+import collections
 
 from mutagen import Metadata
 from mutagen._util import dict_match, utf8
 from mutagen.mp4 import MP4, MP4Tags, error, delete
+from ._compat import PY2, text_type
+
 
 __all__ = ["EasyMP4Tags", "EasyMP4", "delete", "error"]
 
@@ -19,7 +22,7 @@ class EasyMP4KeyError(error, KeyError, ValueError):
     pass
 
 
-class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
+class EasyMP4Tags(collections.MutableMapping, Metadata):
     """A file with MPEG-4 iTunes metadata.
 
     Like Vorbis comments, EasyMP4Tags keys are case-insensitive ASCII
@@ -100,7 +103,7 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
         """
 
         def getter(tags, key):
-            return list(map(str, tags[atomid]))
+            return list(map(text_type, tags[atomid]))
 
         def setter(tags, key, value):
             clamp = lambda x: min(max(min_value, x), max_value)
@@ -119,11 +122,11 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
                 if total:
                     ret.append(u"%d/%d" % (track, total))
                 else:
-                    ret.append(str(track))
+                    ret.append(text_type(track))
             return ret
 
         def setter(tags, key, value):
-            clamp = lambda x: min(max(min_value, x), max_value)
+            clamp = lambda x: int(min(max(min_value, x), max_value))
             data = []
             for v in value:
                 try:
@@ -175,8 +178,14 @@ class EasyMP4Tags(collections.abc.MutableMapping, Metadata):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        if isinstance(value, (str, bytes)):
-            value = [value]
+
+        if PY2:
+            if isinstance(value, basestring):
+                value = [value]
+        else:
+            if isinstance(value, text_type):
+                value = [value]
+
         func = dict_match(self.Set, key)
         if func is not None:
             return func(self.__mp4, key, value)

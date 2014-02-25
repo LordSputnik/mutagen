@@ -39,7 +39,7 @@ def is_valid_key(key):
         raise ValueError
 
     for c in key:
-        if c < u" " or c > u"}" or c == u"=":
+        if c < " " or c > "}" or c == "=":
             return False
     else:
         return bool(key)

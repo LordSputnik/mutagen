@@ -26,6 +26,7 @@ __all__ = ["FLAC", "Open", "delete"]
 import struct
 from mutagen._vorbis import VComment
 from mutagen import FileType
+import mutagen
 
 from ._compat import cBytesIO, endswith, chr_
 from mutagen._util import insert_bytes
@@ -50,6 +51,7 @@ def to_int_be(data):
     """Convert an arbitrarily-long string to a long using big-endian
     byte order."""
     return reduce(lambda a, b: (a << 8) + b, bytearray(data), 0)
+
 
 class StrictFileObject(object):
     """Wraps a file-like object and raises an exception if the requested
@@ -110,24 +112,25 @@ class MetadataBlock(object):
         data = []
         codes = [[block.code, block.write()] for block in blocks]
         codes[-1][0] |= 128
-        for byte, datum in codes:
-            if len(datum) > 2 ** 24:
+        for code, datum in codes:
+            byte = chr_(code)
+            if len(datum) > 2**24:
                 raise error("block is too long to write")
             length = struct.pack(">I", len(datum))[-3:]
-            data.append(bytes((byte,)) + length + datum)
-        return b''.join(data)
+            data.append(byte + length + datum)
+        return b"".join(data)
 
     @staticmethod
     def group_padding(blocks):
         """Consolidate FLAC padding metadata blocks.
 
         The overall size of the rendered blocks does not change, so
-        this adds several bytes of padding for each merged block."""
+        this adds several bytes of padding for each merged block.
+        """
+
         paddings = [b for b in blocks if isinstance(b, Padding)]
-
-        for padding in paddings:
-            blocks.remove(padding)
-
+        for p in paddings:
+            blocks.remove(p)
         # total padding size is the sum of padding sizes plus 4 bytes
         # per removed header.
         size = sum(padding.length for padding in paddings)
@@ -136,7 +139,7 @@ class MetadataBlock(object):
         blocks.append(padding)
 
 
-class StreamInfo(MetadataBlock):
+class StreamInfo(MetadataBlock, mutagen.StreamInfo):
     """FLAC stream information.
 
     This contains information about the audio data in the FLAC file.
@@ -172,10 +175,10 @@ class StreamInfo(MetadataBlock):
     __hash__ = MetadataBlock.__hash__
 
     def load(self, data):
-        self.min_blocksize = to_int_be(data.read(2))
-        self.max_blocksize = to_int_be(data.read(2))
-        self.min_framesize = to_int_be(data.read(3))
-        self.max_framesize = to_int_be(data.read(3))
+        self.min_blocksize = int(to_int_be(data.read(2)))
+        self.max_blocksize = int(to_int_be(data.read(2)))
+        self.min_framesize = int(to_int_be(data.read(3)))
+        self.max_framesize = int(to_int_be(data.read(3)))
         # first 16 bits of sample rate
         sample_first = to_int_be(data.read(2))
         # last 4 bits of sample rate, 3 of channels, first 1 of bits/sample
@@ -184,15 +187,15 @@ class StreamInfo(MetadataBlock):
         bps_total = to_int_be(data.read(5))
 
         sample_tail = sample_channels_bps >> 4
-        self.sample_rate = (sample_first << 4) + sample_tail
+        self.sample_rate = int((sample_first << 4) + sample_tail)
         if not self.sample_rate:
             raise error("A sample rate value of 0 is invalid")
-        self.channels = ((sample_channels_bps >> 1) & 7) + 1
+        self.channels = int(((sample_channels_bps >> 1) & 7) + 1)
         bps_tail = bps_total >> 36
         bps_head = (sample_channels_bps & 1) << 4
-        self.bits_per_sample = bps_head + bps_tail + 1
+        self.bits_per_sample = int(bps_head + bps_tail + 1)
         self.total_samples = bps_total & 0xFFFFFFFFF
-        self.length = self.total_samples / self.sample_rate
+        self.length = self.total_samples / float(self.sample_rate)
 
         self.md5_signature = to_int_be(data.read(16))
 
@@ -209,11 +212,11 @@ class StreamInfo(MetadataBlock):
         byte = (self.sample_rate & 0xF) << 4
         byte += ((self.channels - 1) & 7) << 1
         byte += ((self.bits_per_sample - 1) >> 4) & 1
-        f.write(bytes((byte,)))
+        f.write(chr_(byte))
         # 4 bits of bps, 4 of sample count
-        byte = ((self.bits_per_sample - 1) & 0xF)  << 4
+        byte = ((self.bits_per_sample - 1) & 0xF) << 4
         byte += (self.total_samples >> 32) & 0xF
-        f.write(bytes((byte,)))
+        f.write(chr_(byte))
         # last 32 of sample count
         f.write(struct.pack(">I", self.total_samples & 0xFFFFFFFF))
         # MD5 signature
@@ -412,7 +415,7 @@ class CueSheet(MetadataBlock):
 
     code = 5
 
-    media_catalog_number = ''
+    media_catalog_number = b''
     lead_in_samples = 88200
     compact_disc = True
 
@@ -435,7 +438,7 @@ class CueSheet(MetadataBlock):
         header = data.read(self.__CUESHEET_SIZE)
         media_catalog_number, lead_in_samples, flags, num_tracks = \
             struct.unpack(self.__CUESHEET_FORMAT, header)
-        self.media_catalog_number = media_catalog_number.rstrip(b'\0').decode('ascii')
+        self.media_catalog_number = media_catalog_number.rstrip(b'\0')
         self.lead_in_samples = lead_in_samples
         self.compact_disc = bool(flags & 0x80)
         self.tracks = []
@@ -443,7 +446,7 @@ class CueSheet(MetadataBlock):
             track = data.read(self.__CUESHEET_TRACK_SIZE)
             start_offset, track_number, isrc_padded, flags, num_indexes = \
                 struct.unpack(self.__CUESHEET_TRACK_FORMAT, track)
-            isrc = isrc_padded.rstrip(b'\0').decode('ascii')
+            isrc = isrc_padded.rstrip(b'\0')
             type_ = (flags & 0x80) >> 7
             pre_emphasis = bool(flags & 0x40)
             val = CueSheetTrack(
@@ -462,7 +465,7 @@ class CueSheet(MetadataBlock):
         if self.compact_disc:
             flags |= 0x80
         packed = struct.pack(
-            self.__CUESHEET_FORMAT, self.media_catalog_number.encode('ascii'),
+            self.__CUESHEET_FORMAT, self.media_catalog_number,
             self.lead_in_samples, flags, len(self.tracks))
         f.write(packed)
         for track in self.tracks:
@@ -472,7 +475,7 @@ class CueSheet(MetadataBlock):
                 track_flags |= 0x40
             track_packed = struct.pack(
                 self.__CUESHEET_TRACK_FORMAT, track.start_offset,
-                track.track_number, track.isrc.encode('ascii'), track_flags,
+                track.track_number, track.isrc, track_flags,
                 len(track.indexes))
             f.write(track_packed)
             for index in track.indexes:
@@ -599,7 +602,7 @@ class Padding(MetadataBlock):
         return "<%s (%d bytes)>" % (type(self).__name__, self.length)
 
 
-class FLAC(FileType):
+class FLAC(mutagen.FileType):
     """A FLAC audio file.
 
     Attributes:
@@ -624,10 +627,10 @@ class FLAC(FileType):
         filename = filename.lower()
             
         return (header_data.startswith(b"fLaC") +
-                filename.endswith(".flac") * 3)
+                endswith(filename,".flac") * 3)
 
     def __read_metadata_block(self, fileobj):
-        byte = fileobj.read(1)[0]
+        byte = ord(fileobj.read(1))
         size = to_int_be(fileobj.read(3))
         code = byte & 0x7F
         last_block = bool(byte & 0x80)
@@ -688,7 +691,7 @@ class FLAC(FileType):
         """
         if filename is None:
             filename = self.filename
-        for s in self.metadata_blocks:
+        for s in list(self.metadata_blocks):
             if isinstance(s, VCFLACDict):
                 self.metadata_blocks.remove(s)
                 self.tags = None
@@ -728,12 +731,14 @@ class FLAC(FileType):
 
     def clear_pictures(self):
         """Delete all pictures from the file."""
-        self.metadata_blocks = \
-            [b for b in self.metadata_blocks if b.code != Picture.code]
+
+        blocks = [b for b in self.metadata_blocks if b.code != Picture.code]
+        self.metadata_blocks = blocks
 
     @property
     def pictures(self):
         """List of embedded pictures"""
+
         return [b for b in self.metadata_blocks if b.code == Picture.code]
 
     def save(self, filename=None, deleteid3=False):
@@ -801,7 +806,7 @@ class FLAC(FileType):
     def __find_audio_offset(self, fileobj):
         byte = 0x00
         while not (byte & 0x80):
-            byte = fileobj.read(1)[0]
+            byte = ord(fileobj.read(1))
             size = to_int_be(fileobj.read(3))
             try:
                 block_type = self.METADATA_BLOCKS[byte & 0x7F]

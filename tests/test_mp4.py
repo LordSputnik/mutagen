@@ -2,7 +2,7 @@ import os
 import shutil
 import struct
 
-from mutagen._compat import cBytesIO
+from mutagen._compat import cBytesIO, PY2
 from tempfile import mkstemp
 from tests import TestCase, add
 from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
@@ -470,7 +470,10 @@ class TMP4(TestCase):
 
     def test_pprint_pair(self):
         self.audio[b"cpil"] = (1, 10)
-        self.failUnless("b'cpil'=(1, 10)" in self.audio.pprint())
+        if PY2:
+            self.failUnless("'cpil'=(1, 10)" in self.audio.pprint())
+        else:
+            self.failUnless("b'cpil'=(1, 10)" in self.audio.pprint())
 
     def test_delete(self):
         self.audio.delete()
@@ -542,9 +545,7 @@ class TMP4HasTags(TMP4):
         self.faad()
 
     def test_shrink(self):
-        for k in self.audio.keys():
-            self.audio.__delitem__(k)
-
+        self.audio.clear()
         self.audio.save()
         audio = MP4(self.audio.filename)
         self.failIf(audio.tags)
@@ -657,18 +658,19 @@ class TMP4UpdateParents64Bit(TestCase):
         shutil.copy(self.original, self.filename)
 
     def test_update_parents(self):
-        file = open(self.filename,"rb")
-        atoms = Atoms(file)
-        self.assertEqual(77, atoms.atoms[0].length)
-        self.assertEqual(61, atoms.atoms[0].children[0].length)
-        tags = MP4Tags(atoms, file)
-        tags[b'pgap'] = True
-        tags.save(self.filename)
-        file = open(self.filename,"rb")
-        atoms = Atoms(file)
-        # original size + 'pgap' size + padding
-        self.assertEqual(77 + 25 + 974, atoms.atoms[0].length)
-        self.assertEqual(61 + 25 + 974, atoms.atoms[0].children[0].length)
+        with open(self.filename, "rb") as fileobj:
+            atoms = Atoms(fileobj)
+            self.assertEqual(77, atoms.atoms[0].length)
+            self.assertEqual(61, atoms.atoms[0].children[0].length)
+            tags = MP4Tags(atoms, fileobj)
+            tags[b'pgap'] = True
+            tags.save(self.filename)
+
+        with open(self.filename, "rb") as fileobj:
+            atoms = Atoms(fileobj)
+            # original size + 'pgap' size + padding
+            self.assertEqual(77 + 25 + 974, atoms.atoms[0].length)
+            self.assertEqual(61 + 25 + 974, atoms.atoms[0].children[0].length)
 
     def tearDown(self):
         os.unlink(self.filename)
