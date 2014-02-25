@@ -27,10 +27,10 @@ were all consulted.
 import struct
 import sys
 
-from mutagen import FileType, Metadata, StreamInfo
-from mutagen._constants import GENRES
-from mutagen._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
-from mutagen._compat import reraise, PY2, string_types, text_type, chr_, iteritems
+from mutagenx import FileType, Metadata, StreamInfo
+from mutagenx._constants import GENRES
+from mutagenx._util import cdata, insert_bytes, delete_bytes, DictProxy, utf8
+from mutagenx._compat import reraise, PY2, string_types, text_type, chr_, iteritems
 
 
 class error(IOError):
@@ -107,7 +107,7 @@ class Atom(object):
     * name -- four byte name of the atom, as bytes
     * offset -- location in the constructor-given fileobj of this atom
 
-    This structure should only be used internally by Mutagen.
+    This structure should only be used internally by mutagenx.
     """
 
     children = None
@@ -196,7 +196,7 @@ class Atoms(object):
 
     * atoms -- a list of top-level atoms as Atom objects
 
-    This structure should only be used internally by Mutagen.
+    This structure should only be used internally by mutagenx.
     """
 
     def __init__(self, fileobj):

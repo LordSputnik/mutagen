@@ -7,7 +7,7 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
-"""Utility classes for Mutagen.
+"""Utility classes for mutagen
 
 You should not rely on the interfaces here being stable. They are
 intended for internal use in Mutagen only.
@@ -17,7 +17,7 @@ import struct
 
 from fnmatch import fnmatchcase
 
-from mutagen._compat import text_type, iteritems, PY2, chr_
+from mutagenx._compat import text_type, iteritems, PY2, chr_
 
 from collections import OrderedDict
 

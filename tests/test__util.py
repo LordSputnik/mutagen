@@ -1,5 +1,5 @@
-from mutagen._util import cdata, utf8, insert_bytes, delete_bytes
-from mutagen._compat import text_type, itervalues, iterkeys, iteritems, PY2
+from mutagenx._util import cdata, utf8, insert_bytes, delete_bytes
+from mutagenx._compat import text_type, itervalues, iterkeys, iteritems, PY2
 from tests import TestCase, add
 import random
 

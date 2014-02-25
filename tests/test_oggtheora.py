@@ -3,9 +3,9 @@ import shutil
 
 from tempfile import mkstemp
 
-from mutagen._compat import cBytesIO
-from mutagen.oggtheora import OggTheora, OggTheoraInfo, delete
-from mutagen.ogg import OggPage
+from mutagenx._compat import cBytesIO
+from mutagenx.oggtheora import OggTheora, OggTheoraInfo, delete
+from mutagenx.ogg import OggPage
 from tests import add
 from tests.test_ogg import TOggFileType
 

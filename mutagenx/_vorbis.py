@@ -20,9 +20,9 @@ The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
 
 import sys
 
-import mutagen
-from ._compat import reraise, BytesIO, text_type, xrange, PY3, PY2, ord_
-from mutagen._util import cdata
+import mutagenx
+from mutagenx._compat import reraise, BytesIO, text_type, xrange, PY3, PY2, ord_
+from mutagenx._util import cdata
 
 from collections import MutableMapping
 
@@ -60,7 +60,7 @@ class VorbisEncodingError(error):
     pass
 
 
-class VComment(MutableMapping, mutagen.Metadata):
+class VComment(MutableMapping, mutagenx.Metadata):
     """A Vorbis comment parser, accessor, and renderer.
 
     All comment ordering is preserved. A VComment is a list of
@@ -84,7 +84,7 @@ class VComment(MutableMapping, mutagen.Metadata):
     normalized to lowercase ASCII.
     """
 
-    vendor = u"Mutagen " + mutagen.version_string
+    vendor = u"Mutagen " + mutagenx.version_string
 
     def __init__(self, data=None, *args, **kwargs):
         self._internal = []

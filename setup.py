@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright 2005-2009,2011 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
@@ -139,8 +139,8 @@ class coverage_cmd(Command):
 
         def run_tests():
             import mutagen
-            import mutagen._util
-            reload(mutagen._util)
+            import mutagenx._util
+            reload(mutagenx._util)
             reload(mutagen)
             cmd = self.reinitialize_command("test")
             cmd.quick = self.quick
@@ -185,7 +185,7 @@ else:
     data_files = []
 
 if __name__ == "__main__":
-    from mutagen import version_string
+    from mutagenx import version_string
 
     cmd_classes = {
         "clean": clean,

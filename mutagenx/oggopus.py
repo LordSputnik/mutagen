@@ -19,9 +19,9 @@ __all__ = ["OggOpus", "Open", "delete"]
 
 import struct
 
-from mutagen import StreamInfo
-from mutagen._vorbis import VComment
-from mutagen.ogg import OggPage, OggFileType, error as OggError
+from mutagenx import StreamInfo
+from mutagenx._vorbis import VComment
+from mutagenx.ogg import OggPage, OggFileType, error as OggError
 
 
 class error(OggError):

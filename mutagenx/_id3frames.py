@@ -11,16 +11,16 @@ import zlib
 from warnings import warn
 from struct import unpack
 
-from mutagen._id3util import (
+from mutagenx._id3util import (
     ID3Warning, ID3JunkFrameError, ID3BadCompressedData,
     ID3EncryptionUnsupportedError, ID3BadUnsynchData, unsynch)
-from mutagen._id3specs import (
+from mutagenx._id3specs import (
     BinaryDataSpec, StringSpec, Latin1TextSpec, EncodedTextSpec, ByteSpec,
     EncodingSpec, ASPIIndexSpec, SizedIntegerSpec, IntegerSpec,
     VolumeAdjustmentsSpec, VolumePeakSpec, VolumeAdjustmentSpec,
     ChannelSpec, MultiSpec, SynchronizedTextSpec, KeyEventSpec, TimeStampSpec,
     EncodedNumericPartTextSpec, EncodedNumericTextSpec)
-from ._compat import text_type, string_types, swap_to_string, ord_
+from mutagenx._compat import text_type, string_types, swap_to_string, ord_
 
 
 def is_valid_frame_id(frame_id):
@@ -432,7 +432,7 @@ class TCON(TextFrame):
     use the 'genres' property rather than the 'text' attribute.
     """
 
-    from mutagen._constants import GENRES
+    from mutagenx._constants import GENRES
     GENRES = GENRES
 
     def __get_genres(self):

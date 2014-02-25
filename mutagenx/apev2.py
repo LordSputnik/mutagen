@@ -36,9 +36,9 @@ __all__ = ["APEv2", "APEv2File", "Open", "delete"]
 import sys
 import struct
 
-from ._compat import cBytesIO, PY3, text_type, PY2, reraise, swap_to_string, long_
-from mutagen import Metadata, FileType, StreamInfo
-from mutagen._util import cdata, delete_bytes, total_ordering
+from mutagenx._compat import cBytesIO, PY3, text_type, PY2, reraise, swap_to_string, long_
+from mutagenx import Metadata, FileType, StreamInfo
+from mutagenx._util import cdata, delete_bytes, total_ordering
 
 import collections
 
@@ -337,7 +337,7 @@ class APEv2(collections.MutableMapping, Metadata):
         reference), use the APEValue factory and set the value to the
         result of that::
 
-            from mutagen.apev2 import APEValue, EXTERNAL
+            from mutagenx.apev2 import APEValue, EXTERNAL
             tag['Website'] = APEValue('http://example.org', EXTERNAL)
         """
 

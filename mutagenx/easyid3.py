@@ -9,7 +9,7 @@
 
 """Easier access to ID3 tags.
 
-EasyID3 is a wrapper around mutagen.id3.ID3 to make ID3 tags appear
+EasyID3 is a wrapper around mutagenx.id3.ID3 to make ID3 tags appear
 more like Vorbis or APEv2 tags.
 """
 
@@ -17,12 +17,12 @@ from collections import MutableMapping
 
 from fnmatch import fnmatchcase
 
-import mutagen.id3
+import mutagenx.id3
 
-from ._compat import iteritems, text_type, PY2
-from mutagen import Metadata
-from mutagen._util import dict_match
-from mutagen.id3 import ID3, error, delete, ID3FileType
+from mutagenx._compat import iteritems, text_type, PY2
+from mutagenx import Metadata
+from mutagenx._util import dict_match
+from mutagenx.id3 import ID3, error, delete, ID3FileType
 
 
 __all__ = ['EasyID3', 'Open', 'delete']
@@ -36,7 +36,7 @@ class EasyID3KeyError(KeyError, ValueError, error):
     """
 
 
-class EasyID3(MutableMapping, mutagen.Metadata):
+class EasyID3(MutableMapping, mutagenx.Metadata):
     """A file with an ID3 tag.
 
     Like Vorbis comments, EasyID3 keys are case-insensitive ASCII
@@ -50,9 +50,9 @@ class EasyID3(MutableMapping, mutagen.Metadata):
     keys. These can be set on EasyID3 or on individual instances after
     creation.
 
-    To use an EasyID3 class with mutagen.mp3.MP3::
+    To use an EasyID3 class with mutagenx.mp3.MP3::
 
-        from mutagen.mp3 import EasyMP3 as MP3
+        from mutagenx.mp3 import EasyMP3 as MP3
         MP3(filename)
 
     Because many of the attributes are constructed on the fly, things
@@ -127,7 +127,7 @@ class EasyID3(MutableMapping, mutagen.Metadata):
             try:
                 frame = id3[frameid]
             except KeyError:
-                id3.add(mutagen.id3.Frames[frameid](encoding=3, text=value))
+                id3.add(mutagenx.id3.Frames[frameid](encoding=3, text=value))
             else:
                 frame.encoding = 3
                 frame.text = value
@@ -164,7 +164,7 @@ class EasyID3(MutableMapping, mutagen.Metadata):
                 except UnicodeError:
                     enc = 3
 
-                id3.add(mutagen.id3.TXXX(encoding=enc, text=value, desc=desc))
+                id3.add(mutagenx.id3.TXXX(encoding=enc, text=value, desc=desc))
             else:
                 frame.text = value
 
@@ -266,7 +266,7 @@ def genre_set(id3, key, value):
     try:
         frame = id3["TCON"]
     except KeyError:
-        id3.add(mutagen.id3.TCON(encoding=3, text=value))
+        id3.add(mutagenx.id3.TCON(encoding=3, text=value))
     else:
         frame.encoding = 3
         frame.genres = value
@@ -281,7 +281,7 @@ def date_get(id3, key):
 
 
 def date_set(id3, key, value):
-    id3.add(mutagen.id3.TDRC(encoding=3, text=value))
+    id3.add(mutagenx.id3.TDRC(encoding=3, text=value))
 
 
 def date_delete(id3, key):
@@ -309,7 +309,7 @@ def performer_set(id3, key, value):
     try:
         mcl = id3["TMCL"]
     except KeyError:
-        mcl = mutagen.id3.TMCL(encoding=3, people=[])
+        mcl = mutagenx.id3.TMCL(encoding=3, people=[])
         id3.add(mcl)
     mcl.encoding = 3
     people = [p for p in mcl.people if p[0] != wanted_role]
@@ -353,7 +353,7 @@ def musicbrainz_trackid_set(id3, key, value):
     try:
         frame = id3["UFID:http://musicbrainz.org"]
     except KeyError:
-        frame = mutagen.id3.UFID(owner="http://musicbrainz.org", data=value)
+        frame = mutagenx.id3.UFID(owner="http://musicbrainz.org", data=value)
         id3.add(frame)
     else:
         frame.data = value
@@ -374,7 +374,7 @@ def website_get(id3, key):
 def website_set(id3, key, value):
     id3.delall("WOAR")
     for v in value:
-        id3.add(mutagen.id3.WOAR(url=v))
+        id3.add(mutagenx.id3.WOAR(url=v))
 
 
 def website_delete(id3, key):
@@ -398,7 +398,7 @@ def gain_set(id3, key, value):
     try:
         frame = id3["RVA2:" + key[11:-5]]
     except KeyError:
-        frame = mutagen.id3.RVA2(desc=key[11:-5], gain=0, peak=0, channel=1)
+        frame = mutagenx.id3.RVA2(desc=key[11:-5], gain=0, peak=0, channel=1)
         id3.add(frame)
     frame.gain = gain
 
@@ -434,7 +434,7 @@ def peak_set(id3, key, value):
     try:
         frame = id3["RVA2:" + key[11:-5]]
     except KeyError:
-        frame = mutagen.id3.RVA2(desc=key[11:-5], gain=0, peak=0, channel=1)
+        frame = mutagenx.id3.RVA2(desc=key[11:-5], gain=0, peak=0, channel=1)
         id3.add(frame)
     frame.peak = peak
 

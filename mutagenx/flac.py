@@ -24,13 +24,13 @@ http://flac.sourceforge.net/format.html
 __all__ = ["FLAC", "Open", "delete"]
 
 import struct
-from mutagen._vorbis import VComment
-from mutagen import FileType
-import mutagen
+from mutagenx._vorbis import VComment
+from mutagenx import FileType
+import mutagenx
 
-from ._compat import cBytesIO, endswith, chr_
-from mutagen._util import insert_bytes
-from mutagen.id3 import BitPaddedInt
+from mutagenx._compat import cBytesIO, endswith, chr_
+from mutagenx._util import insert_bytes
+from mutagenx.id3 import BitPaddedInt
 
 from functools import reduce
 
@@ -139,7 +139,7 @@ class MetadataBlock(object):
         blocks.append(padding)
 
 
-class StreamInfo(MetadataBlock, mutagen.StreamInfo):
+class StreamInfo(MetadataBlock, mutagenx.StreamInfo):
     """FLAC stream information.
 
     This contains information about the audio data in the FLAC file.
@@ -602,7 +602,7 @@ class Padding(MetadataBlock):
         return "<%s (%d bytes)>" % (type(self).__name__, self.length)
 
 
-class FLAC(mutagen.FileType):
+class FLAC(mutagenx.FileType):
     """A FLAC audio file.
 
     Attributes:

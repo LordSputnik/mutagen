@@ -2,10 +2,10 @@ import os
 import random
 import shutil
 
-from mutagen._compat import BytesIO
+from mutagenx._compat import BytesIO
 from tests import TestCase, add
-from mutagen.ogg import OggPage, OggFileType, error as OggError
-from mutagen._util import cdata
+from mutagenx.ogg import OggPage, OggFileType, error as OggError
+from mutagenx._util import cdata
 from tempfile import mkstemp
 from os import devnull
 

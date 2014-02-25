@@ -11,7 +11,7 @@
 
 This module reads and writes a subset of the Ogg bitstream format
 version 0. It does *not* read or write Ogg Vorbis files! For that,
-you should use mutagen.oggvorbis.
+you should use mutagenoggvorbis.
 
 This implementation is based on the RFC 3533 standard found at
 http://www.xiph.org/ogg/doc/rfc3533.txt.
@@ -21,9 +21,9 @@ import struct
 import sys
 import zlib
 
-from mutagen import FileType
-from mutagen._util import cdata, insert_bytes, delete_bytes
-from ._compat import cBytesIO, reraise, chr_
+from mutagenx import FileType
+from mutagenx._util import cdata, insert_bytes, delete_bytes
+from mutagenx._compat import cBytesIO, reraise, chr_
 
 
 class error(IOError):

@@ -12,8 +12,8 @@
 
 ::
 
-    import mutagen.[format]
-    metadata = mutagen.[format].Open(filename)
+    import mutagenx.[format]
+    metadata = mutagenx.[format].Open(filename)
 
 `metadata` acts like a dictionary of tags in the file. Tags are generally a
 list of string-like values, but may have additional methods available
@@ -30,7 +30,7 @@ version_string = u'.'.join(map(str, version))
 
 import warnings
 
-from mutagen._compat import PY2
+from mutagenx._compat import PY2
 
 if PY2:
     from collections import MutableMapping
@@ -41,7 +41,7 @@ else:
 class Metadata(object):
     """An abstract dict-like object.
 
-    Metadata is the base class for many of the tag objects in Mutagen.
+    Metadata is the base class for many of the tag objects in mutagenx.
     """
 
     def __init__(self, *args, **kwargs):
@@ -231,34 +231,34 @@ def File(filename, options=None, easy=False):
     """
 
     if options is None:
-        from mutagen.asf import ASF
-        from mutagen.apev2 import APEv2File
-        from mutagen.flac import FLAC
+        from mutagenx.asf import ASF
+        from mutagenx.apev2 import APEv2File
+        from mutagenx.flac import FLAC
         if easy:
-            from mutagen.easyid3 import EasyID3FileType as ID3FileType
+            from mutagenx.easyid3 import EasyID3FileType as ID3FileType
         else:
-            from mutagen.id3 import ID3FileType
+            from mutagenx.id3 import ID3FileType
         if easy:
-            from mutagen.mp3 import EasyMP3 as MP3
+            from mutagenx.mp3 import EasyMP3 as MP3
         else:
-            from mutagen.mp3 import MP3
-        from mutagen.oggflac import OggFLAC
-        from mutagen.oggspeex import OggSpeex
-        from mutagen.oggtheora import OggTheora
-        from mutagen.oggvorbis import OggVorbis
-        from mutagen.oggopus import OggOpus
+            from mutagenx.mp3 import MP3
+        from mutagenx.oggflac import OggFLAC
+        from mutagenx.oggspeex import OggSpeex
+        from mutagenx.oggtheora import OggTheora
+        from mutagenx.oggvorbis import OggVorbis
+        from mutagenx.oggopus import OggOpus
         if easy:
-            from mutagen.trueaudio import EasyTrueAudio as TrueAudio
+            from mutagenx.trueaudio import EasyTrueAudio as TrueAudio
         else:
-            from mutagen.trueaudio import TrueAudio
-        from mutagen.wavpack import WavPack
+            from mutagenx.trueaudio import TrueAudio
+        from mutagenx.wavpack import WavPack
         if easy:
-            from mutagen.easymp4 import EasyMP4 as MP4
+            from mutagenx.easymp4 import EasyMP4 as MP4
         else:
-            from mutagen.mp4 import MP4
-        from mutagen.musepack import Musepack
-        from mutagen.monkeysaudio import MonkeysAudio
-        from mutagen.optimfrog import OptimFROG
+            from mutagenx.mp4 import MP4
+        from mutagenx.musepack import Musepack
+        from mutagenx.monkeysaudio import MonkeysAudio
+        from mutagenx.optimfrog import OptimFROG
         options = [MP3, TrueAudio, OggTheora, OggSpeex, OggVorbis, OggFLAC,
                    FLAC, APEv2File, MP4, ID3FileType, WavPack, Musepack,
                    MonkeysAudio, OptimFROG, ASF, OggOpus]

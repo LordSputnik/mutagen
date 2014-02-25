@@ -24,8 +24,8 @@ __all__ = ["OptimFROG", "Open", "delete"]
 import struct
 
 from ._compat import endswith
-from mutagen import StreamInfo
-from mutagen.apev2 import APEv2File, error, delete
+from mutagenx import StreamInfo
+from mutagenx.apev2 import APEv2File, error, delete
 
 
 class OptimFROGHeaderError(error):
