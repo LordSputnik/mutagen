@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # Copyright 2005-2009,2011 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
