@@ -24,7 +24,7 @@ import mutagen
 from ._compat import reraise, BytesIO, text_type, xrange, PY3, PY2, ord_
 from mutagen._util import cdata
 
-from collections import MutableMapping
+from collections import MutableMapping, MutableSequence
 
 def is_valid_key(key):
     """Return true if a string is a valid Vorbis comment key.
@@ -60,7 +60,7 @@ class VorbisEncodingError(error):
     pass
 
 
-class VComment(MutableMapping, mutagen.Metadata):
+class VComment(mutagen.Metadata, MutableSequence):
     """A Vorbis comment parser, accessor, and renderer.
 
     All comment ordering is preserved. A VComment is a list of
@@ -71,27 +71,18 @@ class VComment(MutableMapping, mutagen.Metadata):
     file-like object, not a filename.
 
     Attributes:
+
     * vendor -- the stream 'vendor' (i.e. writer); default 'Mutagen'
-
-    This object differs from a dictionary in two ways. First,
-    len(comment) will still return the number of values, not the
-    number of keys. Secondly, iterating through the object will
-    iterate over (key, value) pairs, not keys. Since a key may have
-    multiple values, the same value may appear multiple times while
-    iterating.
-
-    Since Vorbis comment keys are case-insensitive, all keys are
-    normalized to lowercase ASCII.
     """
 
     vendor = u"Mutagen " + mutagen.version_string
 
     def __init__(self, data=None, *args, **kwargs):
-        self._internal = []
-
         # Collect the args to pass to load, this lets child classes
         # override just load and get equivalent magic for the
         # constructor.
+        self._internal = []
+
         if data is not None:
             if isinstance(data, bytes):
                 data = BytesIO(data)
@@ -99,8 +90,20 @@ class VComment(MutableMapping, mutagen.Metadata):
                 raise TypeError("VComment requires bytes or a file-like")
             self.load(data, *args, **kwargs)
 
-    def append(self, x):
-        self._internal.append(x)
+    def __getitem__(self, index):
+        return self._internal[index]
+
+    def __setitem__(self, index, value):
+        self._internal[index] = value
+
+    def __delitem__(self, index):
+        del self._internal[index]
+
+    def __len__(self):
+        return len(self._internal)
+
+    def insert(self, index, value):
+        self._internal.insert(index, value)
 
     def load(self, fileobj, errors='replace', framing=True):
         """Parse a Vorbis comment from a file-like object.
@@ -145,6 +148,7 @@ class VComment(MutableMapping, mutagen.Metadata):
                         tag = tag.decode("ascii")
                     if is_valid_key(tag):
                         self.append((tag, value))
+
             if framing and not ord_(fileobj.read(1)) & 0x01:
                 raise VorbisUnsetFrameError("framing bit was unset")
         except (cdata.error, TypeError):
@@ -156,7 +160,19 @@ class VComment(MutableMapping, mutagen.Metadata):
         Check to make sure every key used is a valid Vorbis key, and
         that every value used is a valid Unicode or UTF-8 string. If
         any invalid keys or values are found, a ValueError is raised.
+
+        In Python 3 all keys and values have to be a string.
         """
+
+        # be stricter in Python 3
+        if PY3:
+            if not isinstance(self.vendor, text_type):
+                raise ValueError
+            for key, value in self:
+                if not isinstance(key, text_type):
+                    raise ValueError
+                if not isinstance(value, text_type):
+                    raise ValueError
 
         if not isinstance(self.vendor, text_type):
             try:
@@ -228,6 +244,47 @@ class VComment(MutableMapping, mutagen.Metadata):
         tags = [u"%s=%s" % (_decode(k), _decode(v)) for k, v in self._internal]
         return u"\n".join(tags)
 
+    def __eq__(self, other):
+        if isinstance(other, VComment):
+            return self._internal == other._internal
+        else:
+            return self._internal == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+class VCommentDict(MutableMapping):
+    """A VComment that looks like a dictionary.
+
+    This object differs from a dictionary in two ways. First,
+    len(comment) will still return the number of values, not the
+    number of keys. Secondly, iterating through the object will
+    iterate over (key, value) pairs, not keys. Since a key may have
+    multiple values, the same value may appear multiple times while
+    iterating.
+
+    Since Vorbis comment keys are case-insensitive, all keys are
+    normalized to lowercase ASCII.
+    """
+
+    def __init__(self, data=None, *args, **kwargs):
+        self._internal = VComment()
+
+        if data is not None:
+            if isinstance(data, bytes):
+                data = BytesIO(data)
+            elif not hasattr(data, 'read'):
+                raise TypeError("VComment requires bytes or a file-like")
+            self.load(data, *args, **kwargs)
+
+    def _get_vendor(self):
+        return self._internal.vendor
+
+    def _set_vendor(self, value):
+        self._internal.vendor = value
+
+    vendor = property(_get_vendor, _set_vendor)
+
     def __getitem__(self, key):
         """A list of values for the key.
 
@@ -271,12 +328,6 @@ class VComment(MutableMapping, mutagen.Metadata):
 
         """
 
-        if isinstance(key, bytes):
-            try:
-                key = key.decode('utf-8')
-            except UnicodeError:
-                raise ValueError
-
         if not is_valid_key(key):
             raise ValueError
 
@@ -294,7 +345,7 @@ class VComment(MutableMapping, mutagen.Metadata):
             self.append((key, value))
 
     def __eq__(self, other):
-        if isinstance(other, list):
+        if isinstance(other, (VComment, list)):
             return self._internal == other
         else:
             return self.as_dict() == other
@@ -311,3 +362,51 @@ class VComment(MutableMapping, mutagen.Metadata):
         for key, value in self._internal:
             d.setdefault(key.lower(), []).append(value)
         return d
+
+    # Wrapper functions to expose internal VComment functionality
+
+    def load(self, fileobj, errors='replace', framing=True):
+        self._internal.load(fileobj, errors, framing)
+
+    def validate(self):
+        return self._internal.validate()
+
+    def clear(self):
+        self._internal.clear()
+
+    def write(self, framing=True):
+        return self._internal.write(framing)
+
+    def pprint(self):
+        return self._internal.pprint()
+
+    def index(self, value):
+        return self._internal.index(value)
+
+    def count(self, value):
+        return self._internal.count(value)
+
+    def insert(self, index, value):
+        self._internal.insert(index, value)
+
+    def append(self,value):
+        self._internal.append(value)
+
+    def reverse(self):
+        self._internal.reverse()
+
+    def extend(self, values):
+        self._internal.extend(values)
+
+    def remove(self, value):
+        self._internal.remove(value)
+
+    def __iadd__(values):
+        self._internal.__iadd__(values)
+        return self
+
+    # The following VComment methods aren't wrapped, because they're
+    # implemented in a dict-interface here.
+    #
+    #__getitem__, __setitem__, __delitem__, __len__
+    #__contains__, __iter__, pop

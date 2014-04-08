@@ -6,7 +6,7 @@ from tests import TestCase, add
 from mutagen.id3 import ID3, TIT2, ID3NoHeaderError
 from mutagen.flac import to_int_be, Padding, VCFLACDict, MetadataBlock, error
 from mutagen.flac import StreamInfo, SeekTable, CueSheet, FLAC, delete, Picture
-from tests.test__vorbis import TVComment, VComment
+from tests.test__vorbis import TVComment
 from os import devnull
 
 class Tto_int_be(TestCase):

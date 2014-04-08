@@ -20,7 +20,7 @@ __all__ = ["OggTheora", "Open", "delete"]
 import struct
 
 from mutagen import StreamInfo
-from mutagen._vorbis import VComment
+from mutagen._vorbis import VCommentDict
 from mutagen._util import cdata
 from mutagen.ogg import OggPage, OggFileType, error as OggError
 
@@ -73,7 +73,7 @@ class OggTheoraInfo(StreamInfo):
         return "Ogg Theora, %.2f seconds, %d bps" % (self.length, self.bitrate)
 
 
-class OggTheoraCommentDict(VComment):
+class OggTheoraCommentDict(VCommentDict):
     """Theora comments embedded in an Ogg bitstream."""
 
     def __init__(self, fileobj, info):

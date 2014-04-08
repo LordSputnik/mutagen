@@ -24,7 +24,7 @@ http://flac.sourceforge.net/format.html
 __all__ = ["FLAC", "Open", "delete"]
 
 import struct
-from mutagen._vorbis import VComment
+from mutagen._vorbis import VCommentDict
 from mutagen import FileType
 import mutagen
 
@@ -303,7 +303,7 @@ class SeekTable(MetadataBlock):
         return "<%s seekpoints=%r>" % (type(self).__name__, self.seekpoints)
 
 
-class VCFLACDict(VComment):
+class VCFLACDict(VCommentDict):
     """Read and write FLAC Vorbis comments.
 
     FLACs don't use the framing bit at the end of the comment block.
@@ -625,7 +625,7 @@ class FLAC(mutagen.FileType):
         if isinstance(filename, bytes):
             filename = filename.decode('utf-8')
         filename = filename.lower()
-            
+
         return (header_data.startswith(b"fLaC") +
                 endswith(filename,".flac") * 3)
 
