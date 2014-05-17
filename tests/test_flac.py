@@ -6,7 +6,9 @@ from tests import TestCase, add
 from mutagen.id3 import ID3, TIT2, ID3NoHeaderError
 from mutagen.flac import to_int_be, Padding, VCFLACDict, MetadataBlock, error
 from mutagen.flac import StreamInfo, SeekTable, CueSheet, FLAC, delete, Picture
+from mutagen._compat import PY3
 from tests.test__vorbis import TVComment
+
 from os import devnull
 
 class Tto_int_be(TestCase):
@@ -308,24 +310,30 @@ class TFLAC(TestCase):
 
     def test_write_changetitle(self):
         f = FLAC(self.NEW)
-        f[u"title"] = u"A New Title"
-        f.save()
-        f = FLAC(self.NEW)
-        self.failUnlessEqual(f["title"][0], "A New Title")
+        if PY3:
+            self.assertRaises(ValueError, f.__setitem__, b'title', b"A New Title")
+        else:
+            f[b'title'] = b"A New Title"
+            f.save()
+            f = FLAC(self.NEW)
+            self.failUnlessEqual(f[b"title"][0], b"A New Title")
 
     def test_write_changetitle_unicode_value(self):
         f = FLAC(self.NEW)
-        f[u"title"] = u"A Unicode Title \u2022"
-        f.save()
-        f = FLAC(self.NEW)
-        self.failUnlessEqual(f[u"title"][0], u"A Unicode Title \u2022")
+        if PY3:
+            self.assertRaises(ValueError, f.__setitem__, b'title', u"A Unicode Title \u2022")
+        else:
+            f[b'title'] = u"A Unicode Title \u2022"
+            f.save()
+            f = FLAC(self.NEW)
+            self.failUnlessEqual(f[b"title"][0], u"A Unicode Title \u2022")
 
     def test_write_changetitle_unicode_key(self):
         f = FLAC(self.NEW)
-        f[u"title"] = u"A New Title"
+        f[u"title"] = b"A New Title"
         f.save()
         f = FLAC(self.NEW)
-        self.failUnlessEqual(f[u"title"][0], u"A New Title")
+        self.failUnlessEqual(f[u"title"][0], b"A New Title")
 
     def test_write_changetitle_unicode_key_and_value(self):
         f = FLAC(self.NEW)
@@ -478,6 +486,7 @@ class TFLAC(TestCase):
     def tearDown(self):
         os.unlink(self.NEW)
 
+
 add(TFLAC)
 
 
@@ -513,6 +522,7 @@ class TFLACBadBlockSize(TestCase):
 
     def test_inval_streaminfo(self):
         self.assertRaises(error, FLAC, self.INVAL_INFO)
+
 
 add(TFLACBadBlockSize)
 

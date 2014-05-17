@@ -1,4 +1,7 @@
-# Copyright (C) 2005  Michael Urman
+# -*- coding: utf-8 -*-
+
+# Copyright 2005 Michael Urman
+#           2014 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -427,7 +430,7 @@ class SynchronizedTextSpec(EncodedTextSpec):
             time, = struct.unpack(">I", data[value_idx+l:value_idx+l+4])
             texts.append((value, time))
             data = data[value_idx+l+4:]
-        return texts, b""
+        return texts, b''
 
     def write(self, frame, value):
         data = []
@@ -450,7 +453,7 @@ class KeyEventSpec(Spec):
         return events, data
 
     def write(self, frame, value):
-        return b"".join(struct.pack(">bI", *event) for event in value)
+        return b''.join(struct.pack(">bI", *event) for event in value)
 
     def validate(self, frame, value):
         return value
@@ -470,7 +473,7 @@ class VolumeAdjustmentsSpec(Spec):
         return adjustments, data
 
     def write(self, frame, value):
-        return b"".join(struct.pack(">Hh", int(freq * 2), int(adj * 512))
+        return b''.join(struct.pack(">Hh", int(freq * 2), int(adj * 512))
                         for (freq, adj) in sorted(value))
 
     def validate(self, frame, value):

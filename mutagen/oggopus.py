@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2012, 2013 Christoph Reiter
 #
 # This program is free software; you can redistribute it and/or modify
@@ -79,7 +78,7 @@ class OggOpusVComment(VCommentDict):
         # find the first tags page with the right serial
         page = OggPage(fileobj)
         while ((info.serial != page.serial) or
-                not page.packets[0].startswith(b"OpusTags")):
+                not page.packets[0].startswith(b'OpusTags')):
             page = OggPage(fileobj)
 
         # get all comment pages

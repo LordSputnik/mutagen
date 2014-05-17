@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2005 Joe Wreschnig
+#           2014 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -31,7 +31,6 @@ import mutagen
 from ._compat import cBytesIO, endswith, chr_
 from mutagen._util import insert_bytes
 from mutagen.id3 import BitPaddedInt
-
 from functools import reduce
 
 
@@ -307,7 +306,7 @@ class VCFLACDict(VCommentDict):
     """Read and write FLAC Vorbis comments.
 
     FLACs don't use the framing bit at the end of the comment block.
-    So this extends VComment to not use the framing bit.
+    So this extends VCommentDict to not use the framing bit.
     """
 
     code = 4

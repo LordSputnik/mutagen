@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
+#           2014 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -339,7 +339,7 @@ def performer_list(id3, key):
     except KeyError:
         return []
     else:
-        return list({("performer:" + p[0]) for p in mcl.people})
+        return list(set("performer:" + p[0] for p in mcl.people))
 
 
 def musicbrainz_trackid_get(id3, key):

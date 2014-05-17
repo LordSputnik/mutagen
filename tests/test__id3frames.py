@@ -137,7 +137,7 @@ class FrameSanityChecks(TestCase):
 
     def test_multi_APIC(self):
         from mutagen.id3 import APIC
-        self.assertEquals(APIC(data=b"1").HashKey, APIC(data=b"2").HashKey)
+        self.assertEquals(APIC(data=b'1').HashKey, APIC(data=b'2').HashKey)
         self.assertNotEquals(APIC(encoding=0, desc="a").HashKey, APIC(encoding=0, desc="b").HashKey)
 
     def test_multi_POPM(self):
@@ -147,12 +147,12 @@ class FrameSanityChecks(TestCase):
 
     def test_multi_GEOB(self):
         from mutagen.id3 import GEOB
-        self.assertEquals(GEOB(data=b"1").HashKey, GEOB(data=b"2").HashKey)
+        self.assertEquals(GEOB(data=b'1').HashKey, GEOB(data=b'2').HashKey)
         self.assertNotEquals(GEOB(encoding=0, desc="a").HashKey, GEOB(encoding=0, desc="b").HashKey)
 
     def test_multi_UFID(self):
         from mutagen.id3 import UFID
-        self.assertEquals(UFID(data=b"1").HashKey, UFID(data=b"2").HashKey)
+        self.assertEquals(UFID(data=b'1').HashKey, UFID(data=b'2').HashKey)
         self.assertNotEquals(UFID(owner="a").HashKey, UFID(owner="b").HashKey)
 
     def test_multi_USER(self):

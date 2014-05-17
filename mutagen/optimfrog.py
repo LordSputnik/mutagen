@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
-# Copyright 2006 Lukas Lalinsky <lalinsky@gmail.com>
+# Copyright 2006 Lukas Lalinsky
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -67,9 +66,6 @@ class OptimFROG(APEv2File):
 
     @staticmethod
     def score(filename, fileobj, header):
-        if isinstance(filename, bytes):
-            filename = filename.decode('utf-8')
-        
         filename = filename.lower()
 
         return (header.startswith(b"OFR") + endswith(filename, b".ofr") +

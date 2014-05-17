@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
+#           2014 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -19,12 +19,8 @@ from fnmatch import fnmatchcase
 
 from mutagen._compat import text_type, iteritems, PY2, chr_
 
-from collections import OrderedDict
+from collections import OrderedDict, MutableMapping
 
-if PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
 
 def total_ordering(cls):
     assert hasattr(cls, "__eq__")
@@ -101,9 +97,8 @@ class cdata(object):
     to_longlong_be = staticmethod(lambda data: struct.pack('>q', data))
     to_ulonglong_be = staticmethod(lambda data: struct.pack('>Q', data))
 
-    bitswap = b''.join(chr_(sum([((val >> i) & 1) << (7-i)
-                        for i in range(8)]))
-                        for val in range(256))
+    bitswap = b''.join(chr_(sum(((val >> i) & 1) << (7-i) for i in range(8)))
+                       for val in range(256))
 
     test_bit = staticmethod(lambda value, n: bool((value >> n) & 1))
 
@@ -262,7 +257,8 @@ def utf8(data):
     elif isinstance(data, text_type):
         return data.encode("utf-8")
     else:
-        raise TypeError("only str/bytes types can be converted to UTF-8")
+        raise TypeError("only unicode/bytes types can be converted to UTF-8")
+
 
 def dict_match(d, key, default=None):
     try:

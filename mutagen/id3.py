@@ -194,8 +194,9 @@ class ID3(DictProxy, mutagen.Metadata):
             del(self[key])
         else:
             key = key + ":"
-            for k in (s for s in self.keys() if s.startswith(key)):
-                del(self[k])
+            for k in self.keys():
+                if k.startswith(key):
+                    del(self[k])
 
     def setall(self, key, values):
         """Delete frames of the given type and add frames in 'values'."""
@@ -436,7 +437,8 @@ class ID3(DictProxy, mutagen.Metadata):
 
         # Sort frames by 'importance'
         order = ["TIT2", "TPE1", "TRCK", "TALB", "TPOS", "TDRC", "TCON"]
-        order = {b: a for a, b in enumerate(order)}
+        #PY26 - Change this to dictionary comprehension
+        order = dict((b, a) for a, b in enumerate(order))
         last = len(order)
         frames = sorted(self.items(), key=lambda a: (order.get(a[0][:4], last), a[0]))
 
@@ -813,9 +815,8 @@ def ParseID3v1(data):
 
     # Don't read a track number if it looks like the comment was
     # padded with spaces instead of nulls (thanks, WinAmp).
-    if track and (track != 32 or data[-3] == b'\x00'[0]):
+    if track and ((track != 32) or (data[-3] == b'\x00'[0])):
         frames['TRCK'] = TRCK(encoding=0, text=str(track))
-
     if genre != 255:
         frames['TCON'] = TCON(encoding=0, text=str(genre))
     return frames

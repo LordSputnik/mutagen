@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# A Monkey's Audio (APE) reader/tagger
-#
 # Copyright 2006 Lukas Lalinsky <lalinsky@gmail.com>
+#           2014 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as

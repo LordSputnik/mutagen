@@ -32,10 +32,7 @@ import warnings
 
 from mutagen._compat import PY2
 
-if PY2:
-    from collections import MutableMapping
-else:
-    from collections.abc import MutableMapping
+from collections import MutableMapping
 
 
 class Metadata(object):

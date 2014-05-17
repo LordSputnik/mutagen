@@ -12,7 +12,7 @@
 
 __all__ = ["ASF", "Open"]
 
-from mutagen._compat import swap_to_string, text_type, PY2, string_types
+from mutagen._compat import swap_to_string, text_type, PY2, string_types, iteritems
 
 import struct
 
@@ -60,7 +60,7 @@ class ASFTags(MutableMapping, Metadata):
         self._internal.append(x)
 
     def pprint(self):
-        return "\n".join(("%s=%s" % (k, v)) for k, v in self.items())
+        return "\n".join(("%s=%s" % (k, v)) for k, v in iteritems(self))
 
     def __getitem__(self, key):
         """A list of values for the key.

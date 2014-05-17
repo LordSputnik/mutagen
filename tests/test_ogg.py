@@ -211,7 +211,7 @@ class TOggPage(TestCase):
             num_packets = random.randrange(2, 100)
             lengths = [random.randrange(10, 10000)
                        for i in range(num_packets)]
-            packets = [random_file.read(l) for l in lengths]
+            packets = list(map(random_file.read, lengths))
             self.failUnlessEqual(
                 packets, OggPage.to_packets(OggPage.from_packets(packets)))
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2013 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
+#           2013 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -62,11 +62,11 @@ class MPEGInfo(StreamInfo):
 
     # Map (version, layer) tuples to bitrates.
     __BITRATE = {
-        (1, 1): list(range(0, 480, 32)),
-        (1, 2): [0, 32, 48, 56, 64, 80, 96, 112,128,160,192,224,256,320,384],
-        (1, 3): [0, 32, 40, 48, 56, 64, 80, 96, 112,128,160,192,224,256,320],
-        (2, 1): [0, 32, 48, 56, 64, 80, 96, 112,128,144,160,176,192,224,256],
-        (2, 2): [0,  8, 16, 24, 32, 40, 48,  56, 64, 80, 96,112,128,144,160],
+        (1, 1): [0, 32, 64, 96,128,160,192,224,256,288,320,352,384,416,448],
+        (1, 2): [0, 32, 48, 56, 64, 80, 96,112,128,160,192,224,256,320,384],
+        (1, 3): [0, 32, 40, 48, 56, 64, 80, 96,112,128,160,192,224,256,320],
+        (2, 1): [0, 32, 48, 56, 64, 80, 96,112,128,144,160,176,192,224,256],
+        (2, 2): [0,  8, 16, 24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160],
     }
 
     __BITRATE[(2, 3)] = __BITRATE[(2, 2)]
@@ -230,13 +230,15 @@ class MPEGInfo(StreamInfo):
                 samples = float(frame_size * frame_count)
                 self.length = (samples / self.sample_rate) or self.length
             if flags & 0x2:
-                br_bytes = struct.unpack('>I', data[xing + 12:xing + 16])[0]
-                self.bitrate = int((br_bytes * 8) // self.length)
+                bitrate_data = struct.unpack('>I', data[xing + 12:xing + 16])[0]
+                self.bitrate = int((bitrate_data * 8) // self.length)
 
     def pprint(self):
         s = "MPEG %s layer %d, %d bps, %s Hz, %.2f seconds" % (
             self.version, self.layer, self.bitrate, self.sample_rate,
-            self.length) + (" (sketchy)" if self.sketchy else "")
+            self.length)
+        if self.sketchy:
+            s += " (sketchy)"
         return s
 
 
@@ -260,7 +262,7 @@ class MP3(ID3FileType):
     def score(filename, fileobj, header_data):
         if isinstance(filename, bytes):
             filename = filename.decode('utf-8')
-            
+
         filename = filename.lower()
 
         return (header_data.startswith(b"ID3") * 2 + endswith(filename, b".mp3") +

@@ -934,7 +934,7 @@ class SYLT(Frame):
     __hash__ = Frame.__hash__
 
     def __str__(self):
-        return u"".join([text for (text, time) in self.text])
+        return u"".join(text for (text, time) in self.text)
         
     def __bytes__(self):
         return text_type(self).encode("utf-8")

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
@@ -42,7 +41,6 @@ class WavPackInfo(StreamInfo):
         header = fileobj.read(28)
         if len(header) != 28 or not header.startswith(b"wvpk"):
             raise WavPackHeaderError("not a WavPack file")
-
         samples = cdata.uint_le(header[12:16])
         flags = cdata.uint_le(header[24:28])
         self.version = cdata.short_le(header[8:10])

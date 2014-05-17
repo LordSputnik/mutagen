@@ -32,11 +32,12 @@ class clean(distutils_clean):
             else:
                 return False
         for pathname, dirs, files in os.walk(os.path.dirname(__file__)):
-            for filename in (f for f in files if should_remove(f)):
-                try:
-                    os.unlink(os.path.join(pathname, filename))
-                except EnvironmentError as err:
-                    print(str(err))
+            for filename in files:
+                if should_remove(filename):
+                    try:
+                        os.unlink(os.path.join(pathname, filename))
+                    except EnvironmentError as err:
+                        print(str(err))
 
         try:
             os.unlink("MANIFEST")

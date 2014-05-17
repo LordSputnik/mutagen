@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
+#           2014 Ben Ockmore
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -509,7 +509,7 @@ class MP4Tags(DictProxy, Metadata):
             pos += length
 
     def __render_data(self, key, flags, value):
-        return Atom.render(key, b"".join(
+        return Atom.render(key, b''.join(
             Atom.render(b"data", struct.pack(">2I", flags, 0) + data)
             for data in value))
 

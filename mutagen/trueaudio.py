@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Copyright 2014 Ben Ockmore
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
@@ -67,9 +66,6 @@ class TrueAudio(ID3FileType):
 
     @staticmethod
     def score(filename, fileobj, header):
-        if isinstance(filename, bytes):
-            filename = filename.decode('utf-8')
-            
         filename = filename.lower()
         
         return (header.startswith(b"ID3") + header.startswith(b"TTA") +

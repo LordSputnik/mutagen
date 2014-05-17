@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Vorbis comment support for Mutagen
 # Copyright 2005-2006 Joe Wreschnig
 #           2013 Christoph Reiter
 #           2014 Ben Ockmore
@@ -149,7 +148,7 @@ class VComment(mutagen.Metadata, MutableSequence):
                     if is_valid_key(tag):
                         self.append((tag, value))
 
-            if framing and not ord_(fileobj.read(1)) & 0x01:
+            if framing and not bytearray(fileobj.read(1))[0] & 0x01:
                 raise VorbisUnsetFrameError("framing bit was unset")
         except (cdata.error, TypeError):
             raise error("file is not a valid Vorbis comment")
