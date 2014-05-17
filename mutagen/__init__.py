@@ -21,7 +21,7 @@ depending on tag or format. They may also be entirely different objects
 for certain keys, again depending on format.
 """
 
-version = (1, 22, -1)
+version = (1, 23, -1)
 """Version tuple."""
 
 version_string = u'.'.join(map(str, version))
@@ -256,9 +256,10 @@ def File(filename, options=None, easy=False):
         from mutagen.musepack import Musepack
         from mutagen.monkeysaudio import MonkeysAudio
         from mutagen.optimfrog import OptimFROG
+        from mutagen.aiff import AIFF
         options = [MP3, TrueAudio, OggTheora, OggSpeex, OggVorbis, OggFLAC,
-                   FLAC, APEv2File, MP4, ID3FileType, WavPack, Musepack,
-                   MonkeysAudio, OptimFROG, ASF, OggOpus]
+                   FLAC, AIFF, APEv2File, MP4, ID3FileType, WavPack,
+                   Musepack, MonkeysAudio, OptimFROG, ASF, OggOpus]
 
     if not options:
         return None

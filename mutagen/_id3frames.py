@@ -260,6 +260,7 @@ class FrameOpt(Frame):
                 kw.append('%s=%r' % (attr.name, getattr(self, attr.name)))
         return '%s(%s)' % (type(self).__name__, ', '.join(kw))
 
+
 @swap_to_string
 class TextFrame(Frame):
     """Text strings.
