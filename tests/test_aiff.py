@@ -9,14 +9,14 @@ from mutagen.aiff import error as AIFFError
 from tempfile import mkstemp
 
 class TAIFF(TestCase):
-    silence_1 = os.path.join('tests', 'data', '11k-1ch-2s-silence.aif')
-    silence_2 = os.path.join('tests', 'data', '48k-2ch-s16-silence.aif')
-    silence_3 = os.path.join('tests', 'data', '8k-1ch-1s-silence.aif')
-    silence_4 = os.path.join('tests', 'data', '8k-1ch-3.5s-silence.aif')
-    silence_5 = os.path.join('tests', 'data', '8k-4ch-1s-silence.aif')
+    silence_1 = os.path.join(b'tests', b'data', b'11k-1ch-2s-silence.aif')
+    silence_2 = os.path.join(b'tests', b'data', b'48k-2ch-s16-silence.aif')
+    silence_3 = os.path.join(b'tests', b'data', b'8k-1ch-1s-silence.aif')
+    silence_4 = os.path.join(b'tests', b'data', b'8k-1ch-3.5s-silence.aif')
+    silence_5 = os.path.join(b'tests', b'data', b'8k-4ch-1s-silence.aif')
 
-    has_tags = os.path.join('tests', 'data', 'with-id3.aif')
-    no_tags  = os.path.join('tests', 'data', '8k-1ch-1s-silence.aif')
+    has_tags = os.path.join(b'tests', b'data', b'with-id3.aif')
+    no_tags  = os.path.join(b'tests', b'data', b'8k-1ch-1s-silence.aif')
 
     def setUp(self):
         fd, self.filename_1 = mkstemp(suffix='.aif')
@@ -72,7 +72,7 @@ class TAIFF(TestCase):
         self.failUnlessEqual(self.aiff_5.info.sample_size, 16)
 
     def test_notaiff(self):
-        self.failUnlessRaises(AIFFError, AIFF, "README")
+        self.failUnlessRaises(AIFFError, AIFF, b"README")
 
     def test_pprint(self):
         self.failUnless(self.aiff_1.pprint())
@@ -153,8 +153,8 @@ class TAIFFInfo(TestCase):
 add(TAIFFInfo)
 
 class TIFFFile(TestCase):
-    has_tags = os.path.join('tests', 'data', 'with-id3.aif')
-    no_tags  = os.path.join('tests', 'data', '8k-1ch-1s-silence.aif')
+    has_tags = os.path.join(b'tests', b'data', b'with-id3.aif')
+    no_tags  = os.path.join(b'tests', b'data', b'8k-1ch-1s-silence.aif')
 
     def setUp(self):
         self.file_1 = open(self.has_tags, 'rb')
@@ -173,34 +173,34 @@ class TIFFFile(TestCase):
         self.iff_2_tmp  = IFFFile(self.file_2_tmp)
 
     def test_has_chunks(self):
-        self.failUnless('FORM' in self.iff_1)
-        self.failUnless('COMM' in self.iff_1)
-        self.failUnless('SSND' in self.iff_1)
-        self.failUnless('ID3'  in self.iff_1)
+        self.failUnless(u'FORM' in self.iff_1)
+        self.failUnless(u'COMM' in self.iff_1)
+        self.failUnless(u'SSND' in self.iff_1)
+        self.failUnless(u'ID3'  in self.iff_1)
 
-        self.failUnless('FORM' in self.iff_2)
-        self.failUnless('COMM' in self.iff_2)
-        self.failUnless('SSND' in self.iff_2)
+        self.failUnless(u'FORM' in self.iff_2)
+        self.failUnless(u'COMM' in self.iff_2)
+        self.failUnless(u'SSND' in self.iff_2)
 
     def test_is_chunks(self):
-        self.failUnless(isinstance(self.iff_1['FORM'], IFFChunk))
-        self.failUnless(isinstance(self.iff_1['COMM'], IFFChunk))
-        self.failUnless(isinstance(self.iff_1['SSND'], IFFChunk))
-        self.failUnless(isinstance(self.iff_1['ID3'],  IFFChunk))
+        self.failUnless(isinstance(self.iff_1[u'FORM'], IFFChunk))
+        self.failUnless(isinstance(self.iff_1[u'COMM'], IFFChunk))
+        self.failUnless(isinstance(self.iff_1[u'SSND'], IFFChunk))
+        self.failUnless(isinstance(self.iff_1[u'ID3'],  IFFChunk))
 
     def test_chunk_size(self):
-        self.failUnlessEqual(self.iff_1['FORM'].size, 17096)
-        self.failUnlessEqual(self.iff_2['FORM'].size, 16054)
+        self.failUnlessEqual(self.iff_1[u'FORM'].size, 17096)
+        self.failUnlessEqual(self.iff_2[u'FORM'].size, 16054)
 
     def test_chunk_data_size(self):
-        self.failUnlessEqual(self.iff_1['FORM'].data_size, 17088)
-        self.failUnlessEqual(self.iff_2['FORM'].data_size, 16046)
+        self.failUnlessEqual(self.iff_1[u'FORM'].data_size, 17088)
+        self.failUnlessEqual(self.iff_2[u'FORM'].data_size, 16046)
 
     def test_FORM_chunk_resize(self):
-        self.iff_1_tmp['FORM'].resize(17000)
-        self.failUnlessEqual(IFFFile(self.file_1_tmp)['FORM'].data_size, 17000)
-        self.iff_2_tmp['FORM'].resize(0)
-        self.failUnlessEqual(IFFFile(self.file_2_tmp)['FORM'].data_size, 0)
+        self.iff_1_tmp[u'FORM'].resize(17000)
+        self.failUnlessEqual(IFFFile(self.file_1_tmp)[u'FORM'].data_size, 17000)
+        self.iff_2_tmp[u'FORM'].resize(0)
+        self.failUnlessEqual(IFFFile(self.file_2_tmp)[u'FORM'].data_size, 0)
 
     def test_child_chunk_resize(self):
         self.iff_1_tmp['ID3'].resize(128)
