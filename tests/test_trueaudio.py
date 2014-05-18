@@ -1,7 +1,7 @@
 import os
 import shutil
-from mutagen.trueaudio import TrueAudio, delete
-from mutagen.id3 import TIT1
+from mutagenx.trueaudio import TrueAudio, delete
+from mutagenx.id3 import TIT1
 from tests import TestCase, add
 from tempfile import mkstemp
 

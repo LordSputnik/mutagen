@@ -13,8 +13,8 @@ import os
 import struct
 
 from ._compat import endswith
-from mutagen import StreamInfo
-from mutagen.id3 import ID3FileType, BitPaddedInt, delete
+from mutagenx import StreamInfo
+from mutagenx.id3 import ID3FileType, BitPaddedInt, delete
 
 __all__ = ["MP3", "Open", "delete", "MP3"]
 
@@ -246,7 +246,7 @@ class MP3(ID3FileType):
     """An MPEG audio (usually MPEG-1 Layer 3) file.
 
     :ivar info: :class:`MPEGInfo`
-    :ivar tags: :class:`ID3 <mutagen.id3.ID3>`
+    :ivar tags: :class:`ID3 <mutagenx.id3.ID3>`
     """
 
     _Info = MPEGInfo
@@ -277,8 +277,8 @@ class EasyMP3(MP3):
     """Like MP3, but uses EasyID3 for tags.
 
     :ivar info: :class:`MPEGInfo`
-    :ivar tags: :class:`EasyID3 <mutagen.easyid3.EasyID3>`
+    :ivar tags: :class:`EasyID3 <mutagenx.easyid3.EasyID3>`
     """
 
-    from mutagen.easyid3 import EasyID3 as ID3
+    from mutagenx.easyid3 import EasyID3 as ID3
     ID3 = ID3

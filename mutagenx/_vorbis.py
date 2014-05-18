@@ -19,9 +19,9 @@ The specification is at http://www.xiph.org/vorbis/doc/v-comment.html.
 
 import sys
 
-import mutagen
+import mutagenx
 from ._compat import reraise, BytesIO, text_type, xrange, PY3, PY2, ord_
-from mutagen._util import cdata
+from mutagenx._util import cdata
 
 from collections import MutableMapping, MutableSequence
 
@@ -59,7 +59,7 @@ class VorbisEncodingError(error):
     pass
 
 
-class VComment(mutagen.Metadata, MutableSequence):
+class VComment(mutagenx.Metadata, MutableSequence):
     """A Vorbis comment parser, accessor, and renderer.
 
     All comment ordering is preserved. A VComment is a list of
@@ -74,7 +74,7 @@ class VComment(mutagen.Metadata, MutableSequence):
     * vendor -- the stream 'vendor' (i.e. writer); default 'Mutagen'
     """
 
-    vendor = u"Mutagen " + mutagen.version_string
+    vendor = u"Mutagen " + mutagenx.version_string
 
     def __init__(self, data=None, *args, **kwargs):
         # Collect the args to pass to load, this lets child classes

@@ -7,17 +7,17 @@
 # it under the terms of the GNU General Public License version 2 as
 # published by the Free Software Foundation.
 
-"""Utility classes for Mutagen.
+"""Utility classes for MutagenX.
 
 You should not rely on the interfaces here being stable. They are
-intended for internal use in Mutagen only.
+intended for internal use in MutagenX only.
 """
 
 import struct
 
 from fnmatch import fnmatchcase
 
-from mutagen._compat import text_type, iteritems, PY2, chr_
+from mutagenx._compat import text_type, iteritems, PY2, chr_
 
 from collections import OrderedDict, MutableMapping
 
@@ -148,7 +148,7 @@ def insert_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
     """Insert size bytes of empty space starting at offset.
 
     fobj must be an open file object, open rb+ or
-    equivalent. Mutagen tries to use mmap to resize the file, but
+    equivalent. MutagenX tries to use mmap to resize the file, but
     falls back to a significantly slower method if mmap fails.
     """
 
@@ -210,7 +210,7 @@ def delete_bytes(fobj, size, offset, BUFFER_SIZE=2**16):
     """Delete size bytes of empty space starting at offset.
 
     fobj must be an open file object, open rb+ or
-    equivalent. Mutagen tries to use mmap to resize the file, but
+    equivalent. MutagenX tries to use mmap to resize the file, but
     falls back to a significantly slower method if mmap fails.
     """
 

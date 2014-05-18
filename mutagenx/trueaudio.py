@@ -18,9 +18,9 @@ True Audio files use ID3 tags.
 __all__ = ["TrueAudio", "Open", "delete", "EasyTrueAudio"]
 
 from ._compat import endswith
-from mutagen import StreamInfo
-from mutagen.id3 import ID3FileType, delete
-from mutagen._util import cdata
+from mutagenx import StreamInfo
+from mutagenx.id3 import ID3FileType, delete
+from mutagenx._util import cdata
 
 
 class error(RuntimeError):
@@ -58,7 +58,7 @@ class TrueAudio(ID3FileType):
     """A True Audio file.
 
     :ivar info: :class:`TrueAudioInfo`
-    :ivar tags: :class:`ID3 <mutagen.id3.ID3>`
+    :ivar tags: :class:`ID3 <mutagenx.id3.ID3>`
     """
 
     _Info = TrueAudioInfo
@@ -67,7 +67,7 @@ class TrueAudio(ID3FileType):
     @staticmethod
     def score(filename, fileobj, header):
         filename = filename.lower()
-        
+
         return (header.startswith(b"ID3") + header.startswith(b"TTA") +
                 endswith(filename, b".tta") * 2)
 
@@ -79,8 +79,8 @@ class EasyTrueAudio(TrueAudio):
     """Like MP3, but uses EasyID3 for tags.
 
     :ivar info: :class:`TrueAudioInfo`
-    :ivar tags: :class:`EasyID3 <mutagen.easyid3.EasyID3>`
+    :ivar tags: :class:`EasyID3 <mutagenx.easyid3.EasyID3>`
     """
 
-    from mutagen.easyid3 import EasyID3 as ID3
+    from mutagenx.easyid3 import EasyID3 as ID3
     ID3 = ID3

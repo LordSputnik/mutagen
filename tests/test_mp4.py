@@ -2,12 +2,12 @@ import os
 import shutil
 import struct
 
-from mutagen._compat import cBytesIO, PY2
+from mutagenx._compat import cBytesIO, PY2
 from tempfile import mkstemp
 from tests import TestCase, add
-from mutagen.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
+from mutagenx.mp4 import MP4, Atom, Atoms, MP4Tags, MP4Info, \
      delete, MP4Cover, MP4MetadataError, MP4FreeForm, error
-from mutagen._util import cdata
+from mutagenx._util import cdata
 from os import devnull
 
 

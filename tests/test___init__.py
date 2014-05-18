@@ -3,24 +3,24 @@ from tempfile import mkstemp
 import shutil
 
 from tests import TestCase, add
-from mutagen._compat import cBytesIO, text_type
-from mutagen import File, Metadata, FileType
-from mutagen.oggvorbis import OggVorbis
-from mutagen.oggflac import OggFLAC
-from mutagen.oggspeex import OggSpeex
-from mutagen.oggtheora import OggTheora
-from mutagen.oggopus import OggOpus
-from mutagen.mp3 import MP3, EasyMP3
-from mutagen.apev2 import APEv2File
-from mutagen.flac import FLAC
-from mutagen.wavpack import WavPack
-from mutagen.trueaudio import TrueAudio, EasyTrueAudio
-from mutagen.mp4 import MP4
-from mutagen.musepack import Musepack
-from mutagen.monkeysaudio import MonkeysAudio
-from mutagen.optimfrog import OptimFROG
-from mutagen.asf import ASF
-from mutagen.aiff import AIFF
+from mutagenx._compat import cBytesIO, text_type
+from mutagenx import File, Metadata, FileType
+from mutagenx.oggvorbis import OggVorbis
+from mutagenx.oggflac import OggFLAC
+from mutagenx.oggspeex import OggSpeex
+from mutagenx.oggtheora import OggTheora
+from mutagenx.oggopus import OggOpus
+from mutagenx.mp3 import MP3, EasyMP3
+from mutagenx.apev2 import APEv2File
+from mutagenx.flac import FLAC
+from mutagenx.wavpack import WavPack
+from mutagenx.trueaudio import TrueAudio, EasyTrueAudio
+from mutagenx.mp4 import MP4
+from mutagenx.musepack import Musepack
+from mutagenx.monkeysaudio import MonkeysAudio
+from mutagenx.optimfrog import OptimFROG
+from mutagenx.asf import ASF
+from mutagenx.aiff import AIFF
 from os import devnull
 
 class TMetadata(TestCase):
@@ -242,13 +242,13 @@ add(TFileUpperExt)
 class TModuleImportAll(TestCase):
 
     def test_all(self):
-        import mutagen
-        files = os.listdir(mutagen.__path__[0])
+        import mutagenx
+        files = os.listdir(mutagenx.__path__[0])
         modules = [os.path.splitext(f)[0] for f in files]
         modules = [f for f in modules if not f.startswith("_")]
 
         for module in modules:
-            mod = getattr(__import__("mutagen." + module), module)
+            mod = getattr(__import__("mutagenx." + module), module)
             for attr in getattr(mod, "__all__", []):
                 getattr(mod, attr)
 

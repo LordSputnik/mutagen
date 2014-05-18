@@ -24,7 +24,7 @@ will not interpret the / characters as a separator, and will almost
 always accept null separators to generate multi-valued text frames.
 
 Because ID3 frame structure differs between frame types, each frame is
-implemented as a different class (e.g. TIT2 as mutagen.id3.TIT2). Each
+implemented as a different class (e.g. TIT2 as mutagenx.id3.TIT2). Each
 frame's documentation contains a list of its attributes.
 
 Since this file's documentation is a little unwieldy, you are probably
@@ -37,16 +37,16 @@ import struct
 
 from struct import unpack, pack, error as StructError
 
-import mutagen
-from mutagen._util import insert_bytes, delete_bytes, DictProxy
+import mutagenx
+from mutagenx._util import insert_bytes, delete_bytes, DictProxy
 from ._compat import reraise, chr_
 
-from mutagen._id3util import *
-from mutagen._id3frames import *
-from mutagen._id3specs import *
+from mutagenx._id3util import *
+from mutagenx._id3frames import *
+from mutagenx._id3specs import *
 
 
-class ID3(DictProxy, mutagen.Metadata):
+class ID3(DictProxy, mutagenx.Metadata):
     """A file with an ID3v2 tag.
 
     Attributes:
@@ -106,10 +106,10 @@ class ID3(DictProxy, mutagen.Metadata):
 
         Example of loading a custom frame::
 
-            my_frames = dict(mutagen.id3.Frames)
+            my_frames = dict(mutagenx.id3.Frames)
             class XMYF(Frame): ...
             my_frames["XMYF"] = XMYF
-            mutagen.id3.ID3(filename, known_frames=my_frames)
+            mutagenx.id3.ID3(filename, known_frames=my_frames)
         """
 
         if not v2_version in (3, 4):
@@ -463,7 +463,7 @@ class ID3(DictProxy, mutagen.Metadata):
               if 2, ID3v1 tags will be created and/or updated
         v2 -- version of ID3v2 tags (3 or 4).
 
-        By default Mutagen saves ID3v2.4 tags. If you want to save ID3v2.3
+        By default MutagenX saves ID3v2.4 tags. If you want to save ID3v2.3
         tags, you must call method update_to_v23 before saving the file.
 
         v23_sep -- the separator used to join multiple text values
@@ -786,7 +786,7 @@ def ParseID3v1(data):
     if 128 < len(data) or len(data) < 124:
         return None
 
-    # Issue #69 - Previous versions of Mutagen, when encountering
+    # Issue #69 - Previous versions of MutagenX, when encountering
     # out-of-spec TDRC and TYER frames of less than four characters,
     # wrote only the characters available - e.g. "1" or "" - into the
     # year field. To parse those, reduce the size of the year field.
@@ -887,12 +887,12 @@ def MakeID3v1(id3):
             v1['genre'])
 
 
-class ID3FileType(mutagen.FileType):
+class ID3FileType(mutagenx.FileType):
     """An unknown type of file with ID3 tags."""
 
     ID3 = ID3
 
-    class _Info(mutagen.StreamInfo):
+    class _Info(mutagenx.StreamInfo):
         length = 0
 
         def __init__(self, fileobj, offset):
@@ -910,7 +910,7 @@ class ID3FileType(mutagen.FileType):
         """Add an empty ID3 tag to the file.
 
         A custom tag reader may be used in instead of the default
-        mutagen.id3.ID3 object, e.g. an EasyID3 reader.
+        mutagenx.id3.ID3 object, e.g. an EasyID3 reader.
         """
         if ID3 is None:
             ID3 = self.ID3
@@ -924,7 +924,7 @@ class ID3FileType(mutagen.FileType):
         """Load stream and tag information from a file.
 
         A custom tag reader may be used in instead of the default
-        mutagen.id3.ID3 object, e.g. an EasyID3 reader.
+        mutagenx.id3.ID3 object, e.g. an EasyID3 reader.
         """
 
         if ID3 is None:

@@ -12,14 +12,14 @@
 
 __all__ = ["ASF", "Open"]
 
-from mutagen._compat import swap_to_string, text_type, PY2, string_types, iteritems
+from mutagenx._compat import swap_to_string, text_type, PY2, string_types, iteritems
 
 import struct
 
 from collections import MutableMapping
 
-from mutagen import FileType, Metadata, StreamInfo
-from mutagen._util import insert_bytes, delete_bytes, total_ordering
+from mutagenx import FileType, Metadata, StreamInfo
+from mutagenx._util import insert_bytes, delete_bytes, total_ordering
 
 
 
