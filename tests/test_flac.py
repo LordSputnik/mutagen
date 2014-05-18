@@ -331,9 +331,12 @@ class TFLAC(TestCase):
     def test_write_changetitle_unicode_key(self):
         f = FLAC(self.NEW)
         f[u"title"] = b"A New Title"
-        f.save()
-        f = FLAC(self.NEW)
-        self.failUnlessEqual(f[u"title"][0], b"A New Title")
+        if PY3:
+            self.assertRaises(ValueError, f.save)
+        else:
+            f.save()
+            f = FLAC(self.NEW)
+            self.failUnlessEqual(f[u"title"][0], b"A New Title")
 
     def test_write_changetitle_unicode_key_and_value(self):
         f = FLAC(self.NEW)

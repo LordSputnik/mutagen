@@ -215,8 +215,8 @@ class TFileUpperExt(TestCase):
         checks = []
         for (original, instance) in self.FILES:
             ext = os.path.splitext(original)[1]
-            suffix = ext.upper()
-            fd, filename = mkstemp(suffix=str(suffix))
+            suffix = ext.decode('ascii').upper()
+            fd, filename = mkstemp(suffix=suffix)
             os.close(fd)
             shutil.copy(original, filename)
             checks.append((filename, instance))
