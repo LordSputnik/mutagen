@@ -2,7 +2,7 @@ import os
 import sys
 import imp
 
-from mutagen._compat import StringIO, text_type
+from mutagenx._compat import StringIO, text_type
 
 from tests import TestCase
 

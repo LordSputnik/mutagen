@@ -2,9 +2,9 @@ import os
 from tempfile import mkstemp
 import shutil
 
-import mutagen
-from mutagen.id3 import ID3
-from mutagen._compat import PY2
+import mutagenx
+from mutagenx.id3 import ID3
+from mutagenx._compat import PY2
 
 from tests import add
 from tests.test_tools import _TTools
@@ -56,7 +56,7 @@ class TMid3v2(_TTools):
         new_value = "TEST"
         for arg in [short, longer]:
             orig = ID3(self.filename)
-            frame_class = mutagen.id3.Frames[frame]
+            frame_class = mutagenx.id3.Frames[frame]
             orig[frame] = frame_class(text=[u"BLAH"], encoding=3)
             orig.save()
 

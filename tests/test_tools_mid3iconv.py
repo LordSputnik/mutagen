@@ -2,7 +2,7 @@ import os
 from tempfile import mkstemp
 import shutil
 
-from mutagen.id3 import ID3
+from mutagenx.id3 import ID3
 
 from tests import add
 from tests.test_tools import _TTools
@@ -51,7 +51,7 @@ class TMid3Iconv(_TTools):
         self.failUnlessEqual(len(results), len(CODECS))
 
     def test_conv_basic(self):
-        from mutagen.id3 import TALB
+        from mutagenx.id3 import TALB
 
         for codec in CODECS:
             f = ID3(self.filename)
@@ -63,7 +63,7 @@ class TMid3Iconv(_TTools):
             self.failUnlessEqual(f["TALB"].text[0] , AMBIGUOUS.decode(codec))
 
     def test_comm(self):
-        from mutagen.id3 import COMM
+        from mutagenx.id3 import COMM
 
         for codec in CODECS:
             f = ID3(self.filename)
@@ -78,7 +78,7 @@ class TMid3Iconv(_TTools):
             self.failUnlessEqual(new_frame.text[0] , AMBIGUOUS.decode(codec))
 
     def test_remove_v1(self):
-        from mutagen.id3 import ParseID3v1
+        from mutagenx.id3 import ParseID3v1
         res, out = self.call("--remove-v1", self.filename)
 
         with open(self.filename, "rb") as h:

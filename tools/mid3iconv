@@ -16,8 +16,8 @@ import locale
 # Deprecated - should be dropped if/when 2.6 is eventually no longer supported.
 from optparse import OptionParser
 
-import mutagen
-import mutagen.id3
+import mutagenx
+import mutagenx.id3
 
 
 VERSION = (0, 3)
@@ -45,14 +45,14 @@ def isascii(string):
 
 class ID3OptionParser(OptionParser):
     def __init__(self):
-        mutagen_version = mutagen.version_string
+        mutagenx_version = mutagenx.version_string
         my_version = ".".join(map(str, VERSION))
-        version = "mid3iconv %s\nUses Mutagen %s" % (
-            my_version, mutagen_version)
+        version = "mid3iconv %s\nUses MutagenX %s" % (
+            my_version, mutagenx_version)
         return OptionParser.__init__(
             self, version=version,
             usage="%prog [OPTION] [FILE]...",
-            description=("Mutagen-based replacement the id3iconv utility, "
+            description=("MutagenX-based replacement the id3iconv utility, "
                          "which converts ID3 tags from legacy encodings "
                          "to Unicode and stores them using the ID3v2 format."))
 
@@ -76,11 +76,11 @@ def update(options, filenames):
             print("Updating %s" % filename)
 
         if has_id3v1(filename) and not noupdate and force_v1:
-            mutagen.id3.delete(filename, False, True)
+            mutagenx.id3.delete(filename, False, True)
 
         try:
-            id3 = mutagen.id3.ID3(filename)
-        except mutagen.id3.ID3NoHeaderError:
+            id3 = mutagenx.id3.ID3(filename)
+        except mutagenx.id3.ID3NoHeaderError:
             if verbose != "quiet":
                 print("No ID3 header found; skipping...")
             continue
@@ -91,7 +91,7 @@ def update(options, filenames):
 
         for tag in (t for t in id3 if t.startswith(('T', 'COMM'))):
             frame = id3[tag]
-            if isinstance(frame, mutagen.id3.TimeStampTextFrame):
+            if isinstance(frame, mutagenx.id3.TimeStampTextFrame):
                 # non-unicode fields
                 continue
             try:
