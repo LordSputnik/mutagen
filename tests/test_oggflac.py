@@ -3,9 +3,9 @@ import shutil
 
 from tempfile import mkstemp
 
-from mutagen._compat import cBytesIO
-from mutagen.oggflac import OggFLAC, OggFLACStreamInfo, delete
-from mutagen.ogg import OggPage, error as OggError
+from mutagenx._compat import cBytesIO
+from mutagenx.oggflac import OggFLAC, OggFLACStreamInfo, delete
+from mutagenx.ogg import OggPage, error as OggError
 from tests import add
 from tests.test_ogg import TOggFileType
 from os import devnull

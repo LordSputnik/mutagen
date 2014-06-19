@@ -11,10 +11,10 @@ import zlib
 from warnings import warn
 from struct import unpack
 
-from mutagen._id3util import (
+from mutagenx._id3util import (
     ID3Warning, ID3JunkFrameError, ID3BadCompressedData,
     ID3EncryptionUnsupportedError, ID3BadUnsynchData, unsynch)
-from mutagen._id3specs import (
+from mutagenx._id3specs import (
     BinaryDataSpec, StringSpec, Latin1TextSpec, EncodedTextSpec, ByteSpec,
     EncodingSpec, ASPIIndexSpec, SizedIntegerSpec, IntegerSpec,
     VolumeAdjustmentsSpec, VolumePeakSpec, VolumeAdjustmentSpec,
@@ -193,10 +193,10 @@ class Frame(object):
 
     def __hash__(self):
         raise TypeError("Frame objects are unhashable")
-        
+
     def __str__(self):
         return u"No tag-specific string/unicode representation for " + type(self).__name__
-        
+
     def __bytes__(self):
         return b"No tag-specific bytes representation for " + type(self).__name__.encode('utf-8')
 
@@ -382,7 +382,7 @@ class UrlFrame(Frame):
     """A frame containing a URL string.
 
     The ID3 specification is silent about IRIs and normalized URL
-    forms. Mutagen assumes all URLs in files are encoded as Latin 1,
+    forms. MutagenX assumes all URLs in files are encoded as Latin 1,
     but string conversion of this frame returns a UTF-8 representation
     for compatibility with other string conversions.
 
@@ -433,7 +433,7 @@ class TCON(TextFrame):
     use the 'genres' property rather than the 'text' attribute.
     """
 
-    from mutagen._constants import GENRES
+    from mutagenx._constants import GENRES
     GENRES = GENRES
 
     def __get_genres(self):
@@ -936,7 +936,7 @@ class SYLT(Frame):
 
     def __str__(self):
         return u"".join(text for (text, time) in self.text)
-        
+
     def __bytes__(self):
         return text_type(self).encode("utf-8")
 
@@ -1074,7 +1074,7 @@ class APIC(Frame):
     * desc -- a text description of the image
     * data -- raw image data, as a byte string
 
-    Mutagen will automatically compress large images when saving tags.
+    MutagenX will automatically compress large images when saving tags.
     """
 
     _framespec = [
@@ -1200,7 +1200,7 @@ class RBUF(FrameOpt):
     * info -- if ID3 tags may be elsewhere in the file (optional)
     * offset -- the location of the next ID3 tag, if any
 
-    Mutagen will not find the next tag itself.
+    MutagenX will not find the next tag itself.
     """
 
     _framespec = [SizedIntegerSpec('size', 3)]
@@ -1230,7 +1230,7 @@ class AENC(FrameOpt):
     * preview_length -- number of unencrypted blocks
     * data -- data required for decryption (optional)
 
-    Mutagen cannot decrypt files.
+    MutagenX cannot decrypt files.
     """
 
     _framespec = [
@@ -1440,7 +1440,7 @@ class ENCR(Frame):
     """Encryption method registration.
 
     The standard does not allow multiple ENCR frames with the same owner
-    or the same method. Mutagen only verifies that the owner is unique.
+    or the same method. MutagenX only verifies that the owner is unique.
     """
 
     _framespec = [
@@ -1545,7 +1545,7 @@ class SIGN(Frame):
 class SEEK(Frame):
     """Seek frame.
 
-    Mutagen does not find tags at seek offsets.
+    MutagenX does not find tags at seek offsets.
     """
 
     _framespec = [IntegerSpec('offset')]

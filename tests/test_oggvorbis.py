@@ -1,9 +1,9 @@
 import os
 import shutil
 
-from mutagen._compat import cBytesIO
-from mutagen.ogg import OggPage
-from mutagen.oggvorbis import OggVorbis, OggVorbisInfo, delete
+from mutagenx._compat import cBytesIO
+from mutagenx.ogg import OggPage
+from mutagenx.oggvorbis import OggVorbis, OggVorbisInfo, delete
 from tests import add
 from tests.test_ogg import TOggFileType
 from tempfile import mkstemp

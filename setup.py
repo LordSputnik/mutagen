@@ -139,10 +139,10 @@ class coverage_cmd(Command):
             ignoredirs=[sys.prefix, sys.exec_prefix])
 
         def run_tests():
-            import mutagen
-            import mutagen._util
-            reload(mutagen._util)
-            reload(mutagen)
+            import mutagenx
+            import mutagenx._util
+            reload(mutagenx._util)
+            reload(mutagenx)
             cmd = self.reinitialize_command("test")
             cmd.quick = self.quick
             cmd.ensure_finalized()
@@ -186,7 +186,7 @@ else:
     data_files = []
 
 if __name__ == "__main__":
-    from mutagen import version_string
+    from mutagenx import version_string
 
     cmd_classes = {
         "clean": clean,
@@ -209,8 +209,7 @@ if __name__ == "__main__":
           long_description="""\
 A fork of the mutagen package, modified to support Python 3.3+. I
 take no credit for the original mutagen - the copyright for that is
-owned by the original developers. This package isn't currently
-compatible with Python 2.x, but I am working with the mutagen
+owned by the original developers. I am working with the mutagen
 developers to make these two projects converge. Once this happens, I'll
 close this project and start working on improving mutagen itself.
 

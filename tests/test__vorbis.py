@@ -1,6 +1,6 @@
 from tests import add, TestCase
-from mutagen._vorbis import VComment, VCommentDict, istag
-from mutagen._compat import text_type, PY3
+from mutagenx._vorbis import VComment, VCommentDict, istag
+from mutagenx._compat import text_type, PY3
 
 
 class Tistag(TestCase):
