@@ -1,16 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
+#!/usr/bin/env python
 # Full tag list for any given file.
 # Copyright 2005 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
-
-from __future__ import print_function, absolute_import, division
 
 import sys
 import locale
@@ -30,17 +24,17 @@ def main(argv):
     if not args:
         raise SystemExit(parser.print_help() or 1)
 
-    enc = locale.getpreferredencoding()
+    enc = locale.getpreferredencoding() or "utf-8"
     for filename in args:
-        print("--%s" % filename)
+        print("--", filename)
         try:
-            print ("- " + File(filename).pprint()).encode(enc, 'replace')
+            print("- " + File(filename).pprint().encode(enc, 'replace'))
         except AttributeError:
-            print "- Unknown file type".encode(enc, 'replace')
+            print("- Unknown file type")
         except KeyboardInterrupt:
             raise
-        except Exception, err:
-            print(str(err).encode(enc, 'replace'))
+        except Exception as err:
+            print(str(err))
         print
 
 

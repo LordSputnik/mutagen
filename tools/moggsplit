@@ -1,16 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
+#!/usr/bin/env python
 # Split a multiplex/chained Ogg file into its component parts.
 # Copyright 2006 Joe Wreschnig
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
 # published by the Free Software Foundation.
-#
-# Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
-
-from __future__ import print_function, absolute_import, division
 
 import os
 import sys
@@ -25,7 +19,7 @@ def main(argv):
     parser = OptionParser(
         usage="%prog [options] filename.ogg ...",
         description="Split Ogg logical streams using Mutagen.",
-        version="Mutagen %s" % mutagen.version_string
+        version="Mutagen %s" % ".".join(map(str, mutagen.version))
         )
 
     parser.add_option(

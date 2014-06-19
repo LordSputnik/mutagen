@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # ID3iconv is a Java based ID3 encoding convertor, here's the Python version.
@@ -9,8 +9,6 @@
 # published by the Free Software Foundation.
 #
 # Modified for Python 3 by Ben Ockmore <ben.sput@gmail.com>
-
-from __future__ import print_function, absolute_import, division
 
 import sys
 import locale
@@ -23,6 +21,10 @@ import mutagen.id3
 
 
 VERSION = (0, 3)
+
+
+def getpreferredencoding(*args):
+    return locale.getpreferredencoding(*args) or "utf-8"
 
 
 def isascii(string):
@@ -60,7 +62,7 @@ class ID3OptionParser(OptionParser):
 
 
 def update(options, filenames):
-    encoding = options.encoding or locale.getpreferredencoding()
+    encoding = options.encoding or getpreferredencoding()
     verbose = options.verbose
     noupdate = options.noupdate
     force_v1 = options.force_v1
@@ -107,7 +109,7 @@ def update(options, filenames):
                 else:
                     frame.encoding = 1
 
-        enc = locale.getpreferredencoding()
+        enc = getpreferredencoding()
         if verbose == "debug":
             print(id3.pprint().encode(enc, "replace"))
 
@@ -133,7 +135,7 @@ def main(argv):
         "-e", "--encoding", metavar="ENCODING", action="store",
         type="string", dest="encoding",
         help=("Specify original tag encoding (default is %s)" % (
-              locale.getpreferredencoding())))
+              getpreferredencoding())))
     parser.add_option(
         "-p", "--dry-run", action="store_true", dest="noupdate",
         help="Do not actually modify files")
