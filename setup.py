@@ -203,7 +203,7 @@ if __name__ == "__main__":
           author="Ben Ockmore",
           author_email="ben.sput@gmail.com",
           license="GNU GPL v2",
-          packages=["mutagenx"],
+          packages=["mutagen"],
           data_files=data_files,
           scripts=glob.glob("tools/m*[!~]"),
           long_description="""\
