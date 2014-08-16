@@ -14,10 +14,11 @@ intended for internal use in Mutagen only.
 """
 
 import struct
+import codecs
 
 from fnmatch import fnmatchcase
 
-from mutagen._compat import text_type, iteritems, PY2, chr_
+from ._compat import chr_, text_type, PY2, iteritems, iterbytes
 
 from collections import OrderedDict, MutableMapping
 
@@ -268,3 +269,47 @@ def dict_match(d, key, default=None):
             if fnmatchcase(key, pattern):
                 return value
     return default
+
+
+def decode_terminated(data, encoding, strict=True):
+    """Returns the decoded data until the first NULL terminator
+    and all data after it.
+
+    In case the data can't be decoded raises UnicodeError.
+    In case the encoding is not found raises LookupError.
+    In case the data isn't null terminated (even if it is encoded correctly)
+    raises ValueError except if strict is False, then the decoded string
+    will be returned anyway.
+    """
+
+    codec_info = codecs.lookup(encoding)
+
+    # normalize encoding name so we can compare by name
+    encoding = codec_info.name
+
+    # fast path
+    if encoding in ("utf-8", "iso8859-1"):
+        index = data.find(b"\x00")
+        if index == -1:
+            # make sure we raise UnicodeError first, like in the slow path
+            res = data.decode(encoding), b""
+            if strict:
+                raise ValueError("not null terminated")
+            else:
+                return res
+        return data[:index].decode(encoding), data[index + 1:]
+
+    # slow path
+    decoder = codec_info.incrementaldecoder()
+    r = []
+    for i, b in enumerate(iterbytes(data)):
+        c = decoder.decode(b)
+        if c == u"\x00":
+            return u"".join(r), data[i + 1:]
+        r.append(c)
+    else:
+        # make sure the decoder is finished
+        r.append(decoder.decode(b"", True))
+        if strict:
+            raise ValueError("not null terminated")
+        return u"".join(r), b""

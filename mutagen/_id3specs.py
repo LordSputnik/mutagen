@@ -11,9 +11,9 @@ import struct
 from struct import unpack, pack
 from warnings import warn
 
-from ._compat import text_type, chr_, ord_, PY3, swap_to_string, string_types
+from ._compat import text_type, chr_, PY3, swap_to_string, string_types, ord_
 from mutagen._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
-from mutagen._util import total_ordering
+from mutagen._util import total_ordering, decode_terminated
 
 # The purpose of validate is to convert input data to the format the tag
 # is expecting. If it cannot do that, it should raise an exception.
@@ -149,25 +149,19 @@ class EncodedTextSpec(Spec):
 
     def read(self, frame, data):
         enc, term = self._encodings[frame.encoding]
-        ret = b''
-        if len(term) == 1:
-            if term in data:
-                data, ret = data.split(term, 1)
-        else:
-            offset = -1
-            try:
-                while True:
-                    offset = data.index(term, offset+1)
-                    if offset & 1:
-                        continue
-                    data, ret = data[0:offset], data[offset+2:]
-                    break
-            except ValueError:
-                pass
+        try:
+            # allow missing termination
+            return decode_terminated(data, enc, strict=False)
+        except ValueError:
+            # utf-16 termination with missing BOM, or single NULL
+            if not data[:len(term)].strip(b"\x00"):
+                return u"", data[len(term):]
 
-        if len(data) < len(term):
-            return u'', ret
-        return data.decode(enc), ret
+            # utf-16 data with single NULL, see issue 169
+            try:
+                return decode_terminated(data + b"\x00", enc)
+            except ValueError:
+                raise ID3JunkFrameError
 
     def write(self, frame, value):
         enc, term = self._encodings[frame.encoding]
@@ -419,23 +413,23 @@ class SynchronizedTextSpec(EncodedTextSpec):
         texts = []
         encoding, term = self._encodings[frame.encoding]
         while data:
-            l = len(term)
             try:
-                value_idx = data.index(term)
+                value, data = decode_terminated(data, encoding)
             except ValueError:
                 raise ID3JunkFrameError
-            value = data[:value_idx].decode(encoding)
-            if len(data) < value_idx + l + 4:
+
+            if len(data) < 4:
                 raise ID3JunkFrameError
-            time, = struct.unpack(">I", data[value_idx+l:value_idx+l+4])
+            time, = struct.unpack(">I", data[:4])
+
             texts.append((value, time))
-            data = data[value_idx+l+4:]
+            data = data[4:]
         return texts, b''
 
     def write(self, frame, value):
         data = []
         encoding, term = self._encodings[frame.encoding]
-        for text, time in frame.text:
+        for text, time in value:
             text = text.encode(encoding) + term
             data.append(text + struct.pack(">I", time))
         return b"".join(data)
