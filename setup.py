@@ -10,12 +10,14 @@ import os
 import shutil
 import sys
 import subprocess
+import tarfile
 
 from imp import reload
 from distutils.core import setup, Command
+from distutils import dir_util
 
 from distutils.command.clean import clean as distutils_clean
-from distutils.command.sdist import sdist as distutils_sdist
+from distutils.command.sdist import sdist
 
 
 class clean(distutils_clean):
@@ -50,11 +52,10 @@ class clean(distutils_clean):
                 shutil.rmtree(path)
 
 
-class sdist(distutils_sdist):
-    def run(self):
-        self.run_command("test")
+class distcheck(sdist):
 
-        distutils_sdist.run(self)
+    def _check_manifest(self):
+        assert self.get_archive_files()
 
         # make sure MANIFEST.in includes all tracked files
         if subprocess.call(["hg", "status"],
@@ -62,6 +63,7 @@ class sdist(distutils_sdist):
                            stderr=subprocess.PIPE) == 0:
             # contains the packaged files after run() is finished
             included_files = self.filelist.files
+            assert included_files
 
             process = subprocess.Popen(["hg", "locate"],
                                        stdout=subprocess.PIPE)
@@ -74,6 +76,38 @@ class sdist(distutils_sdist):
 
             assert not set(tracked_files) - set(included_files), \
                 "Not all tracked files included in tarball, update MANIFEST.in"
+
+    def _check_dist(self):
+        assert self.get_archive_files()
+
+        distcheck_dir = os.path.join(self.dist_dir, "distcheck")
+        if os.path.exists(distcheck_dir):
+            dir_util.remove_tree(distcheck_dir)
+        self.mkpath(distcheck_dir)
+
+        archive = self.get_archive_files()[0]
+        tfile = tarfile.open(archive, "r:gz")
+        tfile.extractall(distcheck_dir)
+        tfile.close()
+
+        name = self.distribution.get_fullname()
+        extract_dir =  os.path.join(distcheck_dir, name)
+
+        old_pwd = os.getcwd()
+        os.chdir(extract_dir)
+        self.spawn([sys.executable, "setup.py", "test"])
+        self.spawn([sys.executable, "setup.py", "build"])
+        self.spawn([sys.executable, "setup.py", "build_sphinx"])
+        self.spawn([sys.executable, "setup.py", "install",
+                    "--prefix", "../prefix", "--record", "../log.txt"])
+        os.environ["LC_ALL"] = "C"
+        self.spawn([sys.executable, "setup.py", "test", "--quick"])
+        os.chdir(old_pwd)
+
+    def run(self):
+        sdist.run(self)
+        self._check_manifest()
+        self._check_dist()
 
 
 class build_sphinx(Command):
@@ -192,7 +226,7 @@ if __name__ == "__main__":
         "clean": clean,
         "test": test_cmd,
         "coverage": coverage_cmd,
-        "sdist": sdist,
+        "distcheck": distcheck,
         "build_sphinx": build_sphinx,
     }
 
@@ -203,9 +237,27 @@ if __name__ == "__main__":
           author="Ben Ockmore",
           author_email="ben.sput@gmail.com",
           license="GNU GPL v2",
+          classifiers=[
+            'Development Status :: 4 - Beta',
+            'Intended Audience :: Developers',
+            'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
+            'Operating System :: OS Independent',
+            'Programming Language :: Python',
+            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 2.7',
+            'Programming Language :: Python :: 3.3',
+            'Programming Language :: Python :: 3.4',
+            'Topic :: Multimedia :: Sound/Audio'
+          ],
           packages=["mutagen"],
           data_files=data_files,
-          scripts=glob.glob("tools/m*[!~]"),
+          scripts=[os.path.join("tools", name) for name in [
+            "mid3iconv",
+            "mid3v2",
+            "moggsplit",
+            "mutagen-inspect",
+            "mutagen-pony",
+          ]],
           long_description="""\
 A fork of the mutagen package, modified to support Python 3.3+. I
 take no credit for the original mutagen - the copyright for that is
