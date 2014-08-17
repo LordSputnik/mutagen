@@ -13,7 +13,7 @@ Read more about FLAC at http://flac.sourceforge.net.
 
 FLAC supports arbitrary metadata blocks. The two most interesting ones
 are the FLAC stream information block, and the Vorbis comment block;
-these are also the only ones Mutagen can currently read.
+these are also the only ones MutagenX can currently read.
 
 This module does not handle Ogg FLAC files.
 
@@ -24,13 +24,13 @@ http://flac.sourceforge.net/format.html
 __all__ = ["FLAC", "Open", "delete"]
 
 import struct
-from mutagen._vorbis import VCommentDict
-from mutagen import FileType
-import mutagen
+from mutagenx._vorbis import VCommentDict
+from mutagenx import FileType
+import mutagenx
 
 from ._compat import cBytesIO, endswith, chr_
-from mutagen._util import insert_bytes
-from mutagen.id3 import BitPaddedInt
+from mutagenx._util import insert_bytes
+from mutagenx.id3 import BitPaddedInt
 from functools import reduce
 
 
@@ -138,11 +138,11 @@ class MetadataBlock(object):
         blocks.append(padding)
 
 
-class StreamInfo(MetadataBlock, mutagen.StreamInfo):
+class StreamInfo(MetadataBlock, mutagenx.StreamInfo):
     """FLAC stream information.
 
     This contains information about the audio data in the FLAC file.
-    Unlike most stream information objects in Mutagen, changes to this
+    Unlike most stream information objects in MutagenX, changes to this
     one will rewritten to the file when it is saved. Unless you are
     actually changing the audio stream itself, don't change any
     attributes of this block.
@@ -568,7 +568,7 @@ class Padding(MetadataBlock):
 
     To avoid rewriting the entire FLAC file when editing comments,
     metadata is often padded. Padding should occur at the end, and no
-    more than one padding block should be in any FLAC file. Mutagen
+    more than one padding block should be in any FLAC file. MutagenX
     handles this with MetadataBlock.group_padding.
     """
 
@@ -601,7 +601,7 @@ class Padding(MetadataBlock):
         return "<%s (%d bytes)>" % (type(self).__name__, self.length)
 
 
-class FLAC(mutagen.FileType):
+class FLAC(mutagenx.FileType):
     """A FLAC audio file.
 
     Attributes:

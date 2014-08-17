@@ -12,8 +12,8 @@ from struct import unpack, pack
 from warnings import warn
 
 from ._compat import text_type, chr_, PY3, swap_to_string, string_types, ord_
-from mutagen._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
-from mutagen._util import total_ordering, decode_terminated
+from mutagenx._id3util import ID3JunkFrameError, ID3Warning, BitPaddedInt
+from mutagenx._util import total_ordering, decode_terminated
 
 # The purpose of validate is to convert input data to the format the tag
 # is expecting. If it cannot do that, it should raise an exception.

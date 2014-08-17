@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Constants used by Mutagen."""
+"""Constants used by MutagenX."""
 
 GENRES = [
     u"Blues",

@@ -16,11 +16,11 @@ import struct
 from struct import pack
 
 from ._compat import endswith, text_type, PY3
-from mutagen import StreamInfo, FileType
+from mutagenx import StreamInfo, FileType
 
-from mutagen.id3 import ID3
-from mutagen._id3util import error as ID3Error
-from mutagen._util import insert_bytes, delete_bytes
+from mutagenx.id3 import ID3
+from mutagenx._id3util import error as ID3Error
+from mutagenx._util import insert_bytes, delete_bytes
 
 __all__ = ["AIFF", "Open", "delete"]
 

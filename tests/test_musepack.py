@@ -2,9 +2,9 @@ import os
 import shutil
 from tempfile import mkstemp
 
-from mutagen.id3 import ID3, TIT2
-from mutagen.musepack import Musepack, MusepackInfo, MusepackHeaderError
-from mutagen._compat import cBytesIO
+from mutagenx.id3 import ID3, TIT2
+from mutagenx.musepack import Musepack, MusepackInfo, MusepackHeaderError
+from mutagenx._compat import cBytesIO
 from tests import TestCase, add
 
 class TMusepack(TestCase):

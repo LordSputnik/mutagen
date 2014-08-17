@@ -9,9 +9,9 @@
 
 import collections
 
-from mutagen import Metadata
-from mutagen._util import dict_match, utf8
-from mutagen.mp4 import MP4, MP4Tags, error, delete
+from mutagenx import Metadata
+from mutagenx._util import dict_match, utf8
+from mutagenx.mp4 import MP4, MP4Tags, error, delete
 from ._compat import PY2, text_type
 
 
@@ -271,10 +271,10 @@ for name, key in {
 
 
 class EasyMP4(MP4):
-    """Like :class:`MP4 <mutagen.mp4.MP4>`,
+    """Like :class:`MP4 <mutagenx.mp4.MP4>`,
     but uses :class:`EasyMP4Tags` for tags.
 
-    :ivar info: :class:`MP4Info <mutagen.mp4.MP4Info>`
+    :ivar info: :class:`MP4Info <mutagenx.mp4.MP4Info>`
     :ivar tags: :class:`EasyMP4Tags`
     """
 

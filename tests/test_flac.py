@@ -3,10 +3,10 @@ import os
 
 from tests import TestCase, add
 
-from mutagen.id3 import ID3, TIT2, ID3NoHeaderError
-from mutagen.flac import to_int_be, Padding, VCFLACDict, MetadataBlock, error
-from mutagen.flac import StreamInfo, SeekTable, CueSheet, FLAC, delete, Picture
-from mutagen._compat import PY3
+from mutagenx.id3 import ID3, TIT2, ID3NoHeaderError
+from mutagenx.flac import to_int_be, Padding, VCFLACDict, MetadataBlock, error
+from mutagenx.flac import StreamInfo, SeekTable, CueSheet, FLAC, delete, Picture
+from mutagenx._compat import PY3
 from tests.test__vorbis import TVComment
 
 from os import devnull
@@ -554,7 +554,7 @@ add(TFLACBadBlockSizeWrite)
 
 class CVE20074619(TestCase):
 
-    # Tests to ensure Mutagen is not vulnerable to a number of security
+    # Tests to ensure MutagenX is not vulnerable to a number of security
     # issues found in libFLAC.
     # http://research.eeye.com/html/advisories/published/AD20071115.html
 
@@ -586,7 +586,7 @@ class CVE20074619(TestCase):
 
     # Vulnerabilities 4-10 are the same thing for the picture block.
 
-    # Vulnerability 11 does not apply to Mutagen as it does not
+    # Vulnerability 11 does not apply to MutagenX as it does not
     # download images when given a redirect MIME type.
 
     # "An overly large Padding length field value would set the basis
@@ -614,7 +614,7 @@ class CVE20074619(TestCase):
         self.failUnlessRaises(IOError, f.metadata_blocks[-1].write)
 
     def test_12_write_too_big_for_flac(self):
-        from mutagen.flac import MetadataBlock
+        from mutagenx.flac import MetadataBlock
         filename = os.path.join("tests", "data", "silence-44-s.flac")
         f = FLAC(filename)
         # This size is too big to be in a FLAC block but is overwise fine.

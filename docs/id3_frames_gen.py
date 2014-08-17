@@ -14,11 +14,11 @@ import os
 
 sys.path.insert(0, os.path.abspath('../'))
 
-import mutagen.id3
-from mutagen.id3 import Frames, Frames_2_2, Frame
+import mutagenx.id3
+from mutagenx.id3 import Frames, Frames_2_2, Frame
 
 
-BaseFrames = dict([(k, v) for (k, v) in vars(mutagen.id3).items()
+BaseFrames = dict([(k, v) for (k, v) in vars(mutagenx.id3).items()
                    if v not in Frames.values() and v not in Frames_2_2.values()
                    and isinstance(v, type) and
                    (issubclass(v, Frame) or v is Frame)])
@@ -39,7 +39,7 @@ def print_frames(frames, sort_mro=False):
 
     for name, cls in sorted(frames.items(), key=sort_func):
         print """
-.. autoclass:: mutagen.id3.%s
+.. autoclass:: mutagenx.id3.%s
     :show-inheritance:
     :members:
 """ % repr(cls())

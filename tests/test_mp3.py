@@ -2,10 +2,10 @@ import os
 import shutil
 
 from tests import TestCase
-from mutagen._compat import cBytesIO
+from mutagenx._compat import cBytesIO
 from tests import add
-from mutagen.mp3 import MP3, error as MP3Error, delete, MPEGInfo, EasyMP3
-from mutagen.id3 import ID3
+from mutagenx.mp3 import MP3, error as MP3Error, delete, MPEGInfo, EasyMP3
+from mutagenx.id3 import ID3
 from tempfile import mkstemp
 
 class TMP3(TestCase):
@@ -25,7 +25,7 @@ class TMP3(TestCase):
         self.mp3_4 = MP3(self.silence_mpeg25)
 
     def test_mode(self):
-        from mutagen.mp3 import JOINTSTEREO
+        from mutagenx.mp3 import JOINTSTEREO
         self.failUnlessEqual(self.mp3.info.mode, JOINTSTEREO)
         self.failUnlessEqual(self.mp3_2.info.mode, JOINTSTEREO)
         self.failUnlessEqual(self.mp3_3.info.mode, JOINTSTEREO)
@@ -105,7 +105,7 @@ class TMP3(TestCase):
 
     def test_load_non_id3(self):
         filename = os.path.join("tests", "data", "apev2-lyricsv2.mp3")
-        from mutagen.apev2 import APEv2
+        from mutagenx.apev2 import APEv2
         mp3 = MP3(filename, ID3=APEv2)
         self.failUnless("replaygain_track_peak" in mp3.tags)
 

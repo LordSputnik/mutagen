@@ -1,6 +1,6 @@
-from mutagen._util import cdata, utf8, insert_bytes, delete_bytes
-from mutagen._util import decode_terminated
-from mutagen._compat import text_type, itervalues, iterkeys, iteritems, PY2
+from mutagenx._util import cdata, utf8, insert_bytes, delete_bytes
+from mutagenx._util import decode_terminated
+from mutagenx._compat import text_type, itervalues, iterkeys, iteritems, PY2
 from tests import TestCase, add
 import random
 
@@ -184,7 +184,7 @@ class FileHandling(TestCase):
     def test_insert_6106_79_51760(self):
         # This appears to be due to ANSI C limitations in read/write on rb+
         # files. The problematic behavior only showed up in our mmap fallback
-        # code for transfers of this or similar sizes. 
+        # code for transfers of this or similar sizes.
         data = u''.join(map(text_type, range(12574))) # 51760 bytes
         data = data.encode("ascii")
         o = self.file(data)
@@ -194,7 +194,7 @@ class FileHandling(TestCase):
     def test_delete_6106_79_51760(self):
         # This appears to be due to ANSI C limitations in read/write on rb+
         # files. The problematic behavior only showed up in our mmap fallback
-        # code for transfers of this or similar sizes. 
+        # code for transfers of this or similar sizes.
         data = u''.join(map(text_type, range(12574))) # 51760 bytes
         data = data.encode("ascii")
         o = self.file(data[:6106+79] + data[79:])
@@ -203,7 +203,7 @@ class FileHandling(TestCase):
 
     # Generate a bunch of random insertions, apply them, delete them,
     # and make sure everything is still correct.
-    # 
+    #
     # The num_runs and num_changes values are tuned to take about 10s
     # on my laptop, or about 30 seconds since we we have 3 variations
     # on insert/delete_bytes brokenness. If I ever get a faster

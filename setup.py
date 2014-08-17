@@ -173,10 +173,10 @@ class coverage_cmd(Command):
             ignoredirs=[sys.prefix, sys.exec_prefix])
 
         def run_tests():
-            import mutagen
-            import mutagen._util
-            reload(mutagen._util)
-            reload(mutagen)
+            import mutagenx
+            import mutagenx._util
+            reload(mutagenx._util)
+            reload(mutagenx)
             cmd = self.reinitialize_command("test")
             cmd.quick = self.quick
             cmd.ensure_finalized()
@@ -220,7 +220,7 @@ else:
     data_files = []
 
 if __name__ == "__main__":
-    from mutagen import version_string
+    from mutagenx import version_string
 
     cmd_classes = {
         "clean": clean,
@@ -249,7 +249,7 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 3.4',
             'Topic :: Multimedia :: Sound/Audio'
           ],
-          packages=["mutagen"],
+          packages=["mutagenx"],
           data_files=data_files,
           scripts=[os.path.join("tools", name) for name in [
             "mid3iconv",
