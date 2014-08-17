@@ -75,8 +75,8 @@ class Report(object):
 
 
 def check_dir(path):
-    from mutagen.id3 import ID3
-    from mutagen.mp3 import MP3
+    from mutagenx.id3 import ID3
+    from mutagenx.mp3 import MP3
 
     class ID3Custom(ID3):
         PEDANTIC = False

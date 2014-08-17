@@ -13,7 +13,7 @@ from optparse import OptionParser
 
 
 def main(argv):
-    from mutagen import File
+    from mutagenx import File
 
     parser = OptionParser()
     parser.add_option("--no-flac", help="Compatibility; does nothing.")
