@@ -1,5 +1,13 @@
 mutagenx
---------
+========
+
+UPDATE
+------
+I now have commit access to the main mutagen repository, so I'm
+currently porting the changes I've made here across to the original
+project. Hopefully, soon I can start focusing on some of the other
+improvements I have planned apart from Python 3 support.
+
 mutagenx was originally a project to create a Python 3 library which
 implemented all the features of the Python 2 library mutagen. After the
 developer of mutagen made some visible progress in making the mutagen
